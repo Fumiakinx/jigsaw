@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/CompletionScreen.uss?fileID=7433441132597879392&amp;guid=6a8d6f5f4b4f4b4f4b4f4b4f4b4f4b4f&amp;type=3#CompletionScreen" />
+    <ui:VisualElement name="Root" class="completion-root">
+        <ui:VisualElement name="MessageContainer" class="message-container">
+            <ui:Label text="完成！おめでとう！" name="Title" class="completion-title" />
+            <ui:VisualElement class="time-container">
+                <ui:Label text="クリアタイム：" class="time-label" />
+                <ui:Label text="00:00" name="TimeValue" class="time-value" />
+            </ui:VisualElement>
+            <ui:Button text="画像選択へ戻る" name="ReturnToSelectionButton" class="return-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

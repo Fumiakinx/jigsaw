@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Jigsaw Piece Tracer (3次ベジェ曲線生成)</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #222; color: #ddd; }
+        .container { display: flex; gap: 20px; }
+        .panel { flex: 1; background: #333; padding: 20px; border-radius: 8px; }
+        canvas { display: none; }
+        .view-frame { position: relative; border: 1px dashed #555; background: #111; overflow: hidden; }
+        .view-frame img, .view-frame svg { position: absolute; top: 0; left: 0; transform-origin: top left; }
+        img { opacity: 0.5; } /* 元画像を半透明表示 */
+        svg { z-index: 10; pointer-events: none; }
+        path { fill: rgba(255, 200, 0, 0.4); stroke: #ffcc00; stroke-width: 2px; }
+        .control-group { margin-bottom: 15px; }
+        input[type="file"], input[type="range"] { width: 100%; }
+        textarea { width: 100%; height: 150px; background: #111; color: #0fa; font-family: monospace; border: none; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Jigsaw Piece Tracer</h2>
+    <p>piece.png を選択すると、その輪郭を自動トレースして「必ず同じ形になる」3次ベジェ曲線を計算・表示します。</p>
+    <div class="container">
+        <div class="panel">
+            <div class="control-group">
+                <label>画像ファイルを選択 (piece.png)</label>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+            <div class="control-group">
+                <label>サンプリング間隔（頂点数調整）: <span id="sampleVal">15</span></label>
+                <input type="range" id="samplingDistance" min="5" max="50" value="15">
+            </div>
+            <div class="control-group">
+                <label>カーブの滑らかさ: <span id="tensionVal">1.0</span></label>
+                <input type="range" id="tension" min="0.1" max="3" step="0.1" value="1.0">
+            </div>
+            <p id="infoText">頂点数: -</p>
+            <label>生成された SVG パスデータ:</label>
+            <textarea id="svgOutput" readonly></textarea>
+        </div>
+        <div class="panel">
+            <label>プレビュー (黄枠が生成された3次ベジェ曲線)</label>
+            <div class="view-frame" id="viewFrame">
+                <img id="sourceImg">
+                <svg id="svgOverlay">
+                    <path id="bezierPath"></path>
+                </svg>
+            </div>
+            <canvas id="hiddenCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const sourceImg = document.getElementById('sourceImg');
+        const hiddenCanvas = document.getElementById('hiddenCanvas');
+        const svgOverlay = document.getElementById('svgOverlay');
+        const bezierPath = document.getElementById('bezierPath');
+        const svgOutput = document.getElementById('svgOutput');
+        const viewFrame = document.getElementById('viewFrame');
+        
+        const sdInput = document.getElementById('samplingDistance');
+        const tInput = document.getElementById('tension');
+
+        let originalContour = [];
+        let imgWidth = 0, imgHeight = 0;
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const url = URL.createObjectURL(file);
+            sourceImg.src = url;
+            sourceImg.onload = () => {
+                imgWidth = sourceImg.naturalWidth;
+                imgHeight = sourceImg.naturalHeight;
+                viewFrame.style.width = imgWidth + 'px';
+                viewFrame.style.height = imgHeight + 'px';
+                svgOverlay.setAttribute('width', imgWidth);
+                svgOverlay.setAttribute('height', imgHeight);
+                processImage();
+            };
+        });
+
+        sdInput.addEventListener('input', () => { document.getElementById('sampleVal').textContent = sdInput.value; updateBezier(); });
+        tInput.addEventListener('input', () => { document.getElementById('tensionVal').textContent = tInput.value; updateBezier(); });
+
+        function processImage() {
+            const ctx = hiddenCanvas.getContext('2d');
+            hiddenCanvas.width = imgWidth;
+            hiddenCanvas.height = imgHeight;
+            ctx.clearRect(0, 0, imgWidth, imgHeight);
+            ctx.drawImage(sourceImg, 0, 0);
+            
+            const imageData = ctx.getImageData(0, 0, imgWidth, imgHeight);
+            originalContour = getContour(imageData, imgWidth, imgHeight);
+            
+            if(originalContour.length === 0) {
+                alert("輪郭が見つかりませんでした。");
+                return;
+            }
+            updateBezier();
+        }
+
+        // 輪郭のエッジピクセルを時計回りに取得する
+        function getContour(imageData, width, height) {
+            const data = imageData.data;
+            const getA = (x, y) => {
+                if(x < 0 || x >= width || y < 0 || y >= height) return 0;
+                return data[(y * width + x) * 4 + 3];
+            };
+
+            let startX = -1, startY = -1;
+            for(let y = 0; y < height; y++) {
+                for(let x = 0; x < width; x++) {
+                    if(getA(x, y) > 128) {
+                        startX = x; startY = y; break;
+                    }
+                }
+                if(startX !== -1) break;
+            }
+
+            if(startX === -1) return [];
+
+            const contour = [];
+            let cx = startX, cy = startY;
+            let dir = 0; 
+            // N, NE, E, SE, S, SW, W, NW
+            const DIRS = [ [0,-1], [1,-1], [1,0], [1,1], [0,1], [-1,1], [-1,0], [-1,-1] ];
+
+            let count = 0;
+            // Moore-Neighbor-like tracing
+            do {
+                contour.push({x: cx, y: cy});
+                let found = false;
+                let startDir = (dir + 5) % 8; // 左後ろくらいから探すのがMoore-Neighborの基本
+                for(let i=0; i<8; i++) {
+                    let d = (startDir + i) % 8;
+                    let nx = cx + DIRS[d][0];
+                    let ny = cy + DIRS[d][1];
+                    if(getA(nx, ny) > 128) {
+                        cx = nx; cy = ny;
+                        dir = d;
+                        found = true;
+                        break;
+                    }
+                }
+                if(!found) break; // 孤立ピクセル
+                count++;
+            } while ((cx !== startX || cy !== startY) && count < width * height);
+
+            return contour;
+        }
+
+        function updateBezier() {
+            if(originalContour.length === 0) return;
+
+            const step = parseInt(sdInput.value);
+            const tension = parseFloat(tInput.value);
+
+            // 適当な等間隔でサンプリング
+            let sampled = [];
+            for (let i = 0; i < originalContour.length; i += step) {
+                sampled.push(originalContour[i]);
+            }
+            // 閉じるため最初の点を追加
+            sampled.push(sampled[0]);
+
+            const beziers = catmullRomToBezier(sampled, tension);
+            
+            let pathD = `M ${beziers[0][0].x.toFixed(1)} ${beziers[0][0].y.toFixed(1)} `;
+            
+            for(let i = 0; i < beziers.length; i++) {
+                let segment = beziers[i];
+                pathD += `C ${segment[1].x.toFixed(1)} ${segment[1].y.toFixed(1)}, ` +
+                         `${segment[2].x.toFixed(1)} ${segment[2].y.toFixed(1)}, ` +
+                         `${segment[3].x.toFixed(1)} ${segment[3].y.toFixed(1)} `;
+            }
+            pathD += "Z";
+
+            bezierPath.setAttribute('d', pathD);
+            svgOutput.value = pathD;
+
+            document.getElementById('infoText').textContent = `3次ベジェ曲線使用個数: ${beziers.length}個 (頂点およそ ${beziers.length * 3} 個)`;
+        }
+
+        // 制御点を計算 (Catmull-Rom -> Cubic Bezier)
+        function catmullRomToBezier(points, tension) {
+            let beziers = [];
+            let n = points.length;
+            // 閉曲線を前提とするためインデックスをループさせる
+            const getP = (i) => points[(i + n) % n];
+
+            for (let i = 0; i < n - 1; i++) {
+                let p0 = getP(i - 1);
+                let p1 = getP(i);
+                let p2 = getP(i + 1);
+                let p3 = getP(i + 2);
+
+                let cp1x = p1.x + (p2.x - p0.x) / (6 * tension);
+                let cp1y = p1.y + (p2.y - p0.y) / (6 * tension);
+
+                let cp2x = p2.x - (p3.x - p1.x) / (6 * tension);
+                let cp2y = p2.y - (p3.y - p1.y) / (6 * tension);
+
+                beziers.push([
+                    { x: p1.x, y: p1.y },
+                    { x: cp1x, y: cp1y },
+                    { x: cp2x, y: cp2y },
+                    { x: p2.x, y: p2.y }
+                ]);
+            }
+            return beziers;
+        }
+    </script>
+</body>
+</html>

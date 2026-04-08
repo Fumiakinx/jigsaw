@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project:/Assets/UI/SelectionScreen.uss" />
+    <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.9); align-items: center; justify-content: center; padding: 30px;">
+        <ui:Label text="JIGSAW PUZZLE" style="font-size: 50px; color: gold; -unity-font-style: bold; margin-bottom: 5px;" />
+        <ui:Label text="パズル画像と難易度を選択" style="font-size: 20px; color: white; margin-bottom: 25px;" />
+        
+        <!-- 枚数選択セクション -->
+        <ui:VisualElement style="flex-direction: row; align-items: center; justify-content: center; margin-bottom: 30px; background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 10px;">
+            <ui:Label text="ピース数:" style="color: white; font-size: 16px; margin-right: 15px;" />
+            <ui:RadioButtonGroup name="PieceCountGroup" value="1" style="flex-direction: row;">
+                <ui:RadioButton label="24枚 (初級)" name="pieces-24" />
+                <ui:RadioButton label="96枚 (中級)" name="pieces-96" />
+                <ui:RadioButton label="216枚 (上級)" name="pieces-216" />
+                <ui:RadioButton label="486枚 (超難問)" name="pieces-486" />
+            </ui:RadioButtonGroup>
+        </ui:VisualElement>
+
+        <ui:ScrollView name="ImageGrid" mode="VerticalAndHorizontal" style="width: 90%; height: 60%; background-color: rgba(255, 255, 255, 0.05); border-radius: 20px;" />
+
+        
+        <ui:Label text="画像をクリックしてスタート！" style="margin-top: 20px; color: rgba(255, 255, 255, 0.5); font-size: 16px;" />
+    </ui:VisualElement>
+</ui:UXML>
