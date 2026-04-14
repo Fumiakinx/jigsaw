@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:Style src="project:/Assets/UI/LoadingScreen.uss" />
+    <ui:VisualElement name="LoadingRoot" class="loading-root">
+        <ui:VisualElement name="TopContainer" class="top-container">
+            <ui:Label text="GENERATING PUZZLE" name="LoadingLabel" class="loading-label" />
+            <ui:VisualElement name="BarContainer" class="bar-container">
+                <ui:VisualElement name="BarFill" class="bar-fill" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

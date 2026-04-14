@@ -1,0 +1,13 @@
+// Jigsaw Piece Shape Backup - Ver 1.2 Original
+// Date: 2026-04-10
+// These coordinates define the "shoulder and head" pattern for the jigsaw pieces.
+
+BezierSegment[] shoulderAndHeadCurveBackup = 
+{
+    new BezierSegment { cx1=0,  cy1=0,   cx2=35, cy2=15,  ex=37, ey=5 },
+    new BezierSegment { cx1=37, cy1=5,   cx2=40, cy2=0,   ex=38, ey=-5 },
+    new BezierSegment { cx1=38, cy1=-5,  cx2=20, cy2=-20, ex=50, ey=-20 },
+    new BezierSegment { cx1=50, cy1=-20, cx2=80, cy2=-20, ex=62, ey=-5 },
+    new BezierSegment { cx1=62, cy1=-5,  cx2=60, cy2=0,   ex=63, ey=5 },
+    new BezierSegment { cx1=63, cy1=5,   cx2=65, cy2=15,  ex=100,ey=0 }
+};

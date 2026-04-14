@@ -1,3 +1,4 @@
+// Project: Jigsaw - Ver 1.2
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
@@ -12,6 +13,17 @@ public class PuzzleSelectionManager : MonoBehaviour
     private ScrollView imageGrid;
     private RadioButtonGroup pieceCountGroup;
     private float lastOpenTime;
+    private List<(Sprite sprite, string name)> cachedSprites;
+
+    [Header("Confirmation UI")]
+    private VisualElement confirmationOverlay;
+    private VisualElement confirmImage;
+    private Label confirmPieces;
+    private Button btnYes;
+    private Button btnNo;
+
+    private Sprite pendingSprite;
+    private int pendingPieces;
 
     private readonly int[] pieceOptions = { 24, 96, 216, 486 };
 
@@ -24,38 +36,57 @@ public class PuzzleSelectionManager : MonoBehaviour
         imageGrid = root.Q<ScrollView>("ImageGrid");
         pieceCountGroup = root.Q<RadioButtonGroup>("PieceCountGroup");
 
+        confirmationOverlay = root.Q<VisualElement>("ConfirmationOverlay");
+        confirmImage = root.Q<VisualElement>("ConfirmImage");
+        confirmPieces = root.Q<Label>("ConfirmPieces");
+        btnYes = root.Q<Button>("ConfirmYes");
+        btnNo = root.Q<Button>("ConfirmNo");
+
+        if (btnYes != null) {
+            btnYes.clicked -= OnConfirmYes;
+            btnYes.clicked += OnConfirmYes;
+        }
+        if (btnNo != null) {
+            btnNo.clicked -= OnConfirmNo;
+            btnNo.clicked += OnConfirmNo;
+        }
+
         RefreshImageGrid();
     }
 
     private void RefreshImageGrid()
     {
         if (imageGrid == null) return;
-        imageGrid.Clear();
 
 #if UNITY_EDITOR
-        // t:Texture2D で検索し、すべての画像を確実に取得
-        string[] guids = UnityEditor.AssetDatabase.FindAssets("t:Texture2D", new[] { imageFolderPath });
-        foreach (string guid in guids)
+        if (cachedSprites == null)
         {
-            string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-            // Spriteとして直接ロードを試みる
-            Sprite sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
-            
-            if (sprite == null) {
-                // もしメインアセットがSpriteでない場合、サブアセットを探す
-                Object[] assets = UnityEditor.AssetDatabase.LoadAllAssetsAtPath(path);
-                foreach(var asset in assets) {
-                    if (asset is Sprite s) {
-                        sprite = s;
-                        break;
+            cachedSprites = new List<(Sprite sprite, string name)>();
+            Debug.Log($"[PuzzleSelectionManager] {imageFolderPath} から画像をキャッシュに読み込んでいます...");
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:Texture2D", new[] { imageFolderPath });
+            foreach (string guid in guids)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
+                Sprite sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (sprite == null) {
+                    Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                    if (tex != null) {
+                        sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
                     }
                 }
+                if (sprite != null) {
+                    cachedSprites.Add((sprite, Path.GetFileNameWithoutExtension(path)));
+                }
             }
+        }
 
-            if (sprite != null)
-            {
-                CreateButton(sprite, Path.GetFileNameWithoutExtension(path));
-            }
+        // 既に要素が作成されている場合は再生成をスキップ
+        if (imageGrid.contentContainer.childCount == cachedSprites.Count) return;
+
+        imageGrid.Clear();
+        foreach (var item in cachedSprites)
+        {
+            CreateButton(item.sprite, item.name);
         }
 #endif
     }
@@ -76,18 +107,41 @@ public class PuzzleSelectionManager : MonoBehaviour
 
         btn.clicked += () => {
             if (Time.time - lastOpenTime < 0.2f) return;
-            if (puzzleManager != null) {
-                // 選択されているインデックスからピース数を取得
-                int selectedIndex = pieceCountGroup != null ? pieceCountGroup.value : 1;
-                if (selectedIndex < 0 || selectedIndex >= pieceOptions.Length) selectedIndex = 1;
-                int pieces = pieceOptions[selectedIndex];
+            
+            // 選択されているインデックスからピース数を取得
+            int selectedIndex = pieceCountGroup != null ? pieceCountGroup.value : 1;
+            if (selectedIndex < 0 || selectedIndex >= pieceOptions.Length) selectedIndex = 1;
+            int pieces = pieceOptions[selectedIndex];
 
-                puzzleManager.StartPuzzle(sprite, pieces);
-                uiDoc.gameObject.SetActive(false);
-            }
+            ShowConfirmation(sprite, pieces);
         };
 
         imageGrid.Add(btn);
+    }
+
+    private void ShowConfirmation(Sprite sprite, int pieces)
+    {
+        pendingSprite = sprite;
+        pendingPieces = pieces;
+
+        if (confirmImage != null) confirmImage.style.backgroundImage = new StyleBackground(sprite);
+        if (confirmPieces != null) confirmPieces.text = $"ピース数: {pieces} 枚";
+        
+        if (confirmationOverlay != null) confirmationOverlay.style.display = DisplayStyle.Flex;
+    }
+
+    private void OnConfirmYes()
+    {
+        if (puzzleManager != null && pendingSprite != null) {
+            puzzleManager.StartPuzzle(pendingSprite, pendingPieces);
+            uiDoc.gameObject.SetActive(false);
+            if (confirmationOverlay != null) confirmationOverlay.style.display = DisplayStyle.None;
+        }
+    }
+
+    private void OnConfirmNo()
+    {
+        if (confirmationOverlay != null) confirmationOverlay.style.display = DisplayStyle.None;
     }
 
     public void Open()

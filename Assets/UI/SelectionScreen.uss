@@ -46,9 +46,34 @@
     opacity: 1;
 }
 
-#ImageGrid .unity-scroll-view__content-container {
+#ImageGrid .unity-scroll-view__content-container,
+#ImageGrid #unity-content-container {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
+    align-items: flex-start;
     padding: 20px;
+}
+
+.confirm-button {
+    border-radius: 10px;
+    border-width: 2px;
+    border-color: #555;
+    background-color: #333;
+    color: white;
+    transition-duration: 0.1s;
+}
+
+.confirm-button:hover {
+    scale: 1.05;
+}
+
+.confirm-button.yes:hover {
+    background-color: #2e7d32;
+    border-color: #4caf50;
+}
+
+.confirm-button.no:hover {
+    background-color: #c62828;
+    border-color: #f44336;
 }

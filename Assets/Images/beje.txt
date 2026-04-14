@@ -1,0 +1,157 @@
+Efficient Jigsaw design is simple and it works like this:
+
+The linked code already shows how to efficiently assemble one of your jigsaw pieces by reusing a single side design.
+
+The piece on the right side of you illustration is a traditional (or "Japanese Style") piece. This means its sides are uniform in length and fully interlocking. Japanese style pieces are the easiest to design because a single piece of design code and be reused throughout the puzzle.
+
+Ironically, While Japanese Style puzzles are the easiest to code, they are more difficult for the user to solve since many pieces will physically fit together without correctly solving the puzzle.
+
+How to design a Japanese Style jigsaw puzzle
+
+Design one side (not more!) of a jigsaw piece by combining multiple cubic Bezier curves.
+
+Use transforms to apply that one jigsaw design to the top, right, bottom or left sides as needed. (or code functions that automatically manipulate the original Bezier control points to apply that one jigsaw design to the 4 sides). Mirror the original side design to give your pieces a variety of "inny" and "outy" sides.
+
+Assemble a puzzle from pieces by mirroring the design of each neighboring side:
+
+Give the top-left piece (0,0) a random right side (either inny or outy).
+Let's assume piece (0,0) was assigned an outy right side. Then the next piece to the right (1,0) must get an inny left side.
+Now give piece (1,0) a random right side (either inny or outy), and piece (2,0) must get the mirrored type of side. And so on...
+So in general, fill the puzzle by assigning random right sides to all the pieces and mirroring the assigned side on the left side of the next piece.
+Do the same vertically. fill the puzzle by assigning random bottom sides to all the pieces and mirroring the assigned side on the top side of the next piece.
+Designing the 2 example pieces you've illustrated
+
+I assume the linked code is not your code because it already shows how to design that piece on the right of your illustration(!).
+
+// Given the center point of the piece (cx,cy) and the side length (s)
+// The single side "outy" design is below
+// Use this single design (with transforms/mirroring) to make all pieces
+ctx.lineTo(cx + s * .34, cy);
+ctx.bezierCurveTo(cx + s * .5, cy, cx + s * .4, cy + s * -.15, cx + s * .4, cy + s * -.15);
+ctx.bezierCurveTo(cx + s * .3, cy + s * -.3, cx + s * .5, cy + s * -.3, cx + s * .5, cy + s * -.3);
+ctx.bezierCurveTo(cx + s * .7, cy + s * -.3, cx + s * .6, cy + s * -.15, cx + s * .6, cy + s * -.15);
+ctx.bezierCurveTo(cx + s * .5, cy, cx + s * .65, cy, cx + s * .65, cy);
+ctx.lineTo(cx + s, cy);
+Then you can reuse this one single set of Bezier curves along with transformations to create your entire puzzle. Transformations==moving, rotating and mirroring the one single design to make up any side of any puzzle piece.
+
+The piece on the left of your illustration is probably from a Freeform Style jigsaw puzzle. It is more complex because it uses 3 different side designs. I assume there are additional side designs which you haven't shown because the 3-sided design you show would not allow all pieces to interlock to complete the puzzle.
+
+You have several options when creating a Freeform Style jigsaw puzzle.
+
+Non-interlocking Freeform Style
+
+In this style, you basically take an image and draw lines that cut it into non-uniform pieces that can be arranged to form the image. Think of this like a pizza that's been sliced randomly. You can fit the pieces together to reform the pizza even if the pieces do not interlock. Mmmmm, pizza! :-)
+
+Interlocking Freeform Style
+
+In this style, you design 2+ sides and create the puzzle much the same way as the traditional style puzzle. Usually you create one design that you will use for all left-right sides and a second design that you will use for all top-bottom sides. The complexity is that the 2 types of sides must fit together where they meet. This means that side-type-1 must share a mirrored pattern where it intersects side-type-2.
+
+So to design the piece on the left side of your illustration, you must decide if you want it to be Interlocking-Freeform or Non-interlocking-Freeform.
+
+Non-interlocking Freeform is the easier. Just pull apart the 3 types of sides and use them with their mirrored partners to chop up your image.
+
+For Interlocking-Freeform, more design work is necessary on your part. You must create additional side designs that will interlock with the 3 designs you've already created.
+
+That's a quick tour of jigsaw puzzles...Good luck with your project!
+
+[ Additional details ]
+
+For the piece on the right side of your illustration, the common "outside" looks like a "shoulders & head" silhouette.
+
+The Bezier-set to create the shoulders & head break down like this:
+
+A Bezier for the "left shoulder"
+A Bezier for the "left neck"
+A Bezier for the "left head"
+A Bezier for the "right head"
+A Bezier for the "right neck"
+A Bezier for the "right shoulder"
+A shoulder & head Bezier set might look like this:
+
+enter image description here
+
+Here's one specific example of the control points to create an outside side with a "shoulders & head" shape:
+
+var ShouldersAndHeadCubicBezierControlPoints=[
+    {cx1:0,  cy1:0,  cx2:35,cy2:15, ex:37, ey:5},   // left shoulder
+    {cx1:37, cy1:5,  cx2:40,cy2:0,  ex:38, ey:-5},  // left neck
+    {cx1:38, cy1:-5, cx2:20,cy2:-20,ex:50, ey:-20}, // left head
+    {cx1:50, cy1:-20,cx2:80,cy2:-20,ex:62, ey:-5},  // right head
+    {cx1:62, cy1:-5, cx2:60,cy2:0,  ex:63, ey:5},   // right neck
+    {cx1:63, cy1:5,  cx2:65,cy2:15, ex:100,ey:0},   // right shoulder
+];
+Once you have the "outside" set of curves, you can use canvas's context transformations to flip the "outside" into its mirrored "inside". Alternatively you can manually reverse the "outside" array of curve control points.
+
+Illustrations: top-tab and top-slot (top-slot is top-tab mirrored)
+
+enter image description here
+
+Example displaying top-tab and top-slot:
+
+var canvas=document.getElementById("canvas");
+var ctx=canvas.getContext("2d");
+var cw=canvas.width;
+var ch=canvas.height;
+function reOffset(){
+  var BB=canvas.getBoundingClientRect();
+  offsetX=BB.left;
+  offsetY=BB.top;        
+}
+var offsetX,offsetY;
+reOffset();
+window.onscroll=function(e){ reOffset(); }
+
+ctx.lineWidth=3;
+var colors=['red','green','blue','gold','purple','cyan'];
+
+var bSet=makeBeziers();
+
+draw(bSet,50,100);
+
+var bSetMirrored=mirror(bSet,1,-1,0,0);
+
+draw(bSetMirrored,50,200);
+
+function draw(bSet,transX,transY){
+  ctx.translate(transX,transY);
+  ctx.scale(2,2);
+  for(var i=0;i<bSet.length;i++){
+    var b=bSet[i];
+    ctx.beginPath();
+    ctx.bezierCurveTo(b.cx1,b.cy1,b.cx2,b.cy2,b.ex,b.ey);
+    ctx.strokeStyle=colors[i];
+    ctx.stroke();
+  }
+  ctx.setTransform(1,0,0,1,0,0);
+}
+
+
+function makeBeziers(){
+  return([
+    {cx1:0,  cy1:0,  cx2:35,cy2:15, ex:37, ey:5},   // left shoulder
+    {cx1:37, cy1:5,  cx2:40,cy2:0,  ex:38, ey:-5},  // left neck
+    {cx1:38, cy1:-5, cx2:20,cy2:-20,ex:50, ey:-20}, // left head
+    {cx1:50, cy1:-20,cx2:80,cy2:-20,ex:62, ey:-5},  // right head
+    {cx1:62, cy1:-5, cx2:60,cy2:0,  ex:63, ey:5},   // right neck
+    {cx1:63, cy1:5,  cx2:65,cy2:15, ex:100,ey:0},   // right shoulder
+  ]);
+    }
+
+    function mirror(b,signX,signY,x,y){
+    var a=[];
+         for(var i=0;i<b.length;i++){
+    var bb=b[i];
+    a.push({
+      cx1: bb.cx1*signX+x,
+      cy1: bb.cy1*signY+y,
+      cx2: bb.cx2*signX+x,
+      cy2: bb.cy2*signY+y,
+      ex:  bb.ex*signX+x,
+      ey:  bb.ey*signY+y
+    });
+  }
+  return(a);
+}
+body{ background-color: ivory; }
+#canvas{border:1px solid red; margin:0 auto; }
+<canvas id="canvas" width=300 height=300></canvas>
