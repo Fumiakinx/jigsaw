@@ -1,6 +1,7 @@
-// Project: Jigsaw - Ver 1.3
+// Project: Jigsaw - Ver 1.4
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.Collections;
 using System;
@@ -26,104 +27,127 @@ public class PuzzleManager : MonoBehaviour
     public AudioClip snapSound;
     
     [Header("Clear Effects")]
+    [Header("UI References")]
     public UIDocument completionUIDoc;
     public UIDocument loadingUIDoc;
+    public UIDocument pauseUIDoc;
     public PuzzleSelectionManager selectionManager;
     public AudioClip clearSound;
 
-    [Header("Piece Visuals")]
-    public Color highlightColor = new Color(0.8f, 0.8f, 0.8f, 1.0f);
-    [Range(0, 1)] public float highlightIntensity = 1.0f;
-    [Range(0, 0.5f)] public float highlightWidth = 0.1f;
-    public Color outlineColor = Color.black;
-
     private float startTime;
+    private float totalPausedTime = 0f;
+    private float pauseStartTime;
+    private bool isPaused = false;
     private bool isFinished = false;
 
-    public bool useBezierCurves = true;
-    public float bevelWidth = 0.0f; // 0固定：検証用
-
-    // BezierSegment 構造体はテンプレート方式への移行に伴い廃止
-
-    // 固定の曲線定義を廃止し、EdgeData ごとに動的に組み立てる方式に変更
+    [Range(0, 0.1f)] public float bevelWidth = 0.02f; 
+    public float bevelFalloff = 1.0f;
+    public float edgeDarkness = 0.4f;
+    public float specularPower = 32f;
+    public float specularIntensity = 1.6f;
 
     private class EdgeData
     {
         public int type; // 1: 凸, -1: 凹, 0: 平ら
-        public float offX, scaleX, scaleY;
-        
-        // 多様性を生む動的パラメータ
-        public float headWidth;    // 頭の横幅
-        public float headHeight;   // タブの高さ
-        public float neckDepth;    // 首の深さ
-        public float shoulderWaveL; // 左肩のうねり
-        public float shoulderWaveR; // 右肩のうねり
-        public float tilt;         // 頭の傾き
-        public float centerShift;  // タブの位置ずれ
-        public float scoopDepth;   // 肩のえぐれ具合
-        public float cornerRigidity;// 角の曲がりにくさ
-        
+        public float headWidth;    
+        public float headHeight;   
+        public float neckDepth;    
+        public float shoulderWaveL; 
+        public float shoulderWaveR; 
+        public float centerShift;  
+        public float nW_ratio; 
         public List<Vector2> cachedNormalizedPoints;
-        public float nW_ratio; // 個別の首の太さ
-        public float headBulbg; // 頭の膨らみ
     }
+
+    private Material shadowMaterial;
 
     private EdgeData[,] horizontalEdges;
     private EdgeData[,] verticalEdges;
     private Vector2[,] cornerPoints;
     private PuzzlePiece[,] pieceGrid;
     private PuzzlePiece draggingPiece = null;
+    private float _uStart, _vStart, _uScale, _vScale;
 
     private List<Material> trackedMaterials = new List<Material>();
     private List<Mesh> trackedMeshes = new List<Mesh>();
-    private Material sharedPieceMaterial;
     private int maxConnectedPieces = 1;
 
     void Start()
     {
+        // 静的な設定はStartで一度だけ行う
+        UnityEngine.QualitySettings.antiAliasing = 0;
+        Application.runInBackground = true; // 全画面切り替え時のポーズを防ぐ
+
+        // FPS設定 (WebGLの特殊な挙動に対応)
+#if UNITY_WEBGL && !UNITY_EDITOR
+        QualitySettings.vSyncCount = 1; // 垂直同期を有効にしてブラウザの更新に合わせる
+        Application.targetFrameRate = -1; 
+#else
+        Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount = 1;
+#endif
+
+        // ライトの無効化も一度だけでOK
+        Light dl = FindAnyObjectByType<Light>(); 
+        if (dl != null) dl.enabled = false;
+
         SetupCamera();
         gameObject.TryGetComponent(out audioSource);
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
         if (completionUIDoc != null) completionUIDoc.gameObject.SetActive(false);
+        if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(false);
     }
+
+    void OnDestroy()
+    {
+        ClearTrackedAssets();
+    }
+
+    private bool isGenerating = false;
 
     public void StartPuzzle(Sprite selectedSprite, int pieceCount = 200)
     {
+        if (isGenerating) {
+            Debug.LogWarning("[PuzzleManager] Already generating...");
+            return;
+        }
         if (selectedSprite == null) return;
+        Debug.Log($"[PuzzleManager] StartPuzzle: {selectedSprite.name}, Texture: {selectedSprite.texture.name} ({selectedSprite.texture.width}x{selectedSprite.texture.height})");
         sourceSprite = selectedSprite;
         targetPieces = pieceCount;
+        ClearExistingPuzzle();
 
-        // 以前のピースを破棄（リストにないものも含む全検索）
-        var orphans = UnityEngine.Object.FindObjectsByType<PuzzlePiece>(FindObjectsInactive.Include);
-        foreach (var p in orphans) 
-        {
-            if (p != null && p.transform.parent != null) 
-                SafeDestroy(p.transform.parent.gameObject); // clusterを破棄
+        if (shadowMaterial == null) {
+            Shader shadowShader = Resources.Load<Shader>("Shaders/JigsawShadow");
+            if (shadowShader == null) shadowShader = Shader.Find("Custom/JigsawShadow");
+            if (shadowShader != null) shadowMaterial = new Material(shadowShader);
         }
-        allPieces.Clear();
-
-        float aspect = (float)sourceSprite.texture.width / sourceSprite.texture.height;
-        rows = Mathf.RoundToInt(Mathf.Sqrt(targetPieces / aspect));
-        cols = Mathf.RoundToInt(aspect * rows);
+        
+        float aspect = sourceSprite.rect.width / sourceSprite.rect.height;
+        cols = Mathf.RoundToInt(Mathf.Sqrt(pieceCount * aspect));
+        rows = Mathf.CeilToInt((float)pieceCount / cols);
         totalPieces = cols * rows;
 
         cornerPoints = new Vector2[rows + 1, cols + 1];
         float ppu = sourceSprite.pixelsPerUnit;
-        float pW = (float)sourceSprite.texture.width / cols / ppu;
-        float pH = (float)sourceSprite.texture.height / rows / ppu;
-        float hW = (float)sourceSprite.texture.width / ppu / 2f;
-        float hH = (float)sourceSprite.texture.height / ppu / 2f;
+        float pW = sourceSprite.rect.width / cols / ppu;
+        float pH = sourceSprite.rect.height / rows / ppu;
+        float hW = sourceSprite.rect.width / ppu / 2f;
+        float hH = sourceSprite.rect.height / ppu / 2f;
         InitializeCornerPoints(pW, pH, hW, hH);
         InitializeEdgeData();
+
+        if (backgroundGuideRenderer == null) {
+            GameObject g = new GameObject("BackgroundGuide");
+            backgroundGuideRenderer = g.AddComponent<SpriteRenderer>();
+            g.SetActive(false);
+        }
 
         if(backgroundGuideRenderer != null)
         {
             backgroundGuideRenderer.sprite = sourceSprite;
-            backgroundGuideRenderer.sortingOrder = -10;
-            backgroundGuideRenderer.gameObject.SetActive(true); // 生成中は表示
-            backgroundGuideRenderer.color = Color.white; // 生成中ははっきり表示
             backgroundGuideRenderer.transform.localScale = Vector3.one;
-            backgroundGuideRenderer.transform.position = Vector3.zero;
+            SetGuideVisible(false); // 初期状態は背景ガイドとして設定
         }
 
         if (loadingUIDoc != null)
@@ -137,22 +161,52 @@ public class PuzzleManager : MonoBehaviour
             if (fill != null) fill.style.width = Length.Percent(0);
         }
         
-        isFinished = false;
         startTime = Time.time;
+        totalPausedTime = 0f;
+        isPaused = false;
         maxConnectedPieces = 1;
 
         SetupCamera();
-        highlightColor = CalculateAndSetDynamicColors(sourceSprite);
-
         ClearTrackedAssets();
         StopAllCoroutines();
         StartCoroutine(GeneratePuzzlePiecesCoroutine());
     }
 
+    public void ClearExistingPuzzle()
+    {
+        StopAllCoroutines();
+        int count = 0;
+        PuzzlePiece[] allPiecesInScene = GameObject.FindObjectsByType<PuzzlePiece>(FindObjectsInactive.Include);
+        foreach (var p in allPiecesInScene)
+        {
+            if (p == null) continue;
+            Transform t = p.transform;
+            while (t.parent != null && (t.parent.name.Contains("PieceCluster") || t.parent.name.Contains("Piece_")))
+                t = t.parent;
+            DestroyImmediate(t.gameObject);
+            count++;
+        }
+
+        GameObject[] roots = SceneManager.GetActiveScene().GetRootGameObjects();
+        foreach (var root in roots)
+        {
+            if (root == null || root == gameObject) continue;
+            if (root.name.Contains("PieceCluster") || root.name.Contains("Piece_")) {
+                DestroyImmediate(root);
+                count++;
+            }
+        }
+
+        Debug.Log($"[PuzzleManager] {count} 個のパズルオブジェクトを完全に削除しました。");
+        allPieces.Clear();
+        if (backgroundGuideRenderer != null) backgroundGuideRenderer.gameObject.SetActive(false);
+        ClearTrackedAssets();
+    }
+
     private void ClearTrackedAssets()
     {
-        foreach (var m in trackedMaterials) if (m != null) SafeDestroy(m);
-        foreach (var m in trackedMeshes) if (m != null) SafeDestroy(m);
+        foreach (var m in trackedMaterials) if (m != null) DestroyImmediate(m);
+        foreach (var m in trackedMeshes) if (m != null) DestroyImmediate(m);
         trackedMaterials.Clear();
         trackedMeshes.Clear();
     }
@@ -174,10 +228,10 @@ public class PuzzleManager : MonoBehaviour
             rightDown = mouse.rightButton.wasPressedThisFrame;
             spaceDown = kb.spaceKey.wasPressedThisFrame;
             spaceUp = kb.spaceKey.wasReleasedThisFrame;
+            if (kb.escapeKey.wasPressedThisFrame) TogglePause();
         }
         else
         {
-            // レガシーInputへのフォールバック
             mousePos = UnityEngine.Input.mousePosition;
             leftPressed = UnityEngine.Input.GetMouseButton(0);
             leftDown = UnityEngine.Input.GetMouseButtonDown(0);
@@ -185,9 +239,10 @@ public class PuzzleManager : MonoBehaviour
             rightDown = UnityEngine.Input.GetMouseButtonDown(1);
             spaceDown = UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.Space);
             spaceUp = UnityEngine.Input.GetKeyUp(UnityEngine.KeyCode.Space);
+            if (UnityEngine.Input.GetKeyDown(UnityEngine.KeyCode.Escape)) TogglePause();
         }
 
-        if (isFinished) return;
+        if (isPaused || isFinished) return;
 
         if (spaceDown) SetGuideVisible(true);
         else if (spaceUp) SetGuideVisible(false);
@@ -195,10 +250,7 @@ public class PuzzleManager : MonoBehaviour
         if (rightDown)
         {
             PuzzlePiece target = (draggingPiece != null) ? draggingPiece : GetTopmostPiece(mousePos);
-            if (target != null)
-            {
-                target.RotateGroup(Camera.main.ScreenToWorldPoint(mousePos));
-            }
+            if (target != null) target.RotateGroup(Camera.main.ScreenToWorldPoint(mousePos));
         }
 
         if (leftDown)
@@ -223,18 +275,23 @@ public class PuzzleManager : MonoBehaviour
 
     private PuzzlePiece GetTopmostPiece(Vector2 mousePosition)
     {
-        // ScreenToWorldPoint に渡す Vector3 の z は、カメラからの距離（または 0）
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(new Vector3(mousePosition.x, mousePosition.y, 10f));
         Collider2D[] hits = Physics2D.OverlapPointAll(worldPos);
         PuzzlePiece topPiece = null;
         int maxOrder = int.MinValue;
-        if (hits.Length > 0) Debug.Log($"Raycast Hits: {hits.Length}");
+
         foreach (var hit in hits)
         {
             PuzzlePiece p = hit.GetComponent<PuzzlePiece>();
             if (p != null)
             {
-                int order = p.GetComponent<Renderer>().sortingOrder;
+                int order = 0;
+                var sg = p.GetComponentInParent<SortingGroup>();
+                if (sg != null) order = sg.sortingOrder;
+                else {
+                    var r = p.GetComponent<Renderer>();
+                    if (r != null) order = r.sortingOrder;
+                }
                 if (order > maxOrder) { maxOrder = order; topPiece = p; }
             }
         }
@@ -243,146 +300,67 @@ public class PuzzleManager : MonoBehaviour
 
     private IEnumerator GeneratePuzzlePiecesCoroutine()
     {
-        float genStartTime = Time.realtimeSinceStartup;
-        
-        // 既存のパズルをクリア
-        var oldClusters = GameObject.FindObjectsByType<SortingGroup>(FindObjectsInactive.Exclude);
-        foreach(var oc in oldClusters) {
-            if (oc.name.Contains("PieceCluster")) DestroyImmediate(oc.gameObject);
-        }
-        var oldPieces = GameObject.FindObjectsByType<PuzzlePiece>(FindObjectsInactive.Exclude);
-        foreach(var op in oldPieces) DestroyImmediate(op.gameObject);
+        try {
+            float genStartTime = Time.realtimeSinceStartup;
+            float ppu = sourceSprite.pixelsPerUnit;
+            float tw = sourceSprite.rect.width;
+            float th = sourceSprite.rect.height;
+            float pWW = tw / cols / ppu;
+            float pWH = th / rows / ppu;
+            puzzleHalfWidth = tw / ppu / 2f;
+            puzzleHalfHeight = th / ppu / 2f;
+            adjacentDistanceThreshold = (pWW + pWH) * 0.08f;
 
-        Texture2D tex = sourceSprite.texture;
-        float ppu = sourceSprite.pixelsPerUnit;
-        int tw = tex.width;
-        int th = tex.height;
-        float pieceWorldWidth = (float)tw / cols / ppu;
-        float pieceWorldHeight = (float)th / rows / ppu;
-        float halfWidth = (float)tw / ppu / 2f;
-        float halfHeight = (float)th / ppu / 2f;
-        puzzleHalfWidth = halfWidth;
-        puzzleHalfHeight = halfHeight;
-        adjacentDistanceThreshold = (pieceWorldWidth + pieceWorldHeight) * 0.08f;
+            pieceGrid = new PuzzlePiece[rows, cols];
+            float bWidth = Mathf.Min(pWW, pWH) * 0.15f;
 
-        pieceGrid = new PuzzlePiece[rows, cols];
+            // シェーダーをResourcesからロード（ビルド時の欠落対策）
+            Shader jigsawShader = Resources.Load<Shader>("Shaders/Jigsaw2D");
+            if (jigsawShader == null) jigsawShader = Shader.Find("Custom/Jigsaw2D");
+            if (jigsawShader == null) jigsawShader = Shader.Find("Sprites/Default");
+            
+            Material puzzleMaterial = new Material(jigsawShader);
+            if (sourceSprite.texture != null) {
+                puzzleMaterial.mainTexture = sourceSprite.texture;
+                puzzleMaterial.SetTexture("_MainTex", sourceSprite.texture);
+                puzzleMaterial.SetFloat("_EdgeDarkness", edgeDarkness);
+                puzzleMaterial.SetFloat("_SpecularStrength", specularIntensity);
+            }
+            trackedMaterials.Add(puzzleMaterial);
 
-        Material puzzleMaterial = new Material(Shader.Find("Custom/Jigsaw2D"));
-        if (tex != null) {
-            puzzleMaterial.mainTexture = tex;
-        }
-        puzzleMaterial.color = Color.white;
-        trackedMaterials.Add(puzzleMaterial);
+            int total = rows * cols;
+            int count = 0;
+            float adaptiveBevelScale = total > 400 ? Mathf.Sqrt(16f / total) : Mathf.Sqrt(24f / total);
+            float scaledBevelWidth = 0.15f * adaptiveBevelScale;
 
-        Material shadowMaterial = new Material(Shader.Find("Sprites/Default"));
-        shadowMaterial.color = new Color(0, 0, 0, 0.7f); // 本番用の黒い影
-        trackedMaterials.Add(shadowMaterial);
-
-        Material highlightMaterial = new Material(Shader.Find("Sprites/Default"));
-        highlightMaterial.color = highlightColor; // 指定された色のハイライト
-        trackedMaterials.Add(highlightMaterial);
-
-        float cH = Camera.main.orthographicSize;
-        float cW = cH * Camera.main.aspect;
-
-        float pad = 0.5f;
-        float zGap = 0.0001f;
-
-        // スプライトがアトラスの一部である可能性を考慮してRectを使用
-        Rect r = sourceSprite.rect;
-        Texture2D fullTex = sourceSprite.texture;
-        float uStart = r.x / fullTex.width;
-        float vStart = r.y / fullTex.height;
-        float uWidth = r.width / fullTex.width;
-        float vHeight = r.height / fullTex.height;
-
-        float uW = uWidth / cols;
-        float vH = vHeight / rows;
-
-        int total = rows * cols;
-        int count = 0;
-
-        for (int y = 0; y < rows; y++)
-        {
-            for (int x = 0; x < cols; x++)
+            for (int y = 0; y < rows; y++)
             {
-                // 4つのコーナー座標を取得
-                Vector2 cBL = cornerPoints[y, x];
-                Vector2 cBR = cornerPoints[y, x + 1];
-                Vector2 cTR = cornerPoints[y + 1, x + 1];
-                Vector2 cTL = cornerPoints[y + 1, x];
-
-                GenerateSinglePiece(x, y, cBL, cBR, cTR, cTL, tex.width, tex.height, ppu, puzzleMaterial, shadowMaterial, highlightMaterial, cW, cH, pad, zGap, uStart, vStart, uWidth, vHeight);
-                
-                count++;
-                if (loadingUIDoc != null)
+                for (int x = 0; x < cols; x++)
                 {
-                    var fill = loadingUIDoc.rootVisualElement.Q<VisualElement>("BarFill");
-                    if (fill != null) fill.style.width = Length.Percent((float)count / total * 100f);
+                    Vector2 cBL = cornerPoints[y, x], cBR = cornerPoints[y, x + 1], cTR = cornerPoints[y + 1, x + 1], cTL = cornerPoints[y + 1, x];
+                    GenerateSinglePiece(x, y, cBL, cBR, cTR, cTL, (int)tw, (int)th, ppu, puzzleMaterial, scaledBevelWidth);
+                    count++;
+                    if (loadingUIDoc != null) {
+                        var fill = loadingUIDoc.rootVisualElement.Q<VisualElement>("BarFill");
+                        if (fill != null) fill.style.width = Length.Percent((float)count / total * 100f);
+                    }
+                    if (count % 20 == 0) yield return null;
                 }
-
-                // 数個おきにフレームを譲る（Piece数が多い場合のフリーズ防止）
-                if (count % 5 == 0) yield return null;
             }
+            if (loadingUIDoc != null) loadingUIDoc.gameObject.SetActive(false);
+            if (backgroundGuideRenderer != null) {
+                SetGuideVisible(false);
+            }
+            Debug.Log($"[LOG] Generation Complete in {Time.realtimeSinceStartup - genStartTime:F3}s");
+            yield break;
+        } finally {
+            isGenerating = false;
+            if (loadingUIDoc != null) loadingUIDoc.gameObject.SetActive(false);
         }
-
-        // 生成完了後のUI更新
-        if (loadingUIDoc != null) loadingUIDoc.gameObject.SetActive(false);
-        if (backgroundGuideRenderer != null) 
-        {
-            backgroundGuideRenderer.color = new Color(1, 1, 1, 0.2f); // プレイ中は薄く設定
-            SetGuideVisible(false); // 初期状態は非表示
-        }
-
-        Debug.Log($"[LOG] Generation Complete in {Time.realtimeSinceStartup - genStartTime:F3}s");
-        
-
-        // 幾何学的検証ログ：Piece(0,0)の右辺 と Piece(1,0)の左辺 を比較
-        VerifyBoundaryGeometry(0, 0, 1, 0);
-        yield break;
     }
 
-    private void VerifyBoundaryGeometry(int x1, int y1, int x2, int y2)
+    private void GenerateSinglePiece(int x, int y, Vector2 cBL, Vector2 cBR, Vector2 cTR, Vector2 cTL, int texWidth, int texHeight, float ppu, Material puzzleMaterial, float bWidth)
     {
-        if (pieceGrid[y1, x1] == null || pieceGrid[y2, x2] == null) return;
-        
-        Mesh m1 = pieceGrid[y1, x1].GetComponent<MeshFilter>().sharedMesh;
-        Mesh m2 = pieceGrid[y2, x2].GetComponent<MeshFilter>().sharedMesh;
-        Vector3[] v1 = m1.vertices;
-        Vector3[] v2 = m2.vertices;
-        
-        // Piece(x1,y1)の右辺は GenerateEdgePoints(pw2...) で生成。
-        // Piece(x2,y2)の左辺は GenerateEdgePoints(-pw2...) で生成。
-        // 両者のワールド座標を比較。
-        Debug.Log($"[DEBUG] Verify {x1},{y1} vs {x2},{y2} started.");
-        
-        // 全ての頂点を比較して、隣接ピース間に「一致する頂点」がどれだけあるかを確認
-        int matchCount = 0;
-        float minDistance = float.MaxValue;
-
-        foreach (Vector3 v1_local in v1)
-        {
-            // scattering（散布）後の transform.position ではなく、理論上の correctPos を使用して検証
-            Vector3 v1_ideal = (Vector3)pieceGrid[y1, x1].correctPos + v1_local;
-            foreach (Vector3 v2_local in v2)
-            {
-                Vector3 v2_ideal = (Vector3)pieceGrid[y2, x2].correctPos + v2_local;
-                float d = Vector3.Distance(v1_ideal, v2_ideal);
-                if (d < 0.0001f) matchCount++;
-                if (d < minDistance) minDistance = d;
-            }
-        }
-
-        Debug.Log($"[GEOMETRY] Total Vertices: P1:{v1.Length}, P2:{v2.Length}");
-        Debug.Log($"[GEOMETRY] Exact Matches Found: {matchCount}");
-        Debug.Log($"[GEOMETRY] Minimum Distance between any two vertices: {minDistance:F8}");
-        
-        if (matchCount < 10) Debug.LogError("[CRITICAL] Geometry Mismatch! Boundary vertices do not overlap.");
-        else Debug.Log("[SUCCESS] Geometry Matches Perfectly at Pixel Level (shared boundary vertices are identical).");
-    }
-    private void GenerateSinglePiece(int x, int y, Vector2 cBL, Vector2 cBR, Vector2 cTR, Vector2 cTL, int texWidth, int texHeight, float ppu, Material puzzleMaterial, Material shadowMaterial, Material highlightMaterial, float cW, float cH, float pad, float zGap, float uStart, float vStart, float uTotalW, float vTotalH)
-    {
-        Debug.Log($"[GEN] Starting Piece ({x}, {y}) with Jittered Corners");
         try {
             EdgeData eL = (x == 0) ? new EdgeData { type = 0 } : verticalEdges[y, x];
             EdgeData eR = (x == cols - 1) ? new EdgeData { type = 0 } : verticalEdges[y, x + 1];
@@ -390,435 +368,376 @@ public class PuzzleManager : MonoBehaviour
             EdgeData eT = (y == rows - 1) ? new EdgeData { type = 0 } : horizontalEdges[y + 1, x];
 
             Vector2 pieceCenter = (cBL + cBR + cTR + cTL) / 4f;
-
             List<Vector2> edgeB = GenerateEdgePoints(cBL, cBR, eB);
             List<Vector2> edgeR = GenerateEdgePoints(cBR, cTR, eR);
             List<Vector2> edgeT = GenerateEdgePoints(cTL, cTR, eT);
             List<Vector2> edgeL = GenerateEdgePoints(cBL, cTL, eL);
 
-            // 【完成】非破壊的・絶対順序保証型の頂点収集ロジック
             List<Vector2> verts = new List<Vector2>();
-            float epsSqr = 0.0001f * 0.0001f;
-
-            // 元のリストを破壊せずに、順方向または逆方向で頂点を追加する
-            void CollectPoints(List<Vector2> source, bool reverse) {
-                if (source == null || source.Count == 0) return;
-                if (reverse) {
-                    for (int i = source.Count - 1; i >= 0; i--) {
-                        Vector2 p = source[i];
-                        if (verts.Count > 0 && (verts[verts.Count - 1] - p).sqrMagnitude < epsSqr) continue;
-                        verts.Add(p);
-                    }
-                } else {
-                    for (int i = 0; i < source.Count; i++) {
-                        Vector2 p = source[i];
-                        if (verts.Count > 0 && (verts[verts.Count - 1] - p).sqrMagnitude < epsSqr) continue;
-                        verts.Add(p);
-                    }
-                }
+            float epsSqr = 1e-8f;
+            void Collect(List<Vector2> s, bool rev) {
+                if (s == null) return;
+                if (rev) for (int i = s.Count-1; i >= 0; i--) { if (verts.Count > 0 && (verts[verts.Count-1]-s[i]).sqrMagnitude < epsSqr) continue; verts.Add(s[i]); }
+                else for (int i = 0; i < s.Count; i++) { if (verts.Count > 0 && (verts[verts.Count-1]-s[i]).sqrMagnitude < epsSqr) continue; verts.Add(s[i]); }
             }
+            Collect(edgeB, false); Collect(edgeR, false); Collect(edgeT, true); Collect(edgeL, true);
+            if (verts.Count > 2 && (verts[verts.Count-1]-verts[0]).sqrMagnitude < epsSqr) verts.RemoveAt(verts.Count-1);
 
-            // CCW（反時計回り）で一筆書きを構成: Bottom -> Right -> Top(rev) -> Left(rev)
-            CollectPoints(edgeB, false);
-            CollectPoints(edgeR, false);
-            CollectPoints(edgeT, true);
-            CollectPoints(edgeL, true);
-
-            // ループを閉じる (最後の点が最初の点と重なる場合は除去)
-            if (verts.Count > 1 && (verts[verts.Count - 1] - verts[0]).sqrMagnitude < epsSqr) {
-                verts.RemoveAt(verts.Count - 1);
-            }
-
-            // 頂点を中心（pieceCenter）からの相対座標に変換
             for (int i = 0; i < verts.Count; i++) verts[i] -= pieceCenter;
 
             GameObject cluster = new GameObject($"PieceCluster_{x}_{y}");
-            var sg = cluster.AddComponent<SortingGroup>();
+            cluster.transform.SetParent(transform);
+            cluster.transform.localPosition = (Vector3)pieceCenter;
+            // cluster.AddComponent<SortingGroup>(); // パフォーマンスのため、初期状態では削除
+
             GameObject pieceObject = new GameObject($"Piece_{x}_{y}");
             pieceObject.transform.SetParent(cluster.transform);
+            pieceObject.transform.localPosition = Vector3.zero;
             
-            // UV計算用のパラメータ：パズルの左下を(0,0)、右上を(1,1)とした正規化座標の開始点と幅
-            // ここでの uStart, vStart はアトラス内での位置、uTotalW, vTotalH は使用する領域の幅
-            float puzzleWorldW = (float)texWidth / ppu;
-            float puzzleWorldH = (float)texHeight / ppu;
-
-            Mesh pieceMesh = CreateIdealPieceMesh(pieceCenter, puzzleWorldW, puzzleWorldH, verts, uStart, vStart, uTotalW, vTotalH);
+            float pWW = (float)texWidth / ppu, pWH = (float)texHeight / ppu;
+            Mesh pieceMesh = CreateIdealPieceMesh(pieceCenter, pWW, pWH, verts, bWidth);
             pieceObject.AddComponent<MeshFilter>().mesh = pieceMesh;
-            var mr = pieceObject.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = puzzleMaterial;
-
-            mr.material.color = Color.white;
+            var pieceRenderer = pieceObject.AddComponent<MeshRenderer>();
+            pieceRenderer.sharedMaterial = puzzleMaterial;
+            
+            // 重要：本体を先に描き、影を後に描くことで、Zテストにより「自分の影」だけを消す
+            int baseOrder = (y * cols + x) * 10;
+            pieceRenderer.sortingOrder = baseOrder; 
+            
+            // Z座標を設定：ピースを手前に、影を僅かに奥に
+            float pieceZ = -baseOrder * 0.0001f;
+            pieceObject.transform.localPosition = new Vector3(0, 0, pieceZ);
+            
+            // 影オブジェクトの生成
+            GameObject shadowObject = new GameObject("Shadow");
+            shadowObject.transform.SetParent(pieceObject.transform); 
+            shadowObject.AddComponent<MeshFilter>().mesh = pieceMesh;
+            if (shadowMaterial != null) {
+                var sr = shadowObject.AddComponent<MeshRenderer>();
+                sr.sharedMaterial = shadowMaterial;
+                sr.sortingOrder = baseOrder + 1; // 本体(baseOrder)の直後に描画
+            }
+            // 影の位置設定：ワールド空間で右下にずらし、Zは本体より僅かに奥(0.00005f)
+            shadowObject.transform.position = pieceObject.transform.position + new Vector3(0.05f, -0.05f, 0.00005f);
 
             try {
-                var pc2d = pieceObject.AddComponent<PolygonCollider2D>();
-                Vector2[] points = new Vector2[verts.Count];
-                for(int i=0; i<verts.Count; i++) points[i] = new Vector2(verts[i].x, verts[i].y);
-                pc2d.points = points;
+                // PolygonCollider2D は重いため、BoxCollider2D に変更して負荷を大幅に軽減
+                var pc2d = pieceObject.AddComponent<BoxCollider2D>();
+                // ピースのサイズに合わせてコライダーのサイズを調整
+                pc2d.size = new Vector2(pWW / cols * 1.2f, pWH / rows * 1.2f); 
             } catch { }
             
             var pi = pieceObject.AddComponent<PuzzlePiece>();
-            pi.id = y * cols + x;
-            pi.gridX = x;
-            pi.gridY = y;
-            pi.manager = this; 
-            pieceGrid[y, x] = pi;
-            pi.correctPos = pieceCenter;
-            pi.targetPosition = pi.correctPos; 
-            pi.snapThreshold = adjacentDistanceThreshold;
+            pi.id = y * cols + x; pi.gridX = x; pi.gridY = y; pi.manager = this; pi.correctPos = pieceCenter;
+            pieceGrid[y, x] = pi; allPieces.Add(pi);
+            pi.baseOrder = baseOrder;
+            // SortingGroup はドラッグ時のみ動的に追加されるため、ここでは設定不要
 
-            int pieceBaseOrder = 10000 + (y * cols + x) * 2;
-            pi.baseOrder = pieceBaseOrder; 
-            sg.sortingOrder = pieceBaseOrder; 
-            sg.sortingOrder = pieceBaseOrder; 
-            mr.sortingOrder = 0; 
             
-            // 影 (Shadow) の作成
-            GameObject shadowObj = new GameObject("Shadow");
-            shadowObj.transform.SetParent(pieceObject.transform, false);
-            shadowObj.AddComponent<MeshFilter>().mesh = pieceMesh;
-            var smr = shadowObj.AddComponent<MeshRenderer>();
-            smr.sharedMaterial = shadowMaterial;
-            smr.sortingOrder = -1; // 本体(0)の背面
-
-            pi.UpdateShadowPosition();
-            
-            // 初期配置：画面外周にバラバラの角度（90度刻み）で配置
-            cluster.transform.position = GetPeripheralPosition(cW, cH, pad);
+            float cH = Camera.main.orthographicSize, cW = cH * Camera.main.aspect;
+            cluster.transform.position = GetPeripheralPosition(cW, cH, Mathf.Max(pWW/cols, pWH/rows) * 0.8f);
             cluster.transform.rotation = Quaternion.Euler(0, 0, 90f * UnityEngine.Random.Range(0, 4));
             
-            allPieces.Add(pi);
-        } catch (System.Exception e) {
-            Debug.LogError($"[CRITICAL] Piece({x},{y}) Failed: {e}");
-        }
+            // 初期の回転と位置が決定した後、影のオフセットをワールド座標基準で同期する
+            pi.UpdateShadowPosition();
+        } catch (System.Exception e) { Debug.LogError($"[CRITICAL] Piece({x},{y}) Failed: {e}"); }
     }
 
     private List<Vector2> GenerateEdgePoints(Vector2 start, Vector2 end, EdgeData edge)
     {
         List<Vector2> points = new List<Vector2>();
-        if (edge == null || edge.type == 0)
-        {
-            points.Add(start);
-            points.Add(end);
-            return points;
-        }
-
-        Vector2 dir = (end - start).normalized;
-        Vector2 normal = new Vector2(-dir.y, dir.x);
+        if (edge == null || edge.type == 0) { points.Add(start); points.Add(end); return points; }
+        Vector2 dir = (end - start).normalized, normal = new Vector2(-dir.y, dir.x);
         float scale = (end - start).magnitude;
+        float hW = edge.headWidth, hH = edge.headHeight, nD = edge.neckDepth;
+        float sF = totalPieces > 400 ? 0.28f : 0.32f, hF = totalPieces > 400 ? 0.26f : 0.30f;
+        if (hW/100f*scale > scale*sF) { float r = (scale*sF)/(hW/100f*scale); hW *= r; hH *= r; nD *= r; }
+        if ((hH+nD)/100f*scale > scale*hF) { float r = (scale*hF)/((hH+nD)/100f*scale); hH *= r; nD *= r; }
+        float sM = 28f + hW*0.7f, mid = Mathf.Clamp(50f + edge.centerShift, sM, 100f - sM), nW = hW * edge.nW_ratio;
+
+        Vector2 pA = Vector2.zero;
         
-        edge.cachedNormalizedPoints = new List<Vector2>();
+        // ピースの個性をさらに際立たせるため、首の太さも左右非対称にする
+        float neckW_L = nW + (edge.headWidth * 7.7f % 4f) - 2f;
+        float neckW_R = nW + (edge.headHeight * 8.8f % 4f) - 2f;
+        Vector2 pNeckL = new Vector2(mid - neckW_L, -nD);
+        Vector2 pTop = new Vector2(mid, -nD - hH);
+        Vector2 pNeckR = new Vector2(mid + neckW_R, -nD);
+        Vector2 pB = new Vector2(100, 0);
         
-        float hW = edge.headWidth; 
-        float hH = edge.headHeight;
-        float nD = edge.neckDepth;
-
-        // 【改善】辺の長さに応じてコブを適切な比率（25-32%）に調整
-        // 以前より制限を緩和し、多ピース時でも接続部が細くなりすぎないよう調整
-        float safetyFactor = totalPieces > 400 ? 0.30f : 0.32f;
-        // 【重要】ボディの肉厚を徹底的に確保するため、奥行き方向の制限を再強化 (0.32/0.38 -> 0.28/0.30)
-        float heightFactor = totalPieces > 400 ? 0.28f : 0.30f;
+        // WebGL（Flash版）での最適化：ピース数が多い時はポリゴン数を大胆に削減する
+        int res = totalPieces >= 400 ? 16 : (totalPieces >= 100 ? 24 : 32); 
+        int step = res / 2; // 各セグメントの分割数
+        List<Vector2> nPts = new List<Vector2>();
         
-        float maxAllowedHW = scale * safetyFactor; 
-        if (hW / 100f * scale > maxAllowedHW) {
-            float ratio = maxAllowedHW / (hW / 100f * scale);
-            hW *= ratio;
-            hH *= ratio;
-            nD *= ratio;
-        }
+        float bY = -nD - hH * 0.55f;
+        float dipL = edge.shoulderWaveL;
+        float dipR = edge.shoulderWaveR;
         
-        // 貫通深度（高さ+首の深さ）も辺の長さに比例して制限
-        float totalDepth = (hH + nD) / 100f * scale;
-        if (totalDepth > scale * heightFactor) {
-            float ratio = (scale * heightFactor) / totalDepth;
-            hH *= ratio;
-            nD *= ratio;
-        }
-
-        // 【安全性向上】コーナー付近に凹が寄りすぎないよう、マージンを極限まで拡大
-        // Entrance地点が 28% 以上内側に来るように制限（旧 23%）
-        float safetyMargin = 28f + (hW * 0.7f);
-        float mid = Mathf.Clamp(50f + edge.centerShift, safetyMargin, 100f - safetyMargin);
+        // 波打ち始める位置（ネックからどれくらい離れた場所からディップを開始するか）
+        // ピースごとに開始位置（waveWidth）と、肩の高さ（slant）をランダム（擬似乱数）に変動させ、
+        // 直線部分の長さと曲がり具合に有機的なバリエーションを持たせます
+        float waveWidthL = 16f + (edge.headWidth * 11.1f % 12f);  // 16f ~ 28f (直線部分の長さをランダム化)
+        float waveWidthR = 16f + (edge.headHeight * 13.3f % 12f); // 16f ~ 28f
+        float slantL = (edge.centerShift * 7.7f % 3f) - 1.5f;     // 肩の緩やかな傾き (-1.5 ~ 1.5)
+        float slantR = (edge.neckDepth * 9.9f % 3f) - 1.5f;       // 肩の緩やかな傾き (-1.5 ~ 1.5)
         
-        float nW = hW * edge.nW_ratio;
+        Vector2 pShoulderStartL = new Vector2(Mathf.Max(2f, pNeckL.x - waveWidthL), slantL);
+        Vector2 pShoulderStartR = new Vector2(Mathf.Min(98f, pNeckR.x + waveWidthR), slantR);
 
-        // アンカーポイントの定義 (0-100座標系) - 被り防止のために、よりコンパクトに配置
-        Vector2 pA = new Vector2(0, 0);
-        Vector2 pNeckL = new Vector2(mid - nW, -nD);    
-        Vector2 pTop = new Vector2(mid, -nD - hH);      
-        Vector2 pNeckR = new Vector2(mid + nW, -nD);    
-        Vector2 pB = new Vector2(100, 0);               
+        // 1. Base to ShoulderStartL (Organic gentle curve)
+        // カド（pA）は90度を保つためY=0の接線、ShoulderStartLではY=slantLの水平な接線となり、緩やかなS字を描く
+        Vector2 c1_0 = new Vector2(pShoulderStartL.x * 0.4f, 0);
+        Vector2 c2_0 = new Vector2(pShoulderStartL.x * 0.6f, slantL);
+        for(int i=0; i<step; i++) nPts.Add(GetBezierPoint(pA, c1_0, c2_0, pShoulderStartL, i/(float)step));
 
-        // 1セグメントあたりの解像度：多ピース時は計算量を減らして安定性を上げる
-        int res = totalPieces > 400 ? 24 : totalPieces > 200 ? 32 : 40; 
-        float k = 0.552f; 
+        // 2. ShoulderStartL to NeckL (The gentle dip)
+        // 前のカーブの接線（水平：slantL）を完璧に引き継ぎ、カドの発生を防止
+        Vector2 c1_1 = new Vector2(pShoulderStartL.x + waveWidthL * 0.4f, slantL);
+        // その後、滑らかに波の頂上へ向かい、首へと落ちる
+        Vector2 c2_1 = new Vector2(pNeckL.x, dipL * 1.2f);
+        for(int i=0; i<step; i++) nPts.Add(GetBezierPoint(pShoulderStartL, c1_1, c2_1, pNeckL, i/(float)step));
+        
+        // ピースごとにユニークな形（非対称性）を持たせるための擬似乱数
+        // ピース数が多いときでも個性が目立つように、意図的に変動幅を大きく取ります
+        float skewX = (edge.headWidth * 13.5f % 8f) - 4f;    // -4 から 4 のズレ (頭の左右の傾き)
+        float skewY = (edge.headHeight * 17.2f % 7f) - 3.5f; // -3.5 から 3.5 のズレ (頭の上下の歪み)
+        float topFlatten = 0.3f + (edge.neckDepth * 11.3f % 0.65f); // 0.3 から 0.95 (頭頂部の丸み〜平坦さ)
+        float topSlant = (edge.centerShift * 19.1f % 6f) - 3f; // -3 から 3 (頭頂部の接線の傾き)
+        
+        // 3. Neck to Bulb (left)
+        // 非対称性を加えたバルブ位置
+        Vector2 pBulbL = new Vector2(mid - hW * 0.5f + skewX, bY + skewY);
+        // Y座標が逆転して余計な凹凸が出来ないよう、Yの移動量に対する割合で制御点を配置
+        Vector2 c1_2 = new Vector2(pNeckL.x, pNeckL.y - (pNeckL.y - pBulbL.y) * 0.3f);
+        Vector2 c2_2 = new Vector2(pBulbL.x, pBulbL.y + (pNeckL.y - pBulbL.y) * 0.4f);
+        for(int i=0; i<step; i++) nPts.Add(GetBezierPoint(pNeckL, c1_2, c2_2, pBulbL, i/(float)step));
+        
+        // 4. Bulb to Top (left)
+        // 頭の頂点も傾きに合わせて少しズラす
+        Vector2 pTopSkewed = new Vector2(pTop.x + skewX * 1.5f, pTop.y);
+        Vector2 c1_3 = new Vector2(pBulbL.x, pBulbL.y - (pBulbL.y - pTopSkewed.y) * 0.4f);
+        
+        // 頂上の接線（傾き）を計算。左右で同じ傾き（slope）を使うことで、尖りを防ぎ「完全に滑らかな斜めの頂上」を作る
+        float slope = topSlant / 10f;
+        float dx_L = (pTopSkewed.x - pBulbL.x) * topFlatten;
+        Vector2 c2_3 = new Vector2(pTopSkewed.x - dx_L, pTopSkewed.y - dx_L * slope);
+        for(int i=0; i<step; i++) nPts.Add(GetBezierPoint(pBulbL, c1_3, c2_3, pTopSkewed, i/(float)step));
+        
+        // 5. Top to Bulb (right)
+        // 右側のバルブは Y座標のズレを逆にすることで、頭全体が少し傾いたようなユニークさを生む
+        Vector2 pBulbR = new Vector2(mid + hW * 0.5f + skewX, bY - skewY);
+        float dx_R = (pBulbR.x - pTopSkewed.x) * topFlatten;
+        Vector2 c1_4 = new Vector2(pTopSkewed.x + dx_R, pTopSkewed.y + dx_R * slope);
+        Vector2 c2_4 = new Vector2(pBulbR.x, pBulbR.y - (pBulbR.y - pTopSkewed.y) * 0.4f);
+        for(int i=0; i<step; i++) nPts.Add(GetBezierPoint(pTopSkewed, c1_4, c2_4, pBulbR, i/(float)step));
+        
+        // 6. Bulb to Neck (right)
+        Vector2 c1_5 = new Vector2(pBulbR.x, pBulbR.y + (pNeckR.y - pBulbR.y) * 0.4f);
+        Vector2 c2_5 = new Vector2(pNeckR.x, pNeckR.y - (pNeckR.y - pBulbR.y) * 0.3f);
+        for(int i=0; i<step; i++) nPts.Add(GetBezierPoint(pBulbR, c1_5, c2_5, pNeckR, i/(float)step));
+        
+        // 7. Neck to ShoulderStartR (The gentle dip)
+        Vector2 c1_6 = new Vector2(pNeckR.x, dipR * 1.2f);
+        // 肩への着地も水平（slantR）にしてスムーズに
+        Vector2 c2_6 = new Vector2(pShoulderStartR.x - waveWidthR * 0.4f, slantR);
+        for(int i=0; i<step; i++) nPts.Add(GetBezierPoint(pNeckR, c1_6, c2_6, pShoulderStartR, i/(float)step));
 
-        // 1. Entrance: A -> NeckL
-        float c1x_entry = Mathf.Clamp(mid - hW * 0.7f, 5f, pNeckL.x - 3f);
-        Vector2 c1_1 = new Vector2(c1x_entry, 0); 
-        // 進入角度の深さを緩和（nD * 0.5f -> 0.3f）して、急激なくびれを抑制
-        float nTang = Mathf.Max(-nD * 0.3f, -hH * 0.35f); 
-        Vector2 c2_1 = new Vector2(pNeckL.x, nTang); 
-        for(int i=0; i<res/2; i++) edge.cachedNormalizedPoints.Add(GetBezierPoint(pA, c1_1, c2_1, pNeckL, i/(float)(res/2)));
-
-        // 2. Head Side Left (頸部から膨らみの最大点へ): NeckL -> BulbL
-        float bY = -nD - hH * 0.35f; // 最大膨らみ位置を少し低めに設定してΩ感を出す
-        Vector2 pBulbL = new Vector2(mid - hW * 0.5f, bY);
-        Vector2 c1_2 = new Vector2(pNeckL.x, pNeckL.y - (pNeckL.y - bY) * k);
-        Vector2 c2_2 = new Vector2(pBulbL.x, pBulbL.y + (pNeckL.y - bY) * k);
-        for(int i=0; i<res/2; i++) edge.cachedNormalizedPoints.Add(GetBezierPoint(pNeckL, c1_2, c2_2, pBulbL, i/(float)(res/2)));
-
-        // 3. Head Top Left (膨らみ最大点から頂点へ): BulbL -> Top
-        Vector2 c1_3 = new Vector2(pBulbL.x, pBulbL.y - (bY - pTop.y) * k);
-        Vector2 c2_3 = new Vector2(pTop.x - (pTop.x - pBulbL.x) * k, pTop.y);
-        for(int i=0; i<res/2; i++) edge.cachedNormalizedPoints.Add(GetBezierPoint(pBulbL, c1_3, c2_3, pTop, i/(float)(res/2)));
-
-        // 4. Head Top Right (頂点から反対の膨らみ最大点へ): Top -> BulbR
-        Vector2 pBulbR = new Vector2(mid + hW * 0.5f, bY);
-        Vector2 c1_4 = new Vector2(pTop.x + (pBulbR.x - pTop.x) * k, pTop.y);
-        Vector2 c2_4 = new Vector2(pBulbR.x, pBulbR.y - (bY - pTop.y) * k);
-        for(int i=0; i<res/2; i++) edge.cachedNormalizedPoints.Add(GetBezierPoint(pTop, c1_4, c2_4, pBulbR, i/(float)(res/2)));
-
-        // 5. Head Side Right (膨らみ最大点から反対のネックへ): BulbR -> NeckR
-        Vector2 c1_5 = new Vector2(pBulbR.x, pBulbR.y + (pNeckR.y - bY) * k);
-        Vector2 c2_5 = new Vector2(pNeckR.x, pNeckR.y - (pNeckR.y - bY) * k);
-        for(int i=0; i<res/2; i++) edge.cachedNormalizedPoints.Add(GetBezierPoint(pBulbR, c1_5, c2_5, pNeckR, i/(float)(res/2)));
-
-        // 6. Exit: NeckR -> B
-        Vector2 c1_6 = new Vector2(pNeckR.x, nTang);
-        float c2x_exit = Mathf.Clamp(mid + hW * 0.7f, pNeckR.x + 3f, 95f);
-        Vector2 c2_6 = new Vector2(c2x_exit, 0);
-        for(int i=0; i<=res/2; i++) edge.cachedNormalizedPoints.Add(GetBezierPoint(pNeckR, c1_6, c2_6, pB, i/(float)(res/2)));
-
-        foreach (var norm in edge.cachedNormalizedPoints)
-        {
-            Vector2 worldPos = start + dir * (norm.x / 100f) * scale + normal * (norm.y / 100f) * scale * edge.type;
-            points.Add(worldPos);
-        }
-
+        // 8. ShoulderStartR to Base (Organic gentle curve)
+        // 前のカーブの接線（水平：slantR）を引き継ぐ
+        Vector2 c1_7 = new Vector2(pShoulderStartR.x + (100f - pShoulderStartR.x) * 0.4f, slantR);
+        // カド（pB）は90度を保つためY=0の接線で着地
+        Vector2 c2_7 = new Vector2(pShoulderStartR.x + (100f - pShoulderStartR.x) * 0.6f, 0);
+        for(int i=0; i<=step; i++) nPts.Add(GetBezierPoint(pShoulderStartR, c1_7, c2_7, pB, i/(float)step));
+        
+        foreach(var n in nPts) points.Add(start + dir*(n.x/100f)*scale + normal*(n.y/100f)*scale*edge.type);
         return points;
     }
 
-    // 3次ベジェ曲線補間
-    private Vector2 GetBezierPoint(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t)
+    private Vector2 GetBezierPoint(Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float t) { float u = 1-t; return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3; }
+
+
+    private Mesh CreateIdealPieceMesh(Vector2 center, float puzzleW, float puzzleH, List<Vector2> outerVerts2D, float bWidth)
     {
-        float u = 1 - t;
-        float tt = t * t;
-        float uu = u * u;
-        float uuu = uu * u;
-        float ttt = tt * t;
-
-        Vector2 p = uuu * p0; // (1-t)^3 * p0
-        p += 3 * uu * t * p1; // 3(1-t)^2 * t * p1
-        p += 3 * u * tt * p2; // 3(1-t) * t^2 * p2
-        p += ttt * p3;         // t^3 * p3
-        return p;
-    }
-
-    private float hV_right(float hW, float tilt) { return hW/2f + tilt; } // 簡易的な補助
-
-
-    private Vector3 GetCubicBezierPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
-    {
-        float u = 1 - t;
-        return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
-    }
-
-    private Mesh CreateIdealPieceMesh(Vector2 center, float puzzleW, float puzzleH, List<Vector2> verts2D, float uStart, float vStart, float uTotalW, float vTotalH)
-    {
+        outerVerts2D = EnsureCCW(outerVerts2D);
         Mesh m = new Mesh();
-        
-        // 3D変換
-        List<Vector3> verts3D = new List<Vector3>();
-        foreach(var v in verts2D) verts3D.Add(new Vector3(v.x, v.y, 0));
+        int n = outerVerts2D.Count;
+        List<Vector3> combinedVerts = new List<Vector3>();
+        List<Vector2> combinedUVs = new List<Vector2>();
+        List<Color> combinedColors = new List<Color>();
 
-        // 三角形分割と頂点クリーンアップを同期
-        Vector3[] finalVerts;
-        int[] triangles;
-        TriangulateAndClean(verts3D, out finalVerts, out triangles);
-
-        // UVマッピング（クリーンアップ後の頂点に対して行う）
-        Vector2[] allUVs = new Vector2[finalVerts.Length];
-        float halfPW = puzzleW / 2f;
-        float halfPH = puzzleH / 2f;
-
-        for (int i = 0; i < finalVerts.Length; i++)
-        {
-            Vector2 globalPos = (Vector2)finalVerts[i] + center;
-            float normX = (globalPos.x + halfPW) / puzzleW;
-            float normY = (globalPos.y + halfPH) / puzzleH;
-            allUVs[i] = new Vector2(uStart + normX * uTotalW, vStart + normY * vTotalH);
+        // 1. 外側の頂点
+        for (int i = 0; i < n; i++) {
+            Vector2 p = outerVerts2D[i];
+            Vector2 dir = p.normalized; // 中心からの方向（ベベルの勾配方向）
+            combinedVerts.Add(new Vector3(p.x, p.y, 0));
+            combinedUVs.Add(new Vector2((p.x + center.x) / puzzleW + 0.5f, (p.y + center.y) / puzzleH + 0.5f));
+            combinedColors.Add(new Color((dir.x + 1f) * 0.5f, (dir.y + 1f) * 0.5f, 0, 1.0f)); // Edge influence and direction
         }
 
-        m.vertices = finalVerts;
-        m.uv = allUVs;
-        m.triangles = triangles;
+        // 2. 内側の頂点 (中心に向かって単純に縮小させることで、自己交差を100%防ぐ)
+        List<Vector2> innerVerts2D = new List<Vector2>();
+        float pieceSize = Mathf.Min(puzzleW / cols, puzzleH / rows);
         
-        m.RecalculateNormals();
+        // ピース数（サイズ）に応じた適応型（アダプティブ）ベベル幅の計算
+        // ピース数（サイズ）に応じた適応型（アダプティブ）ベベル幅の計算
+        // 結合時の不自然な太さを解消するため、ベースを1.5%程度まで細くし、よりシャープな溝にします。
+        float basePercentage = 0.015f;
+        float pieceCountBoost = Mathf.Clamp(cols / 8f, 1.0f, 4.0f);
+        float percentage = Mathf.Clamp(basePercentage * pieceCountBoost, 0.01f, 0.06f);
+        
+        float scaleFactor = 1.0f - percentage;
+        
+        for (int i = 0; i < n; i++) {
+            Vector2 p = outerVerts2D[i];
+            // 単純に原点(0,0)に向かって縮小することで、形を保ったまま交差を防ぐ
+            innerVerts2D.Add(p * scaleFactor);
+        }
+
+        for (int i = 0; i < n; i++) {
+            Vector2 innerP = innerVerts2D[i];
+            Vector2 dir = outerVerts2D[i].normalized; // 外側と同じ方向を使用
+            combinedVerts.Add(new Vector3(innerP.x, innerP.y, -0.01f));
+            combinedUVs.Add(new Vector2((innerP.x + center.x) / puzzleW + 0.5f, (innerP.y + center.y) / puzzleH + 0.5f));
+            combinedColors.Add(new Color((dir.x + 1f) * 0.5f, (dir.y + 1f) * 0.5f, 0, 0.0f));
+        }
+
+        List<int> triangles = new List<int>();
+        // 3. ベベル面 (側面)
+        for (int i = 0; i < n; i++) {
+            int oC = i, oN = (i + 1) % n;
+            int iC = i + n, iN = ((i + 1) % n) + n;
+            triangles.Add(oC); triangles.Add(oN); triangles.Add(iN);
+            triangles.Add(oC); triangles.Add(iN); triangles.Add(iC);
+        }
+
+        // 4. 内側の面 (耳切り法による三角形分割)
+        List<int> innerTris = TriangulatePolygon(innerVerts2D);
+        foreach (int t in innerTris) triangles.Add(t + n);
+
+        m.SetVertices(combinedVerts);
+        m.SetUVs(0, combinedUVs);
+        m.SetColors(combinedColors);
+        m.SetTriangles(triangles, 0);
+        
+        Vector3[] normals = new Vector3[combinedVerts.Count];
+        for (int i = 0; i < normals.Length; i++) normals[i] = new Vector3(0, 0, -1);
+        m.normals = normals;
         m.RecalculateBounds();
-        m.RecalculateTangents();
         return m;
     }
 
-    private void TriangulateAndClean(List<Vector3> points, out Vector3[] finalVerts, out int[] triangles)
+    private List<int> TriangulatePolygon(List<Vector2> points)
     {
-        Debug.Log($"<color=cyan>[PuzzleMesh] Triangulating {points.Count} points via Ear Clipping.</color>");
-        
-        // 1. 重複・近接頂点の除去 (判定を少し甘くして安定させる)
-        List<Vector3> cleanPoints = new List<Vector3>();
-        for (int i = 0; i < points.Count; i++)
-        {
-            Vector3 p = points[i];
-            if (cleanPoints.Count > 0 && (p - cleanPoints[cleanPoints.Count - 1]).sqrMagnitude < 0.0000000001f) continue;
-            cleanPoints.Add(p);
-        }
-        if (cleanPoints.Count > 1 && (cleanPoints[0] - cleanPoints[cleanPoints.Count - 1]).sqrMagnitude < 0.0000000001f) {
-            cleanPoints.RemoveAt(cleanPoints.Count - 1);
-        }
+        List<int> triangles = new List<int>();
+        int n = points.Count;
+        if (n < 3) return triangles;
 
-        if (cleanPoints.Count < 3) {
-            finalVerts = points.ToArray(); triangles = new int[0]; return;
-        }
-
-        finalVerts = cleanPoints.ToArray();
-        int n = cleanPoints.Count;
-        List<int> indices = new List<int>();
-        List<int> V = new List<int>();
-        for (int i = 0; i < n; i++) V.Add(i);
-
-        // 外周の巻順を確認
-        float area = 0;
-        for (int i = 0; i < n; i++) {
-            Vector2 p1 = (Vector2)cleanPoints[i];
-            Vector2 p2 = (Vector2)cleanPoints[(i + 1) % n];
-            area += (p1.x * p2.y - p2.x * p1.y);
-        }
-        
-        // CCW（左回り）に統一（もしCWなら反転させる）
-        if (area < 0) {
-            V.Reverse();
-            // area = -area; // デバッグ用
-        }
+        List<int> indices = new List<int>(n);
+        for (int i = 0; i < n; i++) indices.Add(i);
 
         int count = n;
-        int timeout = 5000;
-        int stagnation = 0;
-
-        while (V.Count > 3 && timeout > 0)
+        int iter = 0;
+        int maxIter = n * 10;
+        while (count > 2 && iter < maxIter)
         {
-            timeout--;
+            iter++;
             bool earFound = false;
-            
-            // stagnation (行き詰まり) 対策: 判定をさらに緩和する
-            float epsMultiplier = (stagnation > 50) ? 10.0f : 1.0f;
-
-            for (int i = 0; i < V.Count; i++)
+            for (int i = 0; i < count; i++)
             {
-                int prev = V[(i + V.Count - 1) % V.Count];
-                int curr = V[i];
-                int next = V[(i + 1) % V.Count];
+                int pIdx = indices[(i + count - 1) % count];
+                int cIdx = indices[i];
+                int nIdx = indices[(i + 1) % count];
 
-                if (IsEar(prev, curr, next, V, cleanPoints, epsMultiplier))
+                if (IsEar(pIdx, cIdx, nIdx, points, indices))
                 {
-                    indices.Add(prev);
-                    indices.Add(curr);
-                    indices.Add(next);
-                    V.RemoveAt(i);
+                    triangles.Add(pIdx);
+                    triangles.Add(cIdx);
+                    triangles.Add(nIdx);
+                    indices.RemoveAt(i);
+                    count--;
                     earFound = true;
-                    stagnation = 0;
                     break;
                 }
             }
-
             if (!earFound) {
-                stagnation++;
-                if (stagnation > 50) {
-                    // リカバリ: 一定回数耳が見つからない場合、最もマシな（面積が正の）三角形を削る
-                    for (int i = 0; i < V.Count; i++) {
-                        int prev = V[(i + V.Count - 1) % V.Count];
-                        int curr = V[i];
-                        int next = V[(i + 1) % V.Count];
-                        Vector2 a = (Vector2)cleanPoints[prev], b = (Vector2)cleanPoints[curr], c = (Vector2)cleanPoints[next];
-                        if (((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) > 0) {
-                            indices.Add(prev); indices.Add(curr); indices.Add(next);
-                            V.RemoveAt(i); earFound = true; break;
-                        }
-                    }
+                // 残りが3点なら、判定をスキップして最後の三角形として閉じる
+                if (count == 3) {
+                    triangles.Add(indices[0]);
+                    triangles.Add(indices[1]);
+                    triangles.Add(indices[2]);
+                    break;
                 }
-                if (stagnation > 200) break; // 完全に行き詰まったら終了
+                Debug.LogWarning($"[PuzzleManager] Triangulation failed to find an ear at iteration {iter}. Remaining vertices: {count}/{n}. Using fallback fan.");
+                // フォールバック：残りの頂点を扇状に繋ぐ（穴を塞ぐ最低限の処理）
+                Vector2 center = Vector2.zero;
+                foreach (int idx in indices) center += points[idx];
+                center /= count;
+                // 中心点を最後に追加して繋ぐのは複雑なので、単に0番目を中心に扇状に繋ぐ
+                int centerIdx = indices[0];
+                for (int i = 1; i < count - 1; i++) {
+                    triangles.Add(centerIdx);
+                    triangles.Add(indices[i]);
+                    triangles.Add(indices[i + 1]);
+                }
+                break; 
             }
-        }
 
-        if (V.Count == 3) {
-            indices.Add(V[0]);
-            indices.Add(V[1]);
-            indices.Add(V[2]);
         }
-
-        triangles = indices.ToArray();
+        
+        if (iter >= maxIter) {
+            Debug.LogError($"[PuzzleManager] Triangulation reached max iterations ({maxIter}). Polygon might be too complex or self-intersecting.");
+        }
+        
+        return triangles;
     }
 
-    private bool IsEar(int pIdx, int cIdx, int nIdx, List<int> V, List<Vector3> points, float epsMult = 1.0f)
+    private bool IsEar(int prev, int curr, int next, List<Vector2> points, List<int> currentIndices)
     {
-        Vector2 a = (Vector2)points[pIdx], b = (Vector2)points[cIdx], c = (Vector2)points[nIdx];
-        
-        // 1. 向きのチェック (常にCCWであるべき)
-        float cp = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-        if (cp <= 1e-10f) return false; // 凹頂点または退化した三角形（直線）
+        Vector2 a = points[prev];
+        Vector2 b = points[curr];
+        Vector2 c = points[next];
 
-        // 2. 三角形内に他の点が含まれていないかチェック
-        for (int i = 0; i < V.Count; i++) {
-            int idx = V[i];
-            if (idx == pIdx || idx == cIdx || idx == nIdx) continue;
-            if (PointInTriangle((Vector2)points[idx], a, b, c, epsMult)) return false;
+        // 凸角判定 (CCW)
+        float cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
+        if (cross <= 1e-9f) return false;
+
+        // 他の点が三角形の内部にあるかチェック
+        for (int i = 0; i < currentIndices.Count; i++) {
+            int idx = currentIndices[i];
+            if (idx == prev || idx == curr || idx == next) continue;
+            if (IsPointInTriangle(points[idx], a, b, c)) return false;
         }
         return true;
     }
 
-    private bool PointInTriangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c, float epsMult = 1.0f)
+    private bool IsPointInTriangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
     {
-        float d1 = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
-        float d2 = (c.x - b.x) * (p.y - b.y) - (c.y - b.y) * (p.x - b.x);
-        float d3 = (a.x - c.x) * (p.y - c.y) - (a.y - c.y) * (p.x - c.x);
-        
-        // epsMult を使用して判定をわずかに緩めることで、境界上の点を無視しやすくする
-        const float epsBase = -1e-6f;
-        float eps = epsBase * epsMult;
-        return (d1 >= eps && d2 >= eps && d3 >= eps);
+        float det = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+        if (Mathf.Abs(det) < 1e-10f) return false;
+        float b1 = ((b.y - c.y) * (p.x - c.x) + (c.x - b.x) * (p.y - c.y)) / det;
+        float b2 = ((c.y - a.y) * (p.x - c.x) + (a.x - c.x) * (p.y - c.y)) / det;
+        float b3 = 1f - b1 - b2;
+        return b1 >= -1e-6f && b2 >= -1e-6f && b3 >= -1e-6f;
+    }
+
+    private List<Vector2> EnsureCCW(List<Vector2> points)
+    {
+        float area = 0;
+        for (int i = 0; i < points.Count; i++) area += (points[i].x * points[(i + 1) % points.Count].y - points[(i + 1) % points.Count].x * points[i].y);
+        if (area < 0) { List<Vector2> res = new List<Vector2>(points); res.Reverse(); return res; }
+        return points;
     }
 
     private void InitializeCornerPoints(float pw, float ph, float halfW, float halfH)
     {
-        for (int y = 0; y <= rows; y++)
-        {
-            for (int x = 0; x <= cols; x++)
-            {
-                // 正方形グリッド上の基本座標
+        for (int y = 0; y <= rows; y++) {
+            for (int x = 0; x <= cols; x++) {
                 Vector2 pos = new Vector2(x * pw - halfW, y * ph - halfH);
-                
-                // 【適応型ジッター】ピース数が多い場合に揺らぎを抑制して形状破綻を防ぐ
-                // 100ピースを基準(0.15f)とし、ピース数の増加に従って減衰させる
-                float jitterScale = Mathf.Clamp(Mathf.Sqrt(100f / totalPieces), 0.3f, 1.0f);
-                float maxJitter = 0.15f * jitterScale;
-
-                if (x > 0 && x < cols && y > 0 && y < rows)
-                {
-                    pos.x += UnityEngine.Random.Range(-maxJitter, maxJitter) * pw;
-                    pos.y += UnityEngine.Random.Range(-maxJitter, maxJitter) * ph;
-                }
-                // 外周の角についても、辺に沿った方向にのみ揺らすことを許可（オプション）
-                else if ((x == 0 || x == cols) && (y > 0 && y < rows))
-                {
-                    // 左右の辺：垂直方向にのみ揺らす
-                    float edgeJitter = 0.10f * jitterScale;
-                    pos.y += UnityEngine.Random.Range(-edgeJitter, edgeJitter) * ph;
-                }
-                else if ((y == 0 || y == rows) && (x > 0 && x < cols))
-                {
-                    // 上下の辺：水平方向にのみ揺らす
-                    float edgeJitter = 0.10f * jitterScale;
-                    pos.x += UnityEngine.Random.Range(-edgeJitter, edgeJitter) * pw;
-                }
-
+                float jS = Mathf.Clamp(Mathf.Sqrt(100f / totalPieces), 0.3f, 1.0f), mJ = 0.15f * jS;
+                if (x > 0 && x < cols && y > 0 && y < rows) { pos.x += UnityEngine.Random.Range(-mJ, mJ) * pw; pos.y += UnityEngine.Random.Range(-mJ, mJ) * ph; }
+                else if ((x == 0 || x == cols) && (y > 0 && y < rows)) pos.y += UnityEngine.Random.Range(-0.1f * jS, 0.1f * jS) * ph;
+                else if ((y == 0 || y == rows) && (x > 0 && x < cols)) pos.x += UnityEngine.Random.Range(-0.1f * jS, 0.1f * jS) * pw;
                 cornerPoints[y, x] = pos;
             }
         }
@@ -826,287 +745,170 @@ public class PuzzleManager : MonoBehaviour
 
     private void InitializeEdgeData()
     {
-        horizontalEdges = new EdgeData[rows + 1, cols];
-        verticalEdges = new EdgeData[rows, cols + 1];
-
-        for (int r = 0; r <= rows; r++)
-        {
-            for (int c = 0; c < cols; c++)
-            {
-                horizontalEdges[r, c] = CreateRandomEdge(r == 0 || r == rows);
-            }
-        }
-
-        for (int r = 0; r < rows; r++)
-        {
-            for (int c = 0; c <= cols; c++)
-            {
-                verticalEdges[r, c] = CreateRandomEdge(c == 0 || c == cols);
-            }
-        }
+        horizontalEdges = new EdgeData[rows + 1, cols]; verticalEdges = new EdgeData[rows, cols + 1];
+        for (int r = 0; r <= rows; r++) for (int c = 0; c < cols; c++) horizontalEdges[r, c] = CreateRandomEdge(r == 0 || r == rows);
+        for (int r = 0; r < rows; r++) for (int c = 0; c <= cols; c++) verticalEdges[r, c] = CreateRandomEdge(c == 0 || c == cols);
     }
 
-    private EdgeData CreateRandomEdge(bool isBoundary)
-    {
-        EdgeData edge = new EdgeData();
-        if (isBoundary)
-        {
-            edge.type = 0;
-            return edge;
-        }
+    private int GetDiscreteRotationSteps(float eulerZ) { int steps = Mathf.RoundToInt(eulerZ / 90f); return ((steps % 4) + 4) % 4; }
+    private Vector3 RotateVectorDiscrete(Vector3 v, int steps) { steps = ((steps % 4) + 4) % 4; if (steps == 1) return new Vector3(-v.y, v.x, v.z); if (steps == 2) return new Vector3(-v.x, -v.y, v.z); if (steps == 3) return new Vector3(v.y, -v.x, v.z); return v; }
 
-        edge.type = UnityEngine.Random.value > 0.5f ? 1 : -1;
-        edge.offX = 0f; 
-        edge.scaleX = 1f; 
-        edge.scaleY = 1.0f;
-        
-        // 以前より全体的にボリュームを持たせ、接続部（ネック）を太く頑丈に調整
-        // ただし、ボディへの圧迫を避けるため headWidth は 30-33 に微調整（旧 32-35）
-        edge.headWidth = UnityEngine.Random.Range(30f, 33f); 
-        edge.headHeight = UnityEngine.Random.Range(22f, 26f); 
-        edge.neckDepth = UnityEngine.Random.Range(8f, 11f); 
-                edge.shoulderWaveL = UnityEngine.Random.Range(-2f, 2f); 
-        edge.shoulderWaveR = UnityEngine.Random.Range(-2f, 2f);
-        edge.centerShift = UnityEngine.Random.Range(-3f, 3f); 
-        
-        // nW_ratio: 0.41-0.46 = 太く頑丈な首回り (旧 0.32-0.42)
-        edge.nW_ratio = UnityEngine.Random.Range(0.41f, 0.46f); 
-        edge.headBulbg = 1.0f;
-        return edge;
-    }
-    /// グループ内の全ピースを、基準ピースに対する理想的な相対座標に強制的に再整列させます。
-    /// これにより、回転や移動による微小な浮動小数点誤差（隙間の原因）を完全に排除します。
-    /// </summary>
     public void RealignGroup(Transform root, PuzzlePiece anchor = null)
     {
         if (root == null) return;
-        PuzzlePiece[] pieces = root.GetComponentsInChildren<PuzzlePiece>();
-        if (pieces.Length == 0) return;
-
-        // 基準（アンカー）の選定：引数がない場合は最初のピースを使用
-        PuzzlePiece targetAnchor = anchor;
-        if (targetAnchor == null) targetAnchor = pieces[0];
-
+        PuzzlePiece[] pieces = root.GetComponentsInChildren<PuzzlePiece>(); if (pieces.Length == 0) return;
+        PuzzlePiece targetAnchor = (anchor != null) ? anchor : pieces[0];
+        Quaternion originalRot = root.rotation; Vector3 originalScale = root.localScale;
+        root.rotation = Quaternion.identity; root.localScale = Vector3.one;
         Vector3 anchorLocal = targetAnchor.transform.localPosition;
-        Vector2 anchorTarget = targetAnchor.targetPosition;
-
-        foreach (var p in pieces)
-        {
-            // ターゲット座標（ボード上の理想的な中心座標）の差分を、ローカル座標の差分として厳密に適用
-            // Z座標は重なり防止のためにピースごとの baseOrder に基づく値を維持
-            float targetZ = -0.0001f * p.baseOrder;
-            p.transform.localPosition = new Vector3(
-                anchorLocal.x + (p.targetPosition.x - anchorTarget.x),
-                anchorLocal.y + (p.targetPosition.y - anchorTarget.y),
-                targetZ
-            );
-            p.UpdateShadowPosition();
+        foreach (var p in pieces) {
+            Vector3 gridDiff = (Vector3)p.correctPos - (Vector3)targetAnchor.correctPos;
+            p.transform.localPosition = new Vector3(anchorLocal.x + gridDiff.x, anchorLocal.y + gridDiff.y, -0.0001f * p.baseOrder);
+            p.transform.localRotation = Quaternion.identity; 
         }
+        root.rotation = originalRot; root.localScale = originalScale;
+        foreach (var p in pieces) p.UpdateShadowPosition();
     }
-    public void CheckForGroupSnap(PuzzlePiece activePiece)
+
+    public void CheckForGroupSnap(PuzzlePiece pA)
     {
-        Transform activeRoot = activePiece.transform.root;
-        float angle = activeRoot.eulerAngles.z;
-        PuzzlePiece[] activeGroup = activeRoot.GetComponentsInChildren<PuzzlePiece>();
-        
-        foreach (var pA in activeGroup) {
-            int[] dx = { -1, 1, 0, 0 };
-            int[] dy = { 0, 0, -1, 1 };
+        Transform rootA = pA.transform.parent; float angle = rootA.eulerAngles.z;
+        foreach (var p in rootA.GetComponentsInChildren<PuzzlePiece>()) {
+            int[] dx = { -1, 1, 0, 0 }, dy = { 0, 0, -1, 1 };
             for (int i = 0; i < 4; i++) {
-                int nx = pA.gridX + dx[i];
-                int ny = pA.gridY + dy[i];
+                int nx = p.gridX + dx[i], ny = p.gridY + dy[i];
                 if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
-                
-                PuzzlePiece pO = pieceGrid[ny, nx];
-                if (pO == null) continue;
+                PuzzlePiece pO = pieceGrid[ny, nx]; if (pO == null) continue;
+                Transform rootO = pO.transform.parent; if (rootO == rootA) continue;
+                float angleO = rootO.eulerAngles.z; if (Mathf.Abs(Mathf.DeltaAngle(angle, angleO)) > 3f) continue;
+                int steps = GetDiscreteRotationSteps(angleO);
+                Vector3 wDiff = RotateVectorDiscrete((Vector3)(pO.correctPos - p.correctPos), steps);
+                Vector2 actualDir = (Vector2)pO.transform.position - (Vector2)p.transform.position;
+                if (actualDir.sqrMagnitude > 0.001f && Vector2.Dot(actualDir.normalized, ((Vector2)wDiff).normalized) < 0.7f) continue;
+                Vector2 diff = (Vector2)pO.transform.position - (Vector2)p.transform.position - (Vector2)wDiff;
+                float thresh = adjacentDistanceThreshold * Mathf.Clamp(650f / totalPieces, 0.9f, 1.3f);
+                if (diff.sqrMagnitude < thresh * thresh) {
+                    rootO.rotation = Quaternion.Euler(0, 0, Mathf.Round(angleO / 90f) * 90f);
+                    rootA.rotation = rootO.rotation;
+                    rootA.position += (pO.transform.position - RotateVectorDiscrete((Vector3)(pO.correctPos - p.correctPos), steps) - p.transform.position);
+                    rootA.localScale = rootO.localScale = Vector3.one;
                     
-                Transform oR = pO.transform.root;
-                if (oR == activeRoot) continue;
-                // 角度判定を少し緩和（3度以内なら吸着）
-                if (Mathf.Abs(Mathf.DeltaAngle(angle, oR.eulerAngles.z)) > 3f) continue;
-                
-                // 吸着判定
-                Vector3 wTO = activeRoot.TransformDirection(pO.targetPosition - pA.targetPosition);
-                Vector2 diff = (Vector2)pO.transform.position - (Vector2)pA.transform.position - (Vector2)wTO;
-                
-                if (diff.sqrMagnitude < pA.snapThreshold * pA.snapThreshold) {
-                    // 1. 角度をターゲットグループに完全に一致させる
-                    activeRoot.rotation = oR.rotation;
-                    
-                    // 2. 角度同期後の状態で位置を再計算して正確に吸着
-                    Vector3 adjustedWTO = activeRoot.TransformDirection(pO.targetPosition - pA.targetPosition);
-                    activeRoot.position += (pO.transform.position - adjustedWTO) - pA.transform.position;
-
-                    // 3. 子要素（ピース）をターゲットのルートへ移動
-                    while (activeRoot.childCount > 0) 
-                    {
-                        activeRoot.GetChild(0).SetParent(oR);
-                    }
-                    Destroy(activeRoot.gameObject);
-
-                    // 4. 数学的に正しいグリッド位置へ全てのピースを強制再配置（微小な隙間の排除）
-                    // 最初に吸着したターゲットピース pO を基準にして、結合後のグループ全体を再整列
-                    RealignGroup(oR, pO);
-                    
-                    // 結合後のサイズをチェック
-                    int currentCount = oR.GetComponentsInChildren<PuzzlePiece>().Length;
+                    while (rootA.childCount > 0) rootA.GetChild(0).SetParent(rootO);
+                    Destroy(rootA.gameObject);
+                    if (draggingPiece != null && draggingPiece.transform.parent == rootO) rootO.localScale = Vector3.one * 1.05f;
+                    RealignGroup(rootO, pO);
+                    int currentCount = rootO.GetComponentsInChildren<PuzzlePiece>().Length;
                     if (currentCount > maxConnectedPieces) maxConnectedPieces = currentCount;
-
-                    CheckPuzzleComplete(); 
-                    PlaySnapEffect(oR); 
-                    return;
+                    CheckPuzzleComplete(); PlaySnapEffect(rootO); return;
                 }
             }
         }
     }
 
-
-    public void CheckPuzzleComplete() 
-    { 
-        if (maxConnectedPieces >= totalPieces) 
-        {
-            if (!isFinished) ShowClearEffect(); 
-        }
-    }
+    public void CheckPuzzleComplete() { if (maxConnectedPieces >= totalPieces && !isFinished) ShowClearEffect(); }
 
     private void ShowClearEffect() 
     { 
-        isFinished = true;
-        float elapsed = Time.time - startTime;
-        TimeSpan ts = TimeSpan.FromSeconds(elapsed);
-        if (completionUIDoc != null) 
-        {
+        isFinished = true; float elapsed = (Time.time - startTime) - totalPausedTime; TimeSpan ts = TimeSpan.FromSeconds(elapsed);
+        if (completionUIDoc != null) {
             completionUIDoc.gameObject.SetActive(true);
             var root = completionUIDoc.rootVisualElement;
-            Label l = root.Q<Label>("TimeValue");
-            if (l != null) l.text = string.Format("{0:00}:{1:00}:{2:00}", (int)ts.TotalHours, ts.Minutes, ts.Seconds);
-            Button btn = root.Q<Button>("ReturnToSelectionButton");
-            if (btn != null) btn.clicked += ReturnToTitle;
+            Label l = root.Q<Label>("TimeValue"); if (l != null) l.text = string.Format("{0:00}:{1:00}:{2:00}", (int)ts.TotalHours, ts.Minutes, ts.Seconds);
+            Button btn = root.Q<Button>("ReturnToSelectionButton"); if (btn != null) btn.clicked += ReturnToTitle;
         }
         if (audioSource != null && clearSound != null) audioSource.PlayOneShot(clearSound); 
     }
 
-    public void BringToFront(Transform root)
-    {
+    public void BringToFront(Transform root) {
         var sg = root.GetComponent<SortingGroup>();
-        if (sg != null)
-        {
-            sg.sortingOrder = topSortingOrder;
-            topSortingOrder += 10;
-        }
-        if (topSortingOrder > 1000000) topSortingOrder = 3000;
+        if (sg != null) { sg.sortingOrder = topSortingOrder; topSortingOrder += 10; }
+        if (topSortingOrder > 30000) topSortingOrder = 3000;
     }
 
-    private void ReturnToTitle()
+    public void TogglePause()
     {
+        if (isFinished) return;
+        isPaused = !isPaused;
+        if (isPaused) {
+            pauseStartTime = Time.time;
+            if (pauseUIDoc != null) { pauseUIDoc.sortingOrder = 9999; pauseUIDoc.gameObject.SetActive(true); }
+            foreach (var p in allPieces) if (p != null && p.transform.parent != null) p.transform.parent.gameObject.SetActive(false);
+        } else {
+            totalPausedTime += (Time.time - pauseStartTime);
+            if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(false);
+            foreach (var p in allPieces) if (p != null && p.transform.parent != null) p.transform.parent.gameObject.SetActive(true);
+        }
+    }
+
+    private void ReturnToTitle() {
         isFinished = false;
         if (completionUIDoc != null) completionUIDoc.gameObject.SetActive(false);
         if (selectionManager != null) selectionManager.Open();
         SetGuideVisible(false);
     }
+
     private void SetGuideVisible(bool visible) { 
         if (backgroundGuideRenderer != null) {
-            backgroundGuideRenderer.gameObject.SetActive(visible);
             if (visible) {
-                // 最前面、且つ不透明（透過なし）で表示
+                backgroundGuideRenderer.gameObject.SetActive(true);
+                var sg = backgroundGuideRenderer.GetComponent<SortingGroup>();
+                if (sg == null) sg = backgroundGuideRenderer.gameObject.AddComponent<SortingGroup>();
+                sg.sortingOrder = 32700; 
+                backgroundGuideRenderer.sortingOrder = 0;
                 backgroundGuideRenderer.color = Color.white;
-                backgroundGuideRenderer.sortingOrder = 2000000; 
                 backgroundGuideRenderer.transform.position = new Vector3(0, 0, -5f); 
+            } else {
+                backgroundGuideRenderer.gameObject.SetActive(false);
             }
         }
     }
 
     private void PlaySnapEffect(Transform t) { if (audioSource != null && snapSound != null) audioSource.PlayOneShot(snapSound); StartCoroutine(SnapAnimation(t)); }
     private IEnumerator SnapAnimation(Transform t) { if (t == null) yield break; Vector3 s = t.localScale; float d = 0.15f, e = 0f; while (e < d) { e += Time.deltaTime; t.localScale = Vector3.Lerp(s, s * 1.05f, e / d); yield return null; } e = 0f; while (e < d) { e += Time.deltaTime; t.localScale = Vector3.Lerp(s * 1.05f, s, e / d); yield return null; } t.localScale = s; }
-    private Color CalculateAndSetDynamicColors(Sprite sprite)
-    {
-        if (sprite == null) return Color.white;
-        Texture2D tex = sprite.texture;
-        int step = 20, count = 0;
-        float r = 0, g = 0, b = 0;
-        
-        // テクスチャが読み取り可能でない場合のフォールバック
-        try {
-            for (int y = 0; y < tex.height; y += step) {
-                for (int x = 0; x < tex.width; x += step) {
-                    Color c = tex.GetPixel(x, y);
-                    r += c.r; g += c.g; b += c.b;
-                    count++;
-                }
-            }
-        } catch {
-            return new Color(0.8f, 0.8f, 0.8f, 1f);
+
+    private Vector3 GetPeripheralPosition(float cW, float cH, float pad) {
+        float minX = -cW + pad, maxX = cW - pad, minY = -cH + pad, maxY = cH - pad;
+        float bLX = Mathf.Min(puzzleHalfWidth * 0.7f, Mathf.Max(0, maxX - 0.2f)), bLY = Mathf.Min(puzzleHalfHeight * 0.7f, Mathf.Max(0, maxY - 0.2f));
+        int z = UnityEngine.Random.Range(0, 4); float x = 0, y = 0;
+        switch (z) {
+            case 0: x = UnityEngine.Random.Range(minX, -bLX); y = UnityEngine.Random.Range(minY, maxY); break;
+            case 1: x = UnityEngine.Random.Range(bLX, maxX); y = UnityEngine.Random.Range(minY, maxY); break;
+            case 2: x = UnityEngine.Random.Range(minX, maxX); y = UnityEngine.Random.Range(bLY, maxY); break;
+            case 3: x = UnityEngine.Random.Range(minX, maxX); y = UnityEngine.Random.Range(minY, -bLY); break;
         }
-
-        if (count == 0) return Color.white;
-        Color averageColor = new Color(r / count, g / count, b / count, 1.0f);
-
-        // 背景色の設定（輝度ベースでコントラストを確保）
-        if (Camera.main != null) {
-            float lum = (0.299f * averageColor.r + 0.587f * averageColor.g + 0.114f * averageColor.b);
-            float targetL = (lum > 0.5f) ? 0.15f : 0.4f;
-            Camera.main.backgroundColor = new Color(targetL, targetL, targetL * 1.05f);
-        }
-        
-        return averageColor;
-    }
-
-    private Vector3 GetPeripheralPosition(float cW, float cH, float pad)
-    {
-        // 画面の有効範囲（はみ出し防止用）
-        float minX = -cW + pad;
-        float maxX = cW - pad;
-        float minY = -cH + pad;
-        float maxY = cH - pad;
-
-        // ボードの内側寄りへの配置をもう少し許容する（内側の範囲を広げる）
-        // パズルの中心から見て、ボードのサイズの 70% 程度まで内側に入り込むのを許可
-        float boardLimitX = puzzleHalfWidth * 0.7f;
-        float boardLimitY = puzzleHalfHeight * 0.7f;
-
-        int zone = UnityEngine.Random.Range(0, 4); // 0:Left, 1:Right, 2:Top, 3:Bottom
-        float x = 0, y = 0;
-
-        switch (zone)
-        {
-            case 0: // Left
-                x = UnityEngine.Random.Range(minX, -boardLimitX);
-                y = UnityEngine.Random.Range(minY, maxY);
-                break;
-            case 1: // Right
-                x = UnityEngine.Random.Range(boardLimitX, maxX);
-                y = UnityEngine.Random.Range(minY, maxY);
-                break;
-            case 2: // Top
-                x = UnityEngine.Random.Range(minX, maxX);
-                y = UnityEngine.Random.Range(boardLimitY, maxY);
-                break;
-            case 3: // Bottom
-                x = UnityEngine.Random.Range(minX, maxX);
-                y = UnityEngine.Random.Range(minY, -boardLimitY);
-                break;
-        }
-
-        // 領域が逆転している（ボードが画面に対して大きすぎる）場合に備えたクランプ
-        x = Mathf.Clamp(x, minX, maxX);
-        y = Mathf.Clamp(y, minY, maxY);
-
-        return new Vector3(x, y, 0);
-    }
-
-    private void SafeDestroy(UnityEngine.Object obj)
-    {
-        if (obj == null) return;
-        if (Application.isPlaying) Destroy(obj);
-        else DestroyImmediate(obj);
+        return new Vector3(Mathf.Clamp(x, minX, maxX), Mathf.Clamp(y, minY, maxY), 0);
     }
 
     private void SetupCamera() { 
-        Camera cam = Camera.main; 
-        if (cam == null) return; 
-        cam.clearFlags = CameraClearFlags.SolidColor; cam.orthographic = true; cam.orthographicSize = 6f; cam.transform.position = new Vector3(0, 0, -10f); cam.backgroundColor = new Color(0.3f, 0.3f, 0.3f);
-        // アンチエイリアスを無効化（色が混ざるのを防ぐ）
-        UnityEngine.QualitySettings.antiAliasing = 0;
-        Light dl = FindAnyObjectByType<Light>(); if (dl != null) dl.enabled = false;
+        Camera cam = Camera.main; if (cam == null) return; 
+        cam.clearFlags = CameraClearFlags.SolidColor; 
+        cam.orthographic = true; 
+        cam.orthographicSize = 6f; 
+        cam.transform.position = new Vector3(0, 0, -10f); 
+        cam.backgroundColor = new Color(0.3f, 0.3f, 0.3f);
+    }
+    private EdgeData CreateRandomEdge(bool isBoundary)
+    {
+        EdgeData edge = new EdgeData();
+        if (isBoundary) { edge.type = 0; return edge; }
+        edge.type = UnityEngine.Random.value > 0.5f ? 1 : -1;
+        
+        // --- 参照画像に合わせた、より自然で滑らかな出っ張り ---
+        // 頭の幅：画像を参考にコンパクトに。ピース数が多い時でも個体差が出るよう幅を持たせる
+        edge.headWidth = UnityEngine.Random.Range(24f, 34f); 
+        // 頭の高さ
+        edge.headHeight = UnityEngine.Random.Range(22f, 31f); 
+        edge.neckDepth = UnityEngine.Random.Range(6f, 10f); 
+        edge.centerShift = UnityEngine.Random.Range(-5f, 5f); 
+        
+        // ★肩の盛り上がり（逆方向のカーブ）を追加
+        // 画像のように、なだらかで広い波にするため深さを抑えめに調整
+        edge.shoulderWaveL = UnityEngine.Random.Range(4f, 7f);
+        edge.shoulderWaveR = UnityEngine.Random.Range(4f, 7f);
+        
+        // ネックの細さ
+        edge.nW_ratio = UnityEngine.Random.Range(0.26f, 0.31f); 
+        
+        return edge;
     }
 }

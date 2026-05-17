@@ -1,7 +1,14 @@
+* {
+    -unity-font: url("project:/Assets/Fonts/NotoSansJP-Regular.ttf");
+    -unity-font-definition: initial;
+}
+
 .selection-button {
-    width: 250px;
+    width: 280px;
     height: 180px;
-    margin: 15px;
+    margin: 10px;
+    flex-grow: 1;
+    max-width: 320px;
     border-width: 4px;
     border-color: white;
     border-radius: 15px;
@@ -50,9 +57,18 @@
 #ImageGrid #unity-content-container {
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: flex-start;
     padding: 20px;
+}
+
+#ImageGrid .unity-scroller,
+#ImageGrid .unity-scroll-view__vertical-scroller,
+#ImageGrid #unity-vertical-scroller {
+    display: none;
+    width: 0;
+    opacity: 0;
+    visibility: hidden;
 }
 
 .confirm-button {
@@ -76,4 +92,49 @@
 .confirm-button.no:hover {
     background-color: #c62828;
     border-color: #f44336;
+}
+
+/* RadioButton size adjustments */
+.unity-radio-button__input {
+    margin-right: 10px;
+}
+
+.unity-radio-button__checkmark-background {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    border-width: 2px;
+    justify-content: center;
+    align-items: center;
+}
+
+.unity-radio-button__checkmark {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    translate: -50% -50%;
+}
+
+/* Piece count group styling */
+#PieceCountGroup {
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 15px;
+    border-radius: 10px;
+}
+
+#PieceCountGroup RadioButton {
+    margin-bottom: 10px;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+#PieceCountGroup .unity-radio-button__label {
+    margin-right: 15px;
+    color: white;
+    font-size: 16px;
+    min-width: 120px;
 }

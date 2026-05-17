@@ -1,3 +1,8 @@
+* {
+    -unity-font: url("project:/Assets/Fonts/NotoSansJP-Regular.ttf");
+    -unity-font-definition: initial;
+}
+
 .loading-root {
     position: absolute;
     top: 0;

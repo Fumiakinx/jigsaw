@@ -8,7 +8,7 @@ public class PuzzleSelectionManager : MonoBehaviour
 {
     public UIDocument uiDoc;
     public PuzzleManager puzzleManager;
-    public string imageFolderPath = "Assets/Images/PuzzleBase";
+    public string imageFolderPath = "PuzzleBase"; // Resources フォルダ内からの相対パス
 
     private ScrollView imageGrid;
     private RadioButtonGroup pieceCountGroup;
@@ -25,15 +25,84 @@ public class PuzzleSelectionManager : MonoBehaviour
     private Sprite pendingSprite;
     private int pendingPieces;
 
+    // スクロール用変数
+    private bool isDraggingGrid = false;
+    private bool wasDraggingGrid = false;
+    private Vector2 startMousePos = Vector2.zero;
+    private Vector2 startScrollPos = Vector2.zero;
+    private const float DragThreshold = 10f;
+
     private readonly int[] pieceOptions = { 24, 96, 216, 486 };
+
+    private void OnGridPointerDown(PointerDownEvent evt)
+    {
+        if (evt.button != 0) return;
+        isDraggingGrid = true;
+        wasDraggingGrid = false;
+        startMousePos = evt.position;
+        startScrollPos = imageGrid.scrollOffset;
+        // 最初からはキャプチャしない（ボタンのクリックを優先させるため）
+    }
+
+    private void OnGridPointerMove(PointerMoveEvent evt)
+    {
+        if (!isDraggingGrid) return;
+
+        Vector2 delta = (Vector2)evt.position - startMousePos;
+        if (!wasDraggingGrid && delta.magnitude > DragThreshold)
+        {
+            wasDraggingGrid = true;
+            // 大きく動いたらキャプチャを開始して、以降のイベントを独占する
+            imageGrid.CapturePointer(evt.pointerId);
+        }
+
+        if (wasDraggingGrid)
+        {
+            imageGrid.scrollOffset = startScrollPos - delta;
+        }
+    }
+
+    private void OnGridPointerUp(PointerUpEvent evt)
+    {
+        if (isDraggingGrid)
+        {
+            if (wasDraggingGrid)
+            {
+                imageGrid.ReleasePointer(evt.pointerId);
+            }
+            isDraggingGrid = false;
+            // wasDraggingGridは、ボタンのclickedイベントが処理されるまで維持する必要がある
+            // UI ToolkitのクリックイベントはPointerUpの後に発生するため、少し遅らせてフラグをクリアする
+            Invoke(nameof(ClearDraggingFlag), 0.1f);
+        }
+    }
+
+    private void ClearDraggingFlag()
+    {
+        wasDraggingGrid = false;
+    }
 
     void OnEnable()
     {
+        Application.runInBackground = true; // UnityPlayの全画面ボタン対策
+        if (puzzleManager != null) puzzleManager.ClearExistingPuzzle();
+        
         if (uiDoc == null) uiDoc = GetComponent<UIDocument>();
         if (uiDoc == null) return;
 
         var root = uiDoc.rootVisualElement;
         imageGrid = root.Q<ScrollView>("ImageGrid");
+        if (imageGrid != null)
+        {
+            imageGrid.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
+            imageGrid.mouseWheelScrollSize = 100f; // スクロール感度
+
+            // ドラッグスクロール処理（PCマウス用）
+            imageGrid.RegisterCallback<PointerDownEvent>(OnGridPointerDown);
+            imageGrid.RegisterCallback<PointerMoveEvent>(OnGridPointerMove);
+            imageGrid.RegisterCallback<PointerUpEvent>(OnGridPointerUp);
+            imageGrid.RegisterCallback<PointerCaptureOutEvent>(evt => isDraggingGrid = false);
+        }
         pieceCountGroup = root.Q<RadioButtonGroup>("PieceCountGroup");
 
         confirmationOverlay = root.Q<VisualElement>("ConfirmationOverlay");
@@ -57,38 +126,56 @@ public class PuzzleSelectionManager : MonoBehaviour
     private void RefreshImageGrid()
     {
         if (imageGrid == null) return;
+        imageGrid.Clear(); // 既存の要素をクリアして重複を防止
 
-#if UNITY_EDITOR
+        // パスのクリーニング（Inspectorでの設定ミス対策）
+        string cleanPath = imageFolderPath.Replace("Assets/Resources/", "").Replace("Resources/", "");
+        if (cleanPath != imageFolderPath)
+        {
+            Debug.LogWarning($"[PuzzleSelectionManager] パスを修正しました: {imageFolderPath} -> {cleanPath}");
+            imageFolderPath = cleanPath;
+        }
+
         if (cachedSprites == null)
         {
             cachedSprites = new List<(Sprite sprite, string name)>();
-            Debug.Log($"[PuzzleSelectionManager] {imageFolderPath} から画像をキャッシュに読み込んでいます...");
-            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:Texture2D", new[] { imageFolderPath });
-            foreach (string guid in guids)
+            Debug.Log($"[PuzzleSelectionManager] Resources/{imageFolderPath} から画像を読み込んでいます...");
+            
+            // 全てのオブジェクトをロードして、SpriteまたはTexture2Dとして処理
+            Object[] assets = Resources.LoadAll(imageFolderPath);
+            Debug.Log($"[PuzzleSelectionManager] {assets.Length} 個のアセットが見つかりました。");
+
+            foreach (var asset in assets)
             {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guid);
-                Sprite sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                if (sprite == null) {
-                    Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-                    if (tex != null) {
-                        sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
-                    }
+                if (asset == null) continue;
+                
+                // 重複チェック
+                if (cachedSprites.Exists(x => x.name == asset.name)) continue;
+
+                if (asset is Sprite s)
+                {
+                    cachedSprites.Add((s, s.name));
+                    Debug.Log($"[PuzzleSelectionManager] Spriteをロードしました: {s.name}");
                 }
-                if (sprite != null) {
-                    cachedSprites.Add((sprite, Path.GetFileNameWithoutExtension(path)));
+                else if (asset is Texture2D tex)
+                {
+                    Sprite newSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+                    newSprite.name = tex.name;
+                    cachedSprites.Add((newSprite, tex.name));
+                    Debug.Log($"[PuzzleSelectionManager] Texture2DからSpriteを作成しました: {tex.name}");
                 }
+            }
+
+            if (cachedSprites.Count == 0)
+            {
+                Debug.LogError($"[PuzzleSelectionManager] Resources/{imageFolderPath} 内に画像が見つかりませんでした。パスが正しいか、アセットがResourcesフォルダに含まれているか確認してください。");
             }
         }
 
-        // 既に要素が作成されている場合は再生成をスキップ
-        if (imageGrid.contentContainer.childCount == cachedSprites.Count) return;
-
-        imageGrid.Clear();
         foreach (var item in cachedSprites)
         {
             CreateButton(item.sprite, item.name);
         }
-#endif
     }
 
     private void CreateButton(Sprite sprite, string name)
@@ -107,8 +194,9 @@ public class PuzzleSelectionManager : MonoBehaviour
 
         btn.clicked += () => {
             if (Time.time - lastOpenTime < 0.2f) return;
+            // スクロール操作直後はクリックを無視
+            if (wasDraggingGrid) return;
             
-            // 選択されているインデックスからピース数を取得
             int selectedIndex = pieceCountGroup != null ? pieceCountGroup.value : 1;
             if (selectedIndex < 0 || selectedIndex >= pieceOptions.Length) selectedIndex = 1;
             int pieces = pieceOptions[selectedIndex];
@@ -146,6 +234,8 @@ public class PuzzleSelectionManager : MonoBehaviour
 
     public void Open()
     {
+        if (puzzleManager != null) puzzleManager.ClearExistingPuzzle();
+        
         lastOpenTime = Time.time;
         uiDoc.gameObject.SetActive(true);
         RefreshImageGrid();

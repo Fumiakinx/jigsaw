@@ -5,15 +5,12 @@ public class PuzzlePiece : MonoBehaviour
 {
     public int id;
     public Vector3 correctPos;
-    public int baseOrder; // 追加：元の表示順序を記憶
+    public int baseOrder; 
 
     private Vector3 offset;
-    public Vector2 targetPosition;
-    public float snapThreshold = 0.3f; // 実行時に Manager から上書きされる
-
     public PuzzleManager manager;
     private Renderer pieceRenderer;
-    private Renderer shadowRenderer;
+    private static MaterialPropertyBlock mpb;
     public bool isLocked = false;
     private Camera mainCam;
 
@@ -21,29 +18,27 @@ public class PuzzlePiece : MonoBehaviour
     private Transform rootCache;
     private Transform MyRoot {
         get {
-            if (rootCache == null || rootCache.gameObject == null) rootCache = transform.root;
+            // パズル全体（transform.root）ではなく、このピースが属するクラスター（transform.parent）を対象にする
+            if (rootCache == null || rootCache.gameObject == null) rootCache = transform.parent;
             return rootCache;
         }
     }
 
-    private Transform shadowTransform;
-    private const float shadowOffsetMagnitude = 0.04f;
-    private static readonly Vector3 worldShadowOffset = new Vector3(0.04f, -0.04f, 0.00005f);
+    void OnDestroy()
+    {
+    }
 
     void Start()
     {
         pieceRenderer = GetComponent<Renderer>();
-        shadowTransform = transform.Find("Shadow");
-        if (shadowTransform != null) shadowRenderer = shadowTransform.GetComponent<Renderer>();
         mainCam = Camera.main;
-        UpdateShadowPosition();
     }
 
     public void BeginDrag(Vector3 mousePosition)
     {
         if (isLocked) return;
         
-        rootCache = transform.root;
+        rootCache = transform.parent;
         offset = rootCache.position - mousePosition;
         
         // 掴んだ瞬間に物理的にも手前へ、かつSortingOrderを最大に
@@ -52,9 +47,13 @@ public class PuzzlePiece : MonoBehaviour
         // ドラッグ中の演出：少し大きくし、Z座標を手前へ
         rootCache.localScale = Vector3.one * 1.05f;
         rootCache.position = new Vector3(rootCache.position.x, rootCache.position.y, -5.0f);
+
+        // スケール変更後に補正
         
-        var sg = rootCache.GetComponent<SortingGroup>();
-        if (sg != null) sg.sortingOrder = 30000; // ドラッグ中は最前面
+        // ドラッグ中のみ SortingGroup を動的に追加して最前面へ
+        var sg = rootCache.gameObject.GetComponent<SortingGroup>();
+        if (sg == null) sg = rootCache.gameObject.AddComponent<SortingGroup>();
+        sg.sortingOrder = 30000; // ドラッグ中は最前面
     }
 
     public void OnPointerDrag(Vector3 mousePosition)
@@ -83,11 +82,14 @@ public class PuzzlePiece : MonoBehaviour
         
         // スケールを元に戻す
         MyRoot.localScale = Vector3.one;
+        
+        // スケール変更後に補正
 
         // Z座標を通常レイヤー（SortingOrderベース）に戻す
         var sg = MyRoot.GetComponent<SortingGroup>();
-        if (sg != null) sg.sortingOrder = baseOrder;
-        MyRoot.position = new Vector3(MyRoot.position.x, MyRoot.position.y, -0.0001f * baseOrder);
+        if (sg != null) Destroy(sg); // ドラッグ終了時に SortingGroup を削除してバッチングを有効化
+
+        MyRoot.position = new Vector3(MyRoot.position.x, MyRoot.position.y, 0);
 
         // 移動による微細な位置ズレをリセットしてから吸着判定へ
         manager.RealignGroup(MyRoot, this);
@@ -139,7 +141,7 @@ public class PuzzlePiece : MonoBehaviour
                 lastAngle = currentAngle;
                 
                 // 規模に応じて更新頻度を調整
-                if (!skipRealtimeShadows) UpdateGroupVisuals(piecesInGroup);
+                // if (!skipRealtimeShadows) UpdateGroupVisuals(piecesInGroup); // 不要
                 yield return null;
             }
 
@@ -151,12 +153,12 @@ public class PuzzlePiece : MonoBehaviour
             manager.RealignGroup(root, this);
             
             // 回転終了後に必ず一度全ピースの影を正しい位置に同期
-            UpdateGroupVisuals(piecesInGroup); 
+            // UpdateGroupVisuals(piecesInGroup); // 不要
             
             offset = root.position - mousePosition;
             manager.CheckForGroupSnap(this);
-            // 結合が発生した場合、MyRootが変わっている可能性があるためキャッシュを明示的に更新
-            rootCache = transform.root;
+            // 結合が発生した場合、親クラスター（MyRoot）が変わっている可能性があるためキャッシュを明示的に更新
+            rootCache = transform.parent;
         }
 
         isRotating = false;
@@ -168,7 +170,6 @@ public class PuzzlePiece : MonoBehaviour
         foreach (var p in pieces)
         {
             if (p.pieceRenderer != null) p.pieceRenderer.sortingOrder = order;
-            if (p.shadowRenderer != null) p.shadowRenderer.sortingOrder = order - 1;
         }
     }
 
@@ -177,16 +178,19 @@ public class PuzzlePiece : MonoBehaviour
         if (pieces == null) return;
         foreach(var p in pieces) 
         {
-            p.UpdateShadowPosition();
         }
     }
 
     public void UpdateShadowPosition()
     {
-        if (shadowTransform != null)
-        {
-            // 回転行列の計算を簡略化するため InverseTransformDirection を使用
-            shadowTransform.localPosition = transform.InverseTransformDirection(worldShadowOffset);
+        // 影用のオブジェクトが存在する場合、ピースの回転に関わらず
+        // ワールド空間上で常に右下に影が落ちるように位置と回転を同期する
+        Transform shadow = transform.Find("Shadow");
+        if (shadow != null) {
+            // ピース本体の回転に完全に合わせる（メッシュの向きを同期）
+            shadow.rotation = transform.rotation;
+            // ワールド空間でのオフセットを維持して配置。Zは本体より僅かに奥(0.00005f)にする
+            shadow.position = transform.position + new Vector3(0.06f, -0.06f, 0.00005f);
         }
     }
 }
