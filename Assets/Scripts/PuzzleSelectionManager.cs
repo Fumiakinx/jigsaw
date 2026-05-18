@@ -11,7 +11,8 @@ public class PuzzleSelectionManager : MonoBehaviour
     public string imageFolderPath = "PuzzleBase"; // Resources フォルダ内からの相対パス
 
     private ScrollView imageGrid;
-    private RadioButtonGroup pieceCountGroup;
+    private VisualElement pieceCountGroup;
+    private List<RadioButton> pieceRadioButtons = new List<RadioButton>();
     private float lastOpenTime;
     private List<(Sprite sprite, string name)> cachedSprites;
 
@@ -103,7 +104,15 @@ public class PuzzleSelectionManager : MonoBehaviour
             imageGrid.RegisterCallback<PointerUpEvent>(OnGridPointerUp);
             imageGrid.RegisterCallback<PointerCaptureOutEvent>(evt => isDraggingGrid = false);
         }
-        pieceCountGroup = root.Q<RadioButtonGroup>("PieceCountGroup");
+        pieceCountGroup = root.Q<VisualElement>("PieceCountGroup");
+        pieceRadioButtons.Clear();
+        if (pieceCountGroup != null)
+        {
+            pieceRadioButtons.Add(pieceCountGroup.Q<RadioButton>("pieces-24"));
+            pieceRadioButtons.Add(pieceCountGroup.Q<RadioButton>("pieces-96"));
+            pieceRadioButtons.Add(pieceCountGroup.Q<RadioButton>("pieces-216"));
+            pieceRadioButtons.Add(pieceCountGroup.Q<RadioButton>("pieces-486"));
+        }
 
         confirmationOverlay = root.Q<VisualElement>("ConfirmationOverlay");
         confirmImage = root.Q<VisualElement>("ConfirmImage");
@@ -126,7 +135,6 @@ public class PuzzleSelectionManager : MonoBehaviour
     private void RefreshImageGrid()
     {
         if (imageGrid == null) return;
-        imageGrid.Clear(); // 既存の要素をクリアして重複を防止
 
         // パスのクリーニング（Inspectorでの設定ミス対策）
         string cleanPath = imageFolderPath.Replace("Assets/Resources/", "").Replace("Resources/", "");
@@ -168,43 +176,59 @@ public class PuzzleSelectionManager : MonoBehaviour
 
             if (cachedSprites.Count == 0)
             {
-                Debug.LogError($"[PuzzleSelectionManager] Resources/{imageFolderPath} 内に画像が見つかりませんでした。パスが正しいか、アセットがResourcesフォルダに含まれているか確認してください。");
+                Debug.LogError($"[PuzzleSelectionManager] Resources/{imageFolderPath} 内に画像が見つかりませんでした。");
             }
         }
 
-        foreach (var item in cachedSprites)
+        // UXML上の静的ボタンをクエリして取得
+        List<Button> staticButtons = new List<Button>();
+        for (int i = 0; i < 20; i++)
         {
-            CreateButton(item.sprite, item.name);
+            Button btn = imageGrid.Q<Button>($"GridButton{i}");
+            if (btn != null)
+            {
+                staticButtons.Add(btn);
+                btn.style.display = DisplayStyle.None; // 一旦非表示にする
+            }
         }
-    }
 
-    private void CreateButton(Sprite sprite, string name)
-    {
-        Button btn = new Button();
-        btn.AddToClassList("selection-button");
+        // 取得した静的ボタンに画像とテキストをバインド
+        for (int i = 0; i < cachedSprites.Count; i++)
+        {
+            if (i >= staticButtons.Count) break; // 上限を超えたら終了
 
-        VisualElement thumb = new VisualElement();
-        thumb.AddToClassList("thumbnail-image");
-        thumb.style.backgroundImage = new StyleBackground(sprite);
-        btn.Add(thumb);
+            var (sprite, name) = cachedSprites[i];
+            Button btn = staticButtons[i];
 
-        Label lbl = new Label(name);
-        lbl.AddToClassList("button-label");
-        btn.Add(lbl);
+            VisualElement thumb = btn.Q<VisualElement>(className: "thumbnail-image");
+            Label lbl = btn.Q<Label>(className: "button-label");
 
-        btn.clicked += () => {
-            if (Time.time - lastOpenTime < 0.2f) return;
-            // スクロール操作直後はクリックを無視
-            if (wasDraggingGrid) return;
-            
-            int selectedIndex = pieceCountGroup != null ? pieceCountGroup.value : 1;
-            if (selectedIndex < 0 || selectedIndex >= pieceOptions.Length) selectedIndex = 1;
-            int pieces = pieceOptions[selectedIndex];
+            if (thumb != null) thumb.style.backgroundImage = new StyleBackground(sprite);
+            if (lbl != null) lbl.text = name;
 
-            ShowConfirmation(sprite, pieces);
-        };
+            // 新しいClickableを代入することで、重複登録を防ぎつつクリックイベントを登録
+            btn.clickable = new Clickable(() => {
+                if (Time.time - lastOpenTime < 0.2f) return;
+                // スクロール操作直後はクリックを無視
+                if (wasDraggingGrid) return;
+                
+                int selectedIndex = 1;
+                for (int idx = 0; idx < pieceRadioButtons.Count; idx++)
+                {
+                    if (pieceRadioButtons[idx] != null && pieceRadioButtons[idx].value)
+                    {
+                        selectedIndex = idx;
+                        break;
+                    }
+                }
+                if (selectedIndex < 0 || selectedIndex >= pieceOptions.Length) selectedIndex = 1;
+                int pieces = pieceOptions[selectedIndex];
 
-        imageGrid.Add(btn);
+                ShowConfirmation(sprite, pieces);
+            });
+
+            btn.style.display = DisplayStyle.Flex; // 使用するボタンを表示
+        }
     }
 
     private void ShowConfirmation(Sprite sprite, int pieces)

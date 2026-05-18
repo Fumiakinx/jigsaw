@@ -122,19 +122,30 @@
 /* Piece count group styling */
 #PieceCountGroup {
     background-color: rgba(0, 0, 0, 0.4);
-    padding: 15px;
+    padding: 8px 15px;
     border-radius: 10px;
+    flex-direction: row;
+    align-items: center;
+}
+
+/* 内部コンテナ自体を横並びに強制する */
+#PieceCountGroup .unity-radio-button-group__container,
+#PieceCountGroup > VisualElement {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
 }
 
 #PieceCountGroup RadioButton {
-    margin-bottom: 10px;
+    margin-bottom: 0px;
+    margin-right: 15px;
     flex-direction: row-reverse;
     justify-content: flex-end;
 }
 
 #PieceCountGroup .unity-radio-button__label {
-    margin-right: 15px;
+    margin-right: 8px;
     color: white;
     font-size: 16px;
-    min-width: 120px;
+    min-width: auto;
 }
