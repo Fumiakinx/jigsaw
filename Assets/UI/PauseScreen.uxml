@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:Style src="PauseScreen.uss" />
+    <ui:VisualElement name="PauseRoot" class="pause-root">
+        <ui:VisualElement class="pause-content">
+            <ui:Label text="一時停止中" class="pause-label" />
+            <ui:VisualElement class="instruction-container">
+                <ui:Label text="左ドラッグ：ピースを移動" class="instruction-text" />
+                <ui:Label text="右クリック：ピースを回転" class="instruction-text" />
+                <ui:Label text="スペースキー：下絵を表示" class="instruction-text" />
+                <ui:Label text="ESCキー：一時停止解除" class="instruction-text" />
+            </ui:VisualElement>
+            <ui:Button name="ReturnToSelectionButton" text="画像選択に戻る" class="pause-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

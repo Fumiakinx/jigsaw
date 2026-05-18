@@ -39,10 +39,11 @@ public class PuzzleManager : MonoBehaviour
     private float pauseStartTime;
     private bool isPaused = false;
     private bool isFinished = false;
+    private bool pauseEventsBound = false;
 
     [Range(0, 0.1f)] public float bevelWidth = 0.02f; 
     public float bevelFalloff = 1.0f;
-    public float edgeDarkness = 0.4f;
+    public float edgeDarkness = 1.6f;
     public float specularPower = 32f;
     public float specularIntensity = 1.6f;
 
@@ -120,7 +121,10 @@ public class PuzzleManager : MonoBehaviour
         if (shadowMaterial == null) {
             Shader shadowShader = Resources.Load<Shader>("Shaders/JigsawShadow");
             if (shadowShader == null) shadowShader = Shader.Find("Custom/JigsawShadow");
-            if (shadowShader != null) shadowMaterial = new Material(shadowShader);
+            if (shadowShader != null) {
+                shadowMaterial = new Material(shadowShader);
+                shadowMaterial.SetColor("_Color", new Color(0.0f, 0.0f, 0.0f, 0.5f)); // 元の黒い影
+            }
         }
         
         float aspect = sourceSprite.rect.width / sourceSprite.rect.height;
@@ -580,11 +584,10 @@ public class PuzzleManager : MonoBehaviour
         float pieceSize = Mathf.Min(puzzleW / cols, puzzleH / rows);
         
         // ピース数（サイズ）に応じた適応型（アダプティブ）ベベル幅の計算
-        // ピース数（サイズ）に応じた適応型（アダプティブ）ベベル幅の計算
         // 結合時の不自然な太さを解消するため、ベースを1.5%程度まで細くし、よりシャープな溝にします。
-        float basePercentage = 0.015f;
+        float basePercentage = 0.060f; // 初期から見て4倍（さらに倍）に変更 (0.030f -> 0.060f)
         float pieceCountBoost = Mathf.Clamp(cols / 8f, 1.0f, 4.0f);
-        float percentage = Mathf.Clamp(basePercentage * pieceCountBoost, 0.01f, 0.06f);
+        float percentage = Mathf.Clamp(basePercentage * pieceCountBoost, 0.04f, 0.24f); // クランプ範囲も初期から見て4倍に変更 (0.02f->0.04f, 0.12f->0.24f)
         
         float scaleFactor = 1.0f - percentage;
         
@@ -831,7 +834,28 @@ public class PuzzleManager : MonoBehaviour
         isPaused = !isPaused;
         if (isPaused) {
             pauseStartTime = Time.time;
-            if (pauseUIDoc != null) { pauseUIDoc.sortingOrder = 9999; pauseUIDoc.gameObject.SetActive(true); }
+            if (pauseUIDoc != null) { 
+                pauseUIDoc.sortingOrder = 9999; 
+                pauseUIDoc.gameObject.SetActive(true); 
+                
+                // 表示された直後に安全にボタンイベントをバインド
+                if (!pauseEventsBound)
+                {
+                    var root = pauseUIDoc.rootVisualElement;
+                    if (root != null)
+                    {
+                        Button btn = root.Q<Button>("ReturnToSelectionButton");
+                        if (btn != null)
+                        {
+                            btn.clicked += () => {
+                                TogglePause(); // ポーズ状態を解除
+                                ReturnToTitle(); // 画像選択画面に戻る
+                            };
+                            pauseEventsBound = true;
+                        }
+                    }
+                }
+            }
             foreach (var p in allPieces) if (p != null && p.transform.parent != null) p.transform.parent.gameObject.SetActive(false);
         } else {
             totalPausedTime += (Time.time - pauseStartTime);
