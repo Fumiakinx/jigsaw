@@ -146,12 +146,13 @@
                 <img src="images/berry.jpg" alt="ベリー">
             </div>
         </div>
+
     </div>
 
     <button class="btn" onclick="sendToJigsaw()">パズルを開始する！</button>
 
     <div class="info-text">
-        ※ ドライブから自動取得された画像を一覧から選ぶだけで、パズルをすぐに開始できます。
+        ※ Googleドライブの画像を使用する場合、対象フォルダや画像を「リンクを知っている全員に閲覧可能」に設定してください。
     </div>
 </div>
 
@@ -160,6 +161,8 @@
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec"; 
 
     let selectedImageUrl = 'images/beer1.jpg';
+    let localImageBase64 = null; // ローカル選択ファイル用Base64データ
+    let isLocalFileSelected = false;
 
     // 1. ページロード時にGASからドライブ内の画像一覧を自動取得してギャラリーを作る
     async function loadGalleryFromGAS() {
@@ -216,40 +219,11 @@
         element.classList.add('selected');
         
         selectedImageUrl = url;
-        items.forEach(item => item.classList.remove('selected'));
-        selectedImageUrl = '';
-        document.getElementById('localFile').value = ''; // ローカルファイルをクリア
-        localImageBase64 = null;
-        isLocalFileSelected = false;
-    }
-
-    function handleLocalFile(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        // ギャラリーとカスタムURLの選択状態を解除
-        const items = document.querySelectorAll('.gallery-item');
-        items.forEach(item => item.classList.remove('selected'));
-        selectedImageUrl = '';
-        document.getElementById('customUrl').value = '';
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            localImageBase64 = e.target.result;
-            isLocalFileSelected = true;
-            console.log("ローカル画像をBase64に変換しました。");
-        };
-        reader.onerror = function(err) {
-            console.error("ローカルファイルの読み込みに失敗しました:", err);
-            alert("画像の読み込みに失敗しました。");
-        };
-        reader.readAsDataURL(file);
     }
 
     // パズル開始ボタン処理 (非同期でGAS経由でBase64をロードする)
     async function sendToJigsaw() {
         const pieceCount = document.getElementById('pieceCount').value;
-        
         let finalUrl = selectedImageUrl;
         
         if (!finalUrl) {
@@ -279,7 +253,7 @@
             let targetBase64 = null;
             
             // GAS経由での画像取得
-            // GAS_API_URLが設定されていて、画像ID（英数字の長い文字列）である場合
+            // GAS_API_URLが設定されていて、画像パスがURLではなく画像ID（英数字の長い文字列）である場合
             if (GAS_API_URL && finalUrl && !finalUrl.startsWith('http') && !finalUrl.includes('/')) {
                 console.log("GASから安全にBase64画像データを取得します。ID:", finalUrl);
                 const response = await fetch(`${GAS_API_URL}?action=image&id=${finalUrl}`);
@@ -291,11 +265,16 @@
                     console.warn("GASからの画像取得に失敗しました:", resData.error);
                 }
             }
+            
+            if (!targetBase64) {
+                // デフォルト同居画像などのフォールバック
+                targetBase64 = finalUrl;
+            }
 
             // 3. データの準備完了！共有変数に確実に格納
             // 子ウィンドウがこの変数をポーリングで取得して自動的に進行します
             window.selectedPuzzleData = {
-                imageData: targetBase64 ? targetBase64 : finalUrl,
+                imageData: targetBase64,
                 pieceCount: parseInt(pieceCount, 10)
             };
 
