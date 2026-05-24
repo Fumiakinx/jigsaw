@@ -240,7 +240,7 @@
                 <div class="spinner-inner"></div>
             </div>
             <div class="loading-title">JIGSAW PUZZLE</div>
-            <div id="status-text" class="loading-status">画像を準備しています...</div>
+            <div id="status-text" class="loading-status">パズル画像データを準備しています...</div>
             <div class="progress-bar-empty">
                 <div id="progress-bar" class="progress-bar-full"></div>
             </div>
@@ -327,10 +327,10 @@
 
         // 4. ゲーム起動プロセス
         async function initGame() {
-            statusText.innerText = "画像をデコード中...";
+            statusText.innerText = "パズル画像データを準備しています...";
             await checkParentData();
             
-            statusText.innerText = "パズルエンジンを起動しています...";
+            statusText.innerText = "ゲームエンジンを起動しています...";
             
             var script = document.createElement("script");
             script.src = loaderUrl;

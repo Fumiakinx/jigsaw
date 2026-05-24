@@ -315,35 +315,14 @@
         btn.innerText = "⏳ パズル画像を準備中...";
         btn.disabled = true;
 
-        // 2. ポップアップブロックを完全に回避するため、まず「空のローディング画面」でウィンドウを開いておく
-        const playerWindow = window.open('about:blank', '_blank');
+        // 2. ポップアップブロックを完全に回避するため、即座にゲームプレイヤー画面を開く
+        const playerWindow = window.open('jigsaw_player.html', '_blank');
         if (!playerWindow) {
             alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
             btn.innerText = originalText;
             btn.disabled = false;
             return;
         }
-        
-        // ローディング中の仮画面をレンダリング
-        playerWindow.document.write(`
-            <html>
-            <head>
-                <title>準備中...</title>
-                <style>
-                    body { background: #121214; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; margin: 0; }
-                    .load-box { text-align: center; padding: 30px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; }
-                    h2 { margin: 0 0 10px 0; color: #4CAF50; }
-                    p { margin: 0; color: #aaa; font-size: 14px; }
-                </style>
-            </head>
-            <body>
-                <div class="load-box">
-                    <h2>🧩 パズル画像を準備しています...</h2>
-                    <p>Googleドライブから高品質な画像データを読み込んでいます。しばらくお待ちください。</p>
-                </div>
-            </body>
-            </html>
-        `);
 
         // 親ウィンドウ側の共有変数をクリア
         window.selectedPuzzleData = null;
@@ -382,13 +361,11 @@
             }
 
             // 3. データの準備完了！共有変数に確実に格納
+            // 子ウィンドウがこの変数をポーリングで取得して自動的に進行します
             window.selectedPuzzleData = {
                 imageData: targetBase64 ? targetBase64 : finalUrl,
                 pieceCount: parseInt(pieceCount, 10)
             };
-
-            // 4. 準備完了後に、最初に開いておいたウィンドウを本番のゲームプレイヤーにリダイレクトさせる！
-            playerWindow.location.href = 'jigsaw_player.html';
 
         } catch (e) {
             console.error("画像データ取得処理中にエラーが発生しました:", e);
@@ -397,7 +374,6 @@
                 imageData: finalUrl,
                 pieceCount: parseInt(pieceCount, 10)
             };
-            playerWindow.location.href = 'jigsaw_player.html';
         } finally {
             // 5. ボタンのローディング表示を元に戻す
             btn.innerText = originalText;
