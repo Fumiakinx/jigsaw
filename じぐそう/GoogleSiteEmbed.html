@@ -22,13 +22,14 @@
             letter-spacing: 0.5px;
         }
         .container {
-            width: 100%;
-            max-width: 1200px;
+            width: 95%;
+            max-width: 100%;
             background-color: #2d2d2d;
             border-radius: 16px;
             padding: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
+            box-sizing: border-box;
         }
         .gallery-title-area {
             border-bottom: 2px solid #3d3d3d;
@@ -480,67 +481,75 @@
         galleryContainer.innerHTML = ""; // 初期クリア
         
         imagesList.forEach((imgInfo, index) => {
-            const item = document.createElement('div');
-            item.className = 'gallery-item';
-            
-            // ドライブ画像の場合は軽量サムネイルを使用し、ローカルの場合はパスをそのまま使用
-            const thumbUrl = isFromGAS 
-                ? `https://drive.google.com/thumbnail?sz=w300&id=${imgInfo.id}`
-                : imgInfo.id;
-            
-            // 名前と説明のパース
-            let name = imgInfo.name;
-            let description = imgInfo.description || '';
-            
-            if (description) {
-                const parts = description.split(',');
-                if (parts.length > 0 && parts[0].trim()) {
-                    name = parts[0].trim();
-                }
-            } else {
-                // ドライブの説明（メタデータ）が空の場合、ファイル名から自動パースして補完
-                let nameWithoutExt = name.substring(0, name.lastIndexOf('.')) || name;
-                if (!nameWithoutExt) nameWithoutExt = name;
-
-                const separators = ['_', '-', ','];
-                let foundSeparator = false;
-                for (let sep of separators) {
-                    if (nameWithoutExt.includes(sep)) {
-                        const parts = nameWithoutExt.split(sep);
+            try {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                
+                // ドライブ画像の場合は軽量サムネイルを使用し、ローカルの場合はパスをそのまま使用
+                const thumbUrl = isFromGAS 
+                    ? `https://drive.google.com/thumbnail?sz=w300&id=${imgInfo.id}`
+                    : imgInfo.id;
+                
+                // 名前と説明のパース (極めて安全に処理)
+                let name = imgInfo.name || '';
+                let description = imgInfo.description || '';
+                
+                if (description) {
+                    const parts = description.split(',');
+                    if (parts.length > 0 && parts[0].trim()) {
                         name = parts[0].trim();
-                        // descriptionに「名前,ジャンル1,ジャンル2...」の形式で格納し、メタデータに偽装
-                        description = parts.map(p => p.trim()).join(',');
-                        foundSeparator = true;
-                        break;
+                    }
+                } else {
+                    // ドライブの説明（メタデータ）が空の場合、ファイル名から自動パースして補完
+                    let nameWithoutExt = '';
+                    if (name) {
+                        const lastDotIndex = name.lastIndexOf('.');
+                        nameWithoutExt = lastDotIndex !== -1 ? name.substring(0, lastDotIndex) : name;
+                    }
+                    if (!nameWithoutExt) nameWithoutExt = name || '名称未設定';
+
+                    const separators = ['_', '-', ','];
+                    let foundSeparator = false;
+                    for (let sep of separators) {
+                        if (nameWithoutExt.includes(sep)) {
+                            const parts = nameWithoutExt.split(sep);
+                            name = parts[0].trim();
+                            // descriptionに「名前,ジャンル1,ジャンル2...」の形式で格納し、メタデータに偽装
+                            description = parts.map(p => p.trim()).join(',');
+                            foundSeparator = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!foundSeparator) {
+                        // 区切り文字がない場合はファイル名全体を名前にし、descriptionもその名前単体にする
+                        name = nameWithoutExt;
+                        description = nameWithoutExt;
                     }
                 }
                 
-                if (!foundSeparator) {
-                    // 区切り文字がない場合はファイル名全体を名前にし、descriptionもその名前単体にする
-                    name = nameWithoutExt;
-                    description = nameWithoutExt;
+                item.innerHTML = `
+                    <div class="gallery-image-wrap">
+                        <img src="${thumbUrl}" alt="${name}">
+                    </div>
+                    <div class="gallery-info">${name}</div>
+                `;
+                
+                // クリック時にモーダルを開く
+                item.onclick = function() {
+                    selectImage(this, imgInfo.id, name, description);
+                };
+                
+                galleryContainer.appendChild(item);
+                
+                // 初期値をセット (モーダルはまだ開かない)
+                if (index === 0) {
+                    selectedImageUrl = imgInfo.id;
+                    selectedImageName = name;
+                    selectedImageDescription = description;
                 }
-            }
-            
-            item.innerHTML = `
-                <div class="gallery-image-wrap">
-                    <img src="${thumbUrl}" alt="${name}">
-                </div>
-                <div class="gallery-info">${name}</div>
-            `;
-            
-            // クリック時にモーダルを開く
-            item.onclick = function() {
-                selectImage(this, imgInfo.id, name, description);
-            };
-            
-            galleryContainer.appendChild(item);
-            
-            // 初期値をセット (モーダルはまだ開かない)
-            if (index === 0) {
-                selectedImageUrl = imgInfo.id;
-                selectedImageName = name;
-                selectedImageDescription = description;
+            } catch (innerError) {
+                console.error("個別画像のパース中にエラーが発生しました。スキップします:", imgInfo, innerError);
             }
         });
     }
