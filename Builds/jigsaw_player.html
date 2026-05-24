@@ -315,7 +315,7 @@
                             console.log("Unityにパズル開始リクエストを送信します。ピース数:", selectedData.pieceCount);
                             // メッセージ形式: "画像Base64_または_URL,ピース数"
                             const message = selectedData.imageData + "," + selectedData.pieceCount;
-                            unityInstance.SendMessage('JigsawWebBridge', 'StartPuzzleFromWeb', message);
+                            unityInstance.SendMessage('PuzzleManager', 'StartPuzzleFromWeb', message);
                         } else {
                             console.log("データがロードされていないため、Unity側での画像選択を有効にします。");
                         }
