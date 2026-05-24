@@ -893,8 +893,8 @@ public class PuzzleManager : MonoBehaviour
                     if (draggingPiece != null && draggingPiece.transform.parent == rootO) rootO.localScale = Vector3.one * 1.05f;
                     RealignGroup(rootO, pO);
                     
-                    // 合体したグループの SortingOrder を結合ピース数に応じて再計算して沈める
-                    UpdateGroupSortingOrder(rootO);
+                    // 結合状態が変化したため、画面全体の SortingOrder を一括再計算して整理する
+                    UpdateAllGroupsSortingOrder();
                     
                     int currentCount = rootO.GetComponentsInChildren<PuzzlePiece>().Length;
                     if (currentCount > maxConnectedPieces) maxConnectedPieces = currentCount;
@@ -957,34 +957,39 @@ public class PuzzleManager : MonoBehaviour
         }
     }
 
-    public void UpdateGroupSortingOrder(Transform root)
+    public void UpdateAllGroupsSortingOrder()
     {
-        if (root == null) return;
-        PuzzlePiece[] pieces = root.GetComponentsInChildren<PuzzlePiece>();
-        int N = pieces.Length; // 結合しているピース数
-        
-        // 結合数Nが大きいほど奥（sortingOrderが低い値）、単一ピースは一番手前（高い値）に設定
-        // N = 1 (単一) のとき: 2000 - 5 = 1995 -> 19950 + オフセット
-        // N = 200 (全結合) のとき: 2000 - 1000 = 1000 -> 10000 + オフセット
-        int targetBaseOrder = (2000 - N * 5) * 10;
-        
-        foreach (var p in pieces)
+        // 画面内のすべてのルートオブジェクトを走査してクラスターを収集
+        GameObject[] roots = SceneManager.GetActiveScene().GetRootGameObjects();
+        foreach (var r in roots)
         {
-            var r = p.GetComponent<Renderer>();
-            if (r != null)
+            if (r == null) continue;
+            if (r.name.Contains("PieceCluster") || r.name.Contains("Piece_"))
             {
-                // ピース固有のオフセット（0〜9）を加算してチラつき（Zファイティング）を防止
-                r.sortingOrder = targetBaseOrder + (p.id % 10);
-            }
-            
-            Transform shadow = p.transform.Find("Shadow");
-            if (shadow != null)
-            {
-                var sr = shadow.GetComponent<Renderer>();
-                if (sr != null)
+                PuzzlePiece[] pieces = r.GetComponentsInChildren<PuzzlePiece>();
+                int N = pieces.Length;
+                if (N == 0) continue;
+                
+                // 結合ピース数Nが大きいほど奥（低いSortingOrder）、単一ピースは一番手前に配置
+                int targetBaseOrder = (2000 - N * 5) * 10;
+                
+                foreach (var p in pieces)
                 {
-                    // 影は常に本体の直後（本体+1）に描画
-                    sr.sortingOrder = targetBaseOrder + (p.id % 10) + 1;
+                    var renderer = p.GetComponent<Renderer>();
+                    if (renderer != null)
+                    {
+                        renderer.sortingOrder = targetBaseOrder + (p.id % 10);
+                    }
+                    
+                    Transform shadow = p.transform.Find("Shadow");
+                    if (shadow != null)
+                    {
+                        var sr = shadow.GetComponent<Renderer>();
+                        if (sr != null)
+                        {
+                            sr.sortingOrder = targetBaseOrder + (p.id % 10) + 1;
+                        }
+                    }
                 }
             }
         }
