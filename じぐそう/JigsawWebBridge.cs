@@ -25,19 +25,22 @@ public class JigsawWebBridge : MonoBehaviour
     /// </summary>
     public void StartPuzzleFromWeb(string message)
     {
-        Debug.Log($"[JigsawWebBridge] 外部からリクエストを受信: {message}");
+        Debug.Log($"[JigsawWebBridge] 外部からリクエストを受信しました。");
         
-        string[] parts = message.Split(',');
-        if (parts.Length < 1)
+        // 💡 Base64のデータ内にはカンマが含まれるため（data:image/png;base64,iVBOR...）、
+        // 単純なSplit(',')ではなく、一番後ろのカンマ（ピース数の手前）で分割します。
+        int lastCommaIndex = message.LastIndexOf(',');
+        if (lastCommaIndex == -1)
         {
-            Debug.LogError("[JigsawWebBridge] メッセージフォーマットが不正です。");
+            Debug.LogError("[JigsawWebBridge] メッセージフォーマットが不正です。カンマが見つかりません。");
             return;
         }
 
-        string imageUrl = parts[0].Trim();
+        string imageUrl = message.Substring(0, lastCommaIndex).Trim();
+        string pieceCountStr = message.Substring(lastCommaIndex + 1).Trim();
         int pieceCount = 96; // デフォルトピース数
 
-        if (parts.Length >= 2 && int.TryParse(parts[1], out int parsedCount))
+        if (int.TryParse(pieceCountStr, out int parsedCount))
         {
             pieceCount = parsedCount;
         }
@@ -46,52 +49,81 @@ public class JigsawWebBridge : MonoBehaviour
         StartCoroutine(LoadImageAndStartPuzzle(imageUrl, pieceCount));
     }
 
-    private IEnumerator LoadImageAndStartPuzzle(string url, int pieceCount)
+    private IEnumerator LoadImageAndStartPuzzle(string urlOrBase64, int pieceCount)
     {
-        Debug.Log($"[JigsawWebBridge] 画像ダウンロード開始: {url}");
-        
-        using (UnityWebRequest webRequest = UnityWebRequestTexture.GetTexture(url))
+        Texture2D texture = null;
+
+        if (urlOrBase64.StartsWith("data:image/") && urlOrBase64.Contains("base64,"))
         {
-            yield return webRequest.SendWebRequest();
-
-            if (webRequest.result != UnityWebRequest.Result.Success)
+            Debug.Log("[JigsawWebBridge] Base64画像データのデコードを開始します。");
+            try
             {
-                Debug.LogError($"[JigsawWebBridge] 画像の読み込みに失敗しました: {webRequest.error}");
-                yield break;
+                int base64StartIndex = urlOrBase64.IndexOf("base64,") + 7;
+                string base64Data = urlOrBase64.Substring(base64StartIndex);
+                byte[] imageBytes = System.Convert.FromBase64String(base64Data);
+
+                texture = new Texture2D(2, 2);
+                if (!texture.LoadImage(imageBytes))
+                {
+                    Debug.LogError("[JigsawWebBridge] Base64データからのテクスチャデコードに失敗しました。");
+                    texture = null;
+                }
             }
-
-            Texture2D texture = DownloadHandlerTexture.GetContent(webRequest);
-            if (texture == null)
+            catch (System.Exception ex)
             {
-                Debug.LogError("[JigsawWebBridge] テクスチャのデコードに失敗しました。");
-                yield break;
+                Debug.LogError($"[JigsawWebBridge] Base64デコード中にエラーが発生しました: {ex.Message}");
+                texture = null;
             }
-
-            Debug.Log($"[JigsawWebBridge] 画像ロード成功: {texture.width}x{texture.height}");
-
-            // Texture2DからSpriteを生成
-            Sprite sprite = Sprite.Create(
-                texture, 
-                new Rect(0, 0, texture.width, texture.height), 
-                new Vector2(0.5f, 0.5f)
-            );
-            sprite.name = "WebLoadedImage";
-
-            // 画像選択用UIドキュメントが開いている場合は非表示にする
-            if (selectionManager != null && selectionManager.uiDoc != null)
+            yield return null;
+        }
+        else
+        {
+            Debug.Log($"[JigsawWebBridge] 画像ダウンロード開始: {urlOrBase64}");
+            using (UnityWebRequest webRequest = UnityWebRequestTexture.GetTexture(urlOrBase64))
             {
-                selectionManager.uiDoc.gameObject.SetActive(false);
-            }
+                yield return webRequest.SendWebRequest();
 
-            // パズル生成を開始
-            if (puzzleManager != null)
-            {
-                puzzleManager.StartPuzzle(sprite, pieceCount);
-            }
-            else
-            {
-                Debug.LogError("[JigsawWebBridge] PuzzleManagerが見つかりません。");
+                if (webRequest.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError($"[JigsawWebBridge] 画像の読み込みに失敗しました: {webRequest.error}");
+                    yield break;
+                }
+
+                texture = DownloadHandlerTexture.GetContent(webRequest);
             }
         }
+
+        if (texture == null)
+        {
+            Debug.LogError("[JigsawWebBridge] テクスチャの取得またはデコードに失敗しました。");
+            yield break;
+        }
+
+        Debug.Log($"[JigsawWebBridge] 画像ロード成功: {texture.width}x{texture.height}");
+
+        // Texture2DからSpriteを生成
+        Sprite sprite = Sprite.Create(
+            texture, 
+            new Rect(0, 0, texture.width, texture.height), 
+            new Vector2(0.5f, 0.5f)
+        );
+        sprite.name = "WebLoadedImage";
+
+        // 画像選択用UIドキュメントが開いている場合は非表示にする
+        if (selectionManager != null && selectionManager.uiDoc != null)
+        {
+            selectionManager.uiDoc.gameObject.SetActive(false);
+        }
+
+        // パズル生成を開始
+        if (puzzleManager != null)
+        {
+            puzzleManager.StartPuzzle(sprite, pieceCount);
+        }
+        else
+        {
+            Debug.LogError("[JigsawWebBridge] PuzzleManagerが見つかりません。");
+        }
+    }
     }
 }

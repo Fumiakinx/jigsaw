@@ -25,19 +25,22 @@ public class JigsawWebBridge : MonoBehaviour
     /// </summary>
     public void StartPuzzleFromWeb(string message)
     {
-        Debug.Log($"[JigsawWebBridge] 外部からリクエストを受信: {message}");
+        Debug.Log($"[JigsawWebBridge] 外部からリクエストを受信しました。");
         
-        string[] parts = message.Split(',');
-        if (parts.Length < 1)
+        // 💡 Base64のデータ内にはカンマが含まれるため（data:image/png;base64,iVBOR...）、
+        // 単純なSplit(',')ではなく、一番後ろのカンマ（ピース数の手前）で分割します。
+        int lastCommaIndex = message.LastIndexOf(',');
+        if (lastCommaIndex == -1)
         {
-            Debug.LogError("[JigsawWebBridge] メッセージフォーマットが不正です。");
+            Debug.LogError("[JigsawWebBridge] メッセージフォーマットが不正です。カンマが見つかりません。");
             return;
         }
 
-        string imageUrl = parts[0].Trim();
+        string imageUrl = message.Substring(0, lastCommaIndex).Trim();
+        string pieceCountStr = message.Substring(lastCommaIndex + 1).Trim();
         int pieceCount = 96; // デフォルトピース数
 
-        if (parts.Length >= 2 && int.TryParse(parts[1], out int parsedCount))
+        if (int.TryParse(pieceCountStr, out int parsedCount))
         {
             pieceCount = parsedCount;
         }
