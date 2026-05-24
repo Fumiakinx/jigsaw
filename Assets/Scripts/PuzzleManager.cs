@@ -959,8 +959,8 @@ public class PuzzleManager : MonoBehaviour
 
     public void UpdateAllGroupsSortingOrder()
     {
-        GameObject[] roots = SceneManager.GetActiveScene().GetRootGameObjects();
-        foreach (var r in roots)
+        // シーン内の全ルートオブジェクトを検索するのではなく、PuzzleManager自身の子オブジェクトを直接走査して軽量化
+        foreach (Transform r in transform)
         {
             if (r == null) continue;
             if (r.name.Contains("PieceCluster") || r.name.Contains("Piece_"))
@@ -996,7 +996,7 @@ public class PuzzleManager : MonoBehaviour
                 {
                     // 2枚以上が結合した塊は SortingGroup を常時保持させてグループ一括描画（隙間チラつき100%防止）
                     var sg = r.GetComponent<SortingGroup>();
-                    if (sg == null) sg = r.AddComponent<SortingGroup>();
+                    if (sg == null) sg = r.gameObject.AddComponent<SortingGroup>();
                     sg.sortingOrder = targetBaseOrder;
                     
                     // 物理的Z座標も結合数に応じて奥（0.0f付近）へ沈める

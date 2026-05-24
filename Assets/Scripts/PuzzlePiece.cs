@@ -85,9 +85,7 @@ public class PuzzlePiece : MonoBehaviour
         
         // スケール変更後に補正
 
-        // Z座標を通常レイヤー（SortingOrderベース）に戻す
-        var sg = MyRoot.GetComponent<SortingGroup>();
-        if (sg != null) Destroy(sg); // ドラッグ終了時に SortingGroup を削除してバッチングを有効化
+
 
         MyRoot.position = new Vector3(MyRoot.position.x, MyRoot.position.y, 0);
 

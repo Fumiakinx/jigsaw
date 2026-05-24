@@ -21,9 +21,16 @@ public class JigsawWebBridge : MonoBehaviour
         // 🌟 Unityエディタ上での開発・テスト実行時のみ動く自動デバッグ起動処理
         #if UNITY_EDITOR
         Debug.Log("[JigsawWebBridge] Unityエディタ起動を検知しました。デバッグ用パズル（零戦・96ピース）を自動開始します。");
-        Sprite debugSprite = Resources.Load<Sprite>("PuzzleBase/zero_fighter_boxart");
-        if (debugSprite != null)
+        Texture2D debugTex = Resources.Load<Texture2D>("PuzzleBase/zero_fighter_boxart");
+        if (debugTex != null)
         {
+            Sprite debugSprite = Sprite.Create(
+                debugTex, 
+                new Rect(0, 0, debugTex.width, debugTex.height), 
+                new Vector2(0.5f, 0.5f)
+            );
+            debugSprite.name = "zero_fighter_boxart";
+
             if (puzzleManager != null)
             {
                 puzzleManager.StartPuzzle(debugSprite, 96); // 96ピース固定で開始
