@@ -251,45 +251,8 @@ public class PuzzleManager : MonoBehaviour
     {
         if (hudUIDoc == null) return;
         
-        hudUIDoc.gameObject.SetActive(true);
-        
-        var root = hudUIDoc.rootVisualElement;
-        if (root != null)
-        {
-            btnPause = root.Q<Button>("btnPause");
-            if (btnPause != null)
-            {
-                // 二重登録防止のため、一度登録解除してから登録
-                btnPause.clicked -= TogglePause;
-                btnPause.clicked += TogglePause;
-            }
-
-            btnShowGuide = root.Q<Button>("btnShowGuide");
-            if (btnShowGuide != null)
-            {
-                // Pointer系イベントの解除と登録
-                btnShowGuide.UnregisterCallback<PointerDownEvent>(OnGuideShowPointerDown);
-                btnShowGuide.RegisterCallback<PointerDownEvent>(OnGuideShowPointerDown);
-                
-                btnShowGuide.UnregisterCallback<PointerUpEvent>(OnGuideShowPointerUp);
-                btnShowGuide.RegisterCallback<PointerUpEvent>(OnGuideShowPointerUp);
-                
-                btnShowGuide.UnregisterCallback<PointerLeaveEvent>(OnGuideShowPointerLeave);
-                btnShowGuide.RegisterCallback<PointerLeaveEvent>(OnGuideShowPointerLeave);
-
-                // Mouse系イベントの解除と登録
-                btnShowGuide.UnregisterCallback<MouseDownEvent>(OnGuideShowMouseDown);
-                btnShowGuide.RegisterCallback<MouseDownEvent>(OnGuideShowMouseDown);
-                
-                btnShowGuide.UnregisterCallback<MouseUpEvent>(OnGuideShowMouseUp);
-                btnShowGuide.RegisterCallback<MouseUpEvent>(OnGuideShowMouseUp);
-                
-                btnShowGuide.UnregisterCallback<MouseLeaveEvent>(OnGuideShowMouseLeave);
-                btnShowGuide.RegisterCallback<MouseLeaveEvent>(OnGuideShowMouseLeave);
-            }
-            
-            Debug.Log("[PuzzleManager] HUD events bound successfully.");
-        }
+        // メニューのHTML統合に伴い、Unity側の右上丸ボタンHUDは非表示にします
+        hudUIDoc.gameObject.SetActive(false);
     }
 
     private int GetTouchCount()
@@ -988,6 +951,12 @@ public class PuzzleManager : MonoBehaviour
         if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false); // タイトルに戻る際にHUDを非表示に
         if (selectionManager != null) selectionManager.Open();
         SetGuideVisible(false);
+    }
+
+    public void SetGuideVisibleFromWeb(string visibleStr)
+    {
+        bool visible = (visibleStr == "true" || visibleStr == "1");
+        SetGuideVisible(visible);
     }
 
     private void SetGuideVisible(bool visible) { 

@@ -141,21 +141,56 @@
             background: #000;
         }
         
-        /* マウス検知用トリガーエリア */
-        .control-trigger {
+        /* 非表示時の極小引き下げハンドル */
+        .control-handle {
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
-            height: 35px; /* 上部35pxのエリアにマウスが近づくと検知 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 14px;
+            background: rgba(18, 18, 20, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: none;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
             z-index: 99;
-            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 1;
+        }
+        
+        .control-handle span {
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.4);
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        
+        .control-handle:hover {
+            height: 18px;
+            background: rgba(18, 18, 20, 0.9);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        .control-handle:hover span {
+            color: #4CAF50;
+            transform: translateY(1px);
+        }
+        
+        .control-handle.hidden {
+            top: -20px;
+            opacity: 0;
+            pointer-events: none;
         }
         
         /* コントロールバー */
         .control-bar {
             position: absolute;
-            top: -60px; /* 普段は画面外に隠す */
+            top: -70px; /* 完全に隠す */
             left: 50%;
             transform: translateX(-50%);
             background: rgba(18, 18, 20, 0.85);
@@ -168,17 +203,18 @@
             z-index: 100;
             backdrop-filter: blur(12px);
             opacity: 0;
-            pointer-events: none; /* 隠れている時はクリックを透過してピースを掴めるようにする */
-            transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, background 0.3s ease;
+            pointer-events: none;
+            transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
         
-        /* トリガーにホバーするか、コントロールバー自体にホバーしたときに出現 */
-        .control-trigger:hover + .control-bar,
-        .control-bar:hover {
+        /* JSでactiveクラスが付与されたときに出現 */
+        .control-bar.active {
             top: 15px; /* スッと降りてくる */
             opacity: 1;
-            pointer-events: auto; /* 出現したときはボタンを押せるようにする */
+            pointer-events: auto;
             background: rgba(18, 18, 20, 0.95);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(76, 175, 80, 0.15);
         }
         
         .game-title {
@@ -218,15 +254,27 @@
 </head>
 <body>
 
-    <!-- マウス検知用トリガーエリア -->
-    <div class="control-trigger"></div>
+    <!-- 極小引き下げハンドル -->
+    <div class="control-handle" id="control-handle">
+        <span>▼</span>
+    </div>
 
     <!-- プレミアムコントロールバー -->
-    <div class="control-bar">
+    <div class="control-bar" id="control-bar">
         <span class="game-title">🧩 JIGSAW WEB</span>
+        
+        <button class="btn-control" onclick="togglePause()">
+            <span>⏸</span> 一時停止
+        </button>
+        
+        <button class="btn-control" id="btn-show-guide" style="user-select: none; -webkit-user-select: none;">
+            <span>👁</span> 完成図表示
+        </button>
+
         <button class="btn-control" onclick="toggleFullScreen()">
             <span>📺</span> フルスクリーン
         </button>
+        
         <button class="btn-control" onclick="window.close()">
             <span>❌</span> ゲームを閉じる
         </button>
@@ -444,7 +492,93 @@
             }, 500);
         }
 
-        // 5. ユーティリティ
+        // 5. ユーティリティ & メニュー制御
+        const controlBar = document.getElementById("control-bar");
+        const controlHandle = document.getElementById("control-handle");
+        const btnShowGuide = document.getElementById("btn-show-guide");
+        
+        let hideTimeout = null;
+        
+        // メニューを開く
+        function openControlBar() {
+            if (hideTimeout) clearTimeout(hideTimeout);
+            controlBar.classList.add("active");
+            controlHandle.classList.add("hidden");
+        }
+        
+        // メニューを閉じる
+        function closeControlBar() {
+            controlBar.classList.remove("active");
+            controlHandle.classList.remove("hidden");
+        }
+        
+        // ハンドルにホバーまたはクリックで開く
+        controlHandle.addEventListener("mouseenter", openControlBar);
+        controlHandle.addEventListener("click", openControlBar);
+        
+        // コントロールバーからマウスが離れたら閉じる（ディレイを入れることで誤動作防止）
+        controlBar.addEventListener("mouseleave", () => {
+            hideTimeout = setTimeout(closeControlBar, 600);
+        });
+        
+        controlBar.addEventListener("mouseenter", () => {
+            if (hideTimeout) clearTimeout(hideTimeout);
+        });
+
+        // モバイル向け：メニュー以外の領域をタップした時に閉じる
+        document.addEventListener("touchstart", (e) => {
+            if (!controlBar.contains(e.target) && !controlHandle.contains(e.target)) {
+                closeControlBar();
+            }
+        }, { passive: true });
+        
+        // 一時停止トグル
+        function togglePause() {
+            if (unityInstance) {
+                unityInstance.SendMessage('PuzzleManager', 'TogglePause');
+            }
+        }
+        
+        // 完成図表示（ホールド式）イベント処理
+        let isGuideShowing = false;
+        
+        function showGuide() {
+            if (unityInstance && !isGuideShowing) {
+                unityInstance.SendMessage('PuzzleManager', 'SetGuideVisibleFromWeb', 'true');
+                isGuideShowing = true;
+                btnShowGuide.style.color = "#4CAF50"; // 緑色に光らせる
+            }
+        }
+        
+        function hideGuide() {
+            if (unityInstance && isGuideShowing) {
+                unityInstance.SendMessage('PuzzleManager', 'SetGuideVisibleFromWeb', 'false');
+                isGuideShowing = false;
+                btnShowGuide.style.color = ""; // 元の色に戻す
+            }
+        }
+        
+        // PC向けイベント
+        btnShowGuide.addEventListener("mousedown", showGuide);
+        btnShowGuide.addEventListener("mouseup", hideGuide);
+        btnShowGuide.addEventListener("mouseleave", hideGuide);
+        
+        // スマホ/タブレット向けタッチイベント
+        btnShowGuide.addEventListener("touchstart", (e) => {
+            e.preventDefault(); // タップ時のスクロールや選択動作を防止
+            showGuide();
+        }, { passive: false });
+        
+        btnShowGuide.addEventListener("touchend", (e) => {
+            e.preventDefault();
+            hideGuide();
+        }, { passive: false });
+        
+        btnShowGuide.addEventListener("touchcancel", (e) => {
+            e.preventDefault();
+            hideGuide();
+        }, { passive: false });
+
         function toggleFullScreen() {
             if (unityInstance) {
                 unityInstance.SetFullscreen(1);
