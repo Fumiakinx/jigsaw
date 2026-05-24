@@ -121,12 +121,12 @@
         .modal-content {
             background-color: #ffffff; /* 🌟 背景は完全な白 */
             color: #1e1e1e; /* 🌟 文字色は黒 */
-            width: 80%; /* 🌟 画面幅の80%まで大幅拡大 */
-            max-width: 1000px;
+            width: 90%; /* 🌟 画面幅の90%までダイナミックに拡大 */
+            max-width: 1200px; /* 🌟 最大横幅も1200pxに拡張して画像表示を巨大化 */
             min-width: 320px;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6);
             display: flex;
             flex-direction: column;
             position: relative;
@@ -140,9 +140,9 @@
         }
         .modal-close {
             position: absolute;
-            top: 15px;
-            right: 22px;
-            font-size: 32px;
+            top: 20px;
+            right: 25px;
+            font-size: 36px;
             font-weight: bold;
             color: #888;
             cursor: pointer;
@@ -156,7 +156,7 @@
         /* 🌟 モーダル内の2カラムレイアウト */
         .modal-body {
             display: flex;
-            gap: 30px;
+            gap: 40px;
             margin-top: 10px;
         }
         @media (max-width: 768px) {
@@ -166,7 +166,7 @@
             }
         }
         .modal-left {
-            flex: 1.2;
+            flex: 1.6; /* 🌟 左カラム（画像）の比率を大幅に引き上げて画像をダイナミックに拡大 */
             display: flex;
             flex-direction: column;
         }
@@ -174,9 +174,9 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 24px;
             border-left: 1px solid #e0e0e0;
-            padding-left: 30px;
+            padding-left: 40px;
         }
         @media (max-width: 768px) {
             .modal-right {
@@ -191,102 +191,45 @@
             width: 100%;
             aspect-ratio: 1.6;
             background-color: #f5f5f5;
-            border-radius: 10px;
+            border-radius: 12px;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
             border: 1px solid #e0e0e0;
-            margin-bottom: 15px;
-        }
-        .modal-image-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        .modal-title {
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 8px;
-            color: #111;
-        }
-        .modal-genres {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-        .genre-badge {
-            background-color: #f0f0f0;
-            color: #555;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            border: 1px solid #e2e2e2;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
         }
 
-        /* パズル設定とリーダーボード */
-        .setting-label {
-            font-size: 14px;
-            font-weight: bold;
-            color: #555;
-            margin-bottom: 6px;
-            display: block;
-        }
-        .modal-select {
-            width: 100%;
-            padding: 12px;
+        /* 🌟 モーダル専用プレミアム開始ボタン */
+        .modal-btn-start {
+            background-color: #4CAF50;
+            color: white;
+            padding: 16px 20px;
+            border: none;
             border-radius: 8px;
-            border: 1px solid #ccc;
-            background-color: #fdfdfd;
-            color: #333;
-            font-size: 14px;
-            font-weight: bold;
-            outline: none;
             cursor: pointer;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .modal-select:focus {
-            border-color: #4CAF50;
-        }
-
-        .modal-leaderboard {
-            background-color: #fafafa;
-            border: 1px solid #e6e6e6;
-            border-radius: 10px;
-            padding: 15px;
-        }
-        .leaderboard-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #444;
-            margin-top: 0;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .modal-leaderboard-table {
+            font-size: 18px;
             width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+            text-align: center;
+            outline: none;
         }
-        .modal-leaderboard-table th {
-            background-color: #eaeaea;
-            color: #666;
-            padding: 8px;
-            text-align: left;
-            border-bottom: 2px solid #ddd;
+        .modal-btn-start:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
         }
-        .modal-leaderboard-table td {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            color: #333;
+        .modal-btn-start:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
-
-        .modal-action {
-            margin-top: auto;
-            padding-top: 10px;
+        .modal-btn-start:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+            box-shadow: none;
         }
 
         @keyframes fadeIn {
@@ -395,7 +338,7 @@
                 
                 <!-- 3. ゲーム開始アクション -->
                 <div class="modal-action">
-                    <button id="startBtn" class="btn" onclick="sendToJigsaw()">パズルを開始する！</button>
+                    <button id="startBtn" class="modal-btn-start" onclick="sendToJigsaw()">パズルを開始する！</button>
                 </div>
             </div>
         </div>
