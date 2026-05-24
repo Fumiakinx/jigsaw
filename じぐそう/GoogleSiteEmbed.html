@@ -388,6 +388,11 @@
                 <div id="modalGenres" class="modal-genres">
                     <!-- 動的にジャンルバッジが挿入されます -->
                 </div>
+                <!-- 🌟 作成者とリンク表示エリアを追加 -->
+                <div id="modalAuthorArea" style="margin-top: 15px; font-size: 13px; color: #555; border-top: 1px dashed #e0e0e0; padding-top: 12px; display: none;">
+                    <div style="margin-bottom: 4px;">🎨 <strong>作成者:</strong> <span id="modalAuthor" style="font-weight: bold; color: #333;"></span></div>
+                    <div id="modalLinkContainer" style="display: none;">🔗 <strong>リンク:</strong> <a id="modalLink" href="" target="_blank" style="color: #4CAF50; text-decoration: none; font-weight: bold;"></a></div>
+                </div>
             </div>
             
             <!-- 右カラム: 設定＆リーダーボード＆アクション -->
@@ -449,6 +454,8 @@
     let selectedImageUrl = 'images/beer1.jpg';
     let selectedImageName = 'ビール缶 1';
     let selectedImageDescription = 'ビール缶 1,飲み物';
+    let selectedImageAuthor = 'Google AI画像生成 (Imagen 3)';
+    let selectedImageLink = 'https://deepmind.google/technologies/imagen/';
 
     // 1. ページロード時にGASからドライブ内の画像一覧を自動取得してギャラリーを作る
     async function loadGalleryFromGAS() {
@@ -492,7 +499,22 @@
                 
                 // 名前と説明のパース (極めて安全に処理)
                 let name = imgInfo.name || '';
-                let description = imgInfo.description || '';
+                let descriptionRaw = imgInfo.description || '';
+                let description = '';
+                let author = '';
+                let link = '';
+                
+                if (descriptionRaw) {
+                    // パイプ "|" で区切られているかチェック (名前,ジャンル1,ジャンル2|作成者|リンク)
+                    if (descriptionRaw.includes('|')) {
+                        const pipeParts = descriptionRaw.split('|');
+                        description = pipeParts[0].trim();
+                        if (pipeParts.length > 1) author = pipeParts[1].trim();
+                        if (pipeParts.length > 2) link = pipeParts[2].trim();
+                    } else {
+                        description = descriptionRaw;
+                    }
+                }
                 
                 if (description) {
                     const parts = description.split(',');
@@ -528,6 +550,12 @@
                     }
                 }
                 
+                // 🌟 デフォルト作成者の設定 (すべての画像がAI生成画像とのことなので、未指定ならデフォルト表示)
+                if (!author) {
+                    author = "Google AI画像生成 (Imagen 3)";
+                    link = "https://deepmind.google/technologies/imagen/";
+                }
+                
                 item.innerHTML = `
                     <div class="gallery-image-wrap">
                         <img src="${thumbUrl}" alt="${name}">
@@ -537,7 +565,7 @@
                 
                 // クリック時にモーダルを開く
                 item.onclick = function() {
-                    selectImage(this, imgInfo.id, name, description);
+                    selectImage(this, imgInfo.id, name, description, author, link);
                 };
                 
                 galleryContainer.appendChild(item);
@@ -547,6 +575,8 @@
                     selectedImageUrl = imgInfo.id;
                     selectedImageName = name;
                     selectedImageDescription = description;
+                    selectedImageAuthor = author;
+                    selectedImageLink = link;
                 }
             } catch (innerError) {
                 console.error("個別画像のパース中にエラーが発生しました。スキップします:", imgInfo, innerError);
@@ -558,7 +588,7 @@
     window.addEventListener('DOMContentLoaded', loadGalleryFromGAS);
 
     // 画像選択時のコールバック
-    function selectImage(element, url, name, description) {
+    function selectImage(element, url, name, description, author, link) {
         // ギャラリーの選択枠更新
         const items = document.querySelectorAll('.gallery-item');
         items.forEach(item => item.classList.remove('selected'));
@@ -567,17 +597,23 @@
         selectedImageUrl = url;
         selectedImageName = name;
         selectedImageDescription = description;
+        selectedImageAuthor = author || '';
+        selectedImageLink = link || '';
 
         // モーダルの準備と表示
-        openModal(url, name, description);
+        openModal(url, name, description, selectedImageAuthor, selectedImageLink);
     }
 
     // 詳細モーダルを開く
-    function openModal(url, name, description) {
+    function openModal(url, name, description, author, link) {
         const modal = document.getElementById('detailModal');
         const modalImg = document.getElementById('modalImg');
         const modalTitle = document.getElementById('modalTitle');
         const modalGenres = document.getElementById('modalGenres');
+        const modalAuthorArea = document.getElementById('modalAuthorArea');
+        const modalAuthor = document.getElementById('modalAuthor');
+        const modalLinkContainer = document.getElementById('modalLinkContainer');
+        const modalLink = document.getElementById('modalLink');
 
         // ドライブ画像の場合はプレビュー用に高解像度サムネイルを使用 (sz=w800など)
         let displayUrl = url;
@@ -610,6 +646,28 @@
             badge.className = 'genre-badge';
             badge.innerText = '一般';
             modalGenres.appendChild(badge);
+        }
+
+        // 🌟 作成者と宣伝リンクのバインド
+        if (author) {
+            modalAuthor.innerText = author;
+            modalAuthorArea.style.display = 'block';
+            
+            if (link) {
+                modalLink.href = link;
+                // ドメイン部分だけを抽出してすっきり表示
+                let linkText = link;
+                try {
+                    const urlObj = new URL(link);
+                    linkText = urlObj.hostname;
+                } catch (e) {}
+                modalLink.innerText = "公式サイト (" + linkText + ")";
+                modalLinkContainer.style.display = 'block';
+            } else {
+                modalLinkContainer.style.display = 'none';
+            }
+        } else {
+            modalAuthorArea.style.display = 'none';
         }
 
         modal.style.display = 'flex';
