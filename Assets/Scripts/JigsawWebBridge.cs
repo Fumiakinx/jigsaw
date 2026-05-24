@@ -17,6 +17,29 @@ public class JigsawWebBridge : MonoBehaviour
         {
             selectionManager = FindAnyObjectByType<PuzzleSelectionManager>();
         }
+
+        // 🌟 Unityエディタ上での開発・テスト実行時のみ動く自動デバッグ起動処理
+        #if UNITY_EDITOR
+        Debug.Log("[JigsawWebBridge] Unityエディタ起動を検知しました。デバッグ用パズル（零戦・96ピース）を自動開始します。");
+        Sprite debugSprite = Resources.Load<Sprite>("PuzzleBase/zero_fighter_boxart");
+        if (debugSprite != null)
+        {
+            if (puzzleManager != null)
+            {
+                puzzleManager.StartPuzzle(debugSprite, 96); // 96ピース固定で開始
+                
+                // 画像選択用UIドキュメントを非表示にする
+                if (selectionManager != null && selectionManager.uiDoc != null)
+                {
+                    selectionManager.uiDoc.gameObject.SetActive(false);
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("[JigsawWebBridge] デバッグ用画像 (zero_fighter_boxart) が Resources/PuzzleBase 内で見つかりません。");
+        }
+        #endif
     }
 
     /// <summary>

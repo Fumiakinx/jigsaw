@@ -244,6 +244,20 @@
             <div class="progress-bar-empty">
                 <div id="progress-bar" class="progress-bar-full"></div>
             </div>
+
+            <!-- 🌟 エラー発生時に表示するエリア -->
+            <div id="error-area" style="display: none; margin-top: 20px; animation: fadeIn 0.3s ease;">
+                <div style="color: #ff6b6b; font-weight: bold; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>⚠️</span> 自動開始に失敗しました
+                </div>
+                <div style="font-size: 11px; color: #aaa; margin-bottom: 20px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); max-height: 100px; overflow-y: auto;">
+                    <strong>原因ログ:</strong><br>
+                    <span id="error-log-text">親画面からの画像データの受信（Base64転送）に失敗したか、制限時間（5秒）を超過しました。</span>
+                </div>
+                <button class="btn-control" onclick="skipToDefaultGame()" style="background: #4CAF50; color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; width: 100%; justify-content: center; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3); transition: all 0.2s ease;">
+                    <span>🎮</span> ゲーム内の画像で遊ぶ
+                </button>
+            </div>
         </div>
     </div>
 
@@ -335,23 +349,51 @@
                             // メッセージ形式: "画像Base64_または_URL,ピース数"
                             const message = selectedData.imageData + "," + selectedData.pieceCount;
                             unityInstance.SendMessage('PuzzleManager', 'StartPuzzleFromWeb', message);
+                            
+                            // ローディング画面をフェードアウト
+                            loadingOverlay.style.opacity = 0;
+                            setTimeout(() => {
+                                loadingOverlay.style.visibility = "hidden";
+                            }, 500);
                         } else {
-                            console.log("データがロードされていないため、Unity側での画像選択を有効にします。");
+                            console.warn("データがロードされていないため、エラー画面を表示します。");
+                            showConnectionError("親画面からの画像データ受信（Base64転送）に失敗したか、待機制限時間（5秒）を超過しました。");
                         }
-                        
-                        // ローディング画面をフェードアウト
-                        loadingOverlay.style.opacity = 0;
-                        setTimeout(() => {
-                            loadingOverlay.style.visibility = "hidden";
-                        }, 500);
                     }, 800);
 
                 }).catch((message) => {
                     statusText.innerText = "起動エラーが発生しました。";
-                    alert("Unity起動エラー: " + message);
+                    showConnectionError("Unityエンジンのロードエラー: " + message);
                 });
             };
             document.body.appendChild(script);
+        }
+
+        // 🌟 自動連携に失敗した際のエラー表示
+        function showConnectionError(reason) {
+            const spinner = document.querySelector(".spinner-outer");
+            const progress = document.querySelector(".progress-bar-empty");
+            if (spinner) spinner.style.display = "none";
+            if (progress) progress.style.display = "none";
+            
+            statusText.innerText = "自動読み込みエラー";
+            statusText.style.color = "#ff6b6b";
+            
+            const errorArea = document.getElementById("error-area");
+            const errorLog = document.getElementById("error-log-text");
+            
+            if (reason && errorLog) {
+                errorLog.innerText = reason;
+            }
+            if (errorArea) errorArea.style.display = "block";
+        }
+        
+        // 🌟 エラー画面をスキップして、通常のUnity初期画像選択画面に進む
+        function skipToDefaultGame() {
+            loadingOverlay.style.opacity = 0;
+            setTimeout(() => {
+                loadingOverlay.style.visibility = "hidden";
+            }, 500);
         }
 
         // 5. ユーティリティ
