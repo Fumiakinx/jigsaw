@@ -959,7 +959,6 @@ public class PuzzleManager : MonoBehaviour
 
     public void UpdateAllGroupsSortingOrder()
     {
-        // 画面内のすべてのルートオブジェクトを走査してクラスターを収集
         GameObject[] roots = SceneManager.GetActiveScene().GetRootGameObjects();
         foreach (var r in roots)
         {
@@ -970,24 +969,52 @@ public class PuzzleManager : MonoBehaviour
                 int N = pieces.Length;
                 if (N == 0) continue;
                 
-                // 結合ピース数Nが大きいほど奥（低いSortingOrder）、単一ピースは一番手前に配置
                 int targetBaseOrder = (2000 - N * 5) * 10;
                 
-                foreach (var p in pieces)
+                if (N == 1)
                 {
-                    var renderer = p.GetComponent<Renderer>();
-                    if (renderer != null)
-                    {
-                        renderer.sortingOrder = targetBaseOrder + (p.id % 10);
-                    }
+                    // 単一ピースは SortingGroup を削除して描画バッチング（軽さ）を有効化
+                    var sg = r.GetComponent<SortingGroup>();
+                    if (sg != null) Destroy(sg);
                     
-                    Transform shadow = p.transform.Find("Shadow");
-                    if (shadow != null)
+                    // 物理的Z座標を最前面（-0.2f）へ
+                    foreach (var p in pieces)
                     {
-                        var sr = shadow.GetComponent<Renderer>();
-                        if (sr != null)
+                        p.transform.localPosition = new Vector3(p.transform.localPosition.x, p.transform.localPosition.y, -0.2f);
+                        var renderer = p.GetComponent<Renderer>();
+                        if (renderer != null) renderer.sortingOrder = targetBaseOrder + (p.id % 10);
+                        
+                        Transform shadow = p.transform.Find("Shadow");
+                        if (shadow != null)
                         {
-                            sr.sortingOrder = targetBaseOrder + (p.id % 10) + 1;
+                            var sr = shadow.GetComponent<Renderer>();
+                            if (sr != null) sr.sortingOrder = targetBaseOrder + (p.id % 10) + 1;
+                        }
+                    }
+                }
+                else
+                {
+                    // 2枚以上が結合した塊は SortingGroup を常時保持させてグループ一括描画（隙間チラつき100%防止）
+                    var sg = r.GetComponent<SortingGroup>();
+                    if (sg == null) sg = r.AddComponent<SortingGroup>();
+                    sg.sortingOrder = targetBaseOrder;
+                    
+                    // 物理的Z座標も結合数に応じて奥（0.0f付近）へ沈める
+                    float targetZ = Mathf.Min(0.0f, -0.1f + N * 0.0005f);
+                    foreach (var p in pieces)
+                    {
+                        // 塊内の各ピースは、グループ内で一貫したZ座標（Zバッファ競合防止）
+                        p.transform.localPosition = new Vector3(p.transform.localPosition.x, p.transform.localPosition.y, targetZ - (p.id % 10) * 0.0001f);
+                        
+                        // SortingGroupが効いているため本体と影の順序のみ相対的に設定
+                        var renderer = p.GetComponent<Renderer>();
+                        if (renderer != null) renderer.sortingOrder = p.id % 10;
+                        
+                        Transform shadow = p.transform.Find("Shadow");
+                        if (shadow != null)
+                        {
+                            var sr = shadow.GetComponent<Renderer>();
+                            if (sr != null) sr.sortingOrder = (p.id % 10) + 1;
                         }
                     }
                 }
