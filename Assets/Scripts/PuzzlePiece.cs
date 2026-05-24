@@ -159,6 +159,7 @@ public class PuzzlePiece : MonoBehaviour
             // UpdateGroupVisuals(piecesInGroup); // 不要
             
             offset = root.position - mousePosition;
+            if (manager != null) manager.UpdateAllGroupsSortingOrder();
             manager.CheckForGroupSnap(this);
             // 結合が発生した場合、親クラスター（MyRoot）が変わっている可能性があるためキャッシュを明示的に更新
             rootCache = transform.parent;

@@ -692,7 +692,7 @@ public class PuzzleManager : MonoBehaviour
         for (int i = 0; i < n; i++) {
             Vector2 innerP = innerVerts2D[i];
             Vector2 dir = outerVerts2D[i].normalized; // 外側と同じ方向を使用
-            combinedVerts.Add(new Vector3(innerP.x, innerP.y, -0.01f));
+            combinedVerts.Add(new Vector3(innerP.x, innerP.y, 0f));
             combinedUVs.Add(new Vector2((innerP.x + center.x) / puzzleW + 0.5f, (innerP.y + center.y) / puzzleH + 0.5f));
             combinedColors.Add(new Color((dir.x + 1f) * 0.5f, (dir.y + 1f) * 0.5f, 0, 0.0f));
         }
@@ -858,7 +858,7 @@ public class PuzzleManager : MonoBehaviour
         Vector3 anchorLocal = targetAnchor.transform.localPosition;
         foreach (var p in pieces) {
             Vector3 gridDiff = (Vector3)p.correctPos - (Vector3)targetAnchor.correctPos;
-            p.transform.localPosition = new Vector3(anchorLocal.x + gridDiff.x, anchorLocal.y + gridDiff.y, -0.0001f * p.baseOrder);
+            p.transform.localPosition = new Vector3(anchorLocal.x + gridDiff.x, anchorLocal.y + gridDiff.y, p.transform.localPosition.z);
             p.transform.localRotation = Quaternion.identity; 
         }
         root.rotation = originalRot; root.localScale = originalScale;
