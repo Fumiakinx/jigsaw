@@ -143,11 +143,63 @@
 </div>
 
 <script>
+    // 💡 デプロイ後に発行されるGASのWebアプリURLをここに貼り付けてください
+    const GAS_API_URL = ""; 
+
     let selectedImageUrl = 'images/beer1.jpg';
     let localImageBase64 = null; // ローカル選択ファイル用Base64データ
+    let isLocalFileSelected = false;
+
+    // 1. ページロード時にGASからドライブ内の画像一覧を自動取得してギャラリーを作る
+    async function loadGalleryFromGAS() {
+        const galleryContainer = document.getElementById('gallery');
+        if (!GAS_API_URL) {
+            console.log("GAS_API_URLが未設定です。ローカルのデフォルトアセットを使用します。");
+            return;
+        }
+        galleryContainer.innerHTML = "<div style='grid-column: span 4; text-align: center; color: #aaa; padding: 20px;'>ドライブから画像を読み込み中...</div>";
+
+        try {
+            const response = await fetch(`${GAS_API_URL}?action=list`);
+            const data = await response.json();
+            
+            if (data.success && data.images.length > 0) {
+                galleryContainer.innerHTML = ""; // 読み込み中表示をクリア
+                
+                data.images.forEach((imgInfo, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item' + (index === 0 ? ' selected' : '');
+                    
+                    // サムネイル画像はGoogleドライブの軽量サムネイルURLを使用 (CORS不要で表示可能)
+                    const thumbUrl = `https://drive.google.com/thumbnail?sz=w200&id=${imgInfo.id}`;
+                    item.innerHTML = `<img src="${thumbUrl}" alt="${imgInfo.name}">`;
+                    
+                    // クリック時に画像IDを選択状態にする
+                    item.onclick = function() {
+                        selectImage(this, imgInfo.id);
+                    };
+                    
+                    galleryContainer.appendChild(item);
+                    
+                    // 初期選択状態として最初の画像を設定
+                    if (index === 0) {
+                        selectedImageUrl = imgInfo.id;
+                    }
+                });
+            } else {
+                galleryContainer.innerHTML = "<div style='grid-column: span 4; text-align: center; color: #ff8888; padding: 20px;'>画像が見つかりませんでした。</div>";
+            }
+        } catch (error) {
+            console.error("GASからの画像リスト取得に失敗しました:", error);
+            galleryContainer.innerHTML = "<div style='grid-column: span 4; text-align: center; color: #ff8888; padding: 20px;'>ギャラリーの読み込みに失敗しました。</div>";
+        }
+    }
+
+    // ページロード時に自動的にGASからロード
+    window.addEventListener('DOMContentLoaded', loadGalleryFromGAS);
 
     function selectImage(element, url) {
-        // 選択表示の切り替え
+        // 選択表示 of 切り替え
         const items = document.querySelectorAll('.gallery-item');
         items.forEach(item => item.classList.remove('selected'));
         element.classList.add('selected');
@@ -156,6 +208,7 @@
         document.getElementById('customUrl').value = ''; // カスタム入力をクリア
         document.getElementById('localFile').value = ''; // ローカルファイルをクリア
         localImageBase64 = null;
+        isLocalFileSelected = false;
     }
 
     function clearGallerySelection() {
@@ -164,6 +217,7 @@
         selectedImageUrl = '';
         document.getElementById('localFile').value = ''; // ローカルファイルをクリア
         localImageBase64 = null;
+        isLocalFileSelected = false;
     }
 
     function handleLocalFile(event) {
@@ -179,6 +233,7 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             localImageBase64 = e.target.result;
+            isLocalFileSelected = true;
             console.log("ローカル画像をBase64に変換しました。");
         };
         reader.onerror = function(err) {
@@ -188,7 +243,7 @@
         reader.readAsDataURL(file);
     }
 
-    // 外部URLの画像をJavaScript側でロードしBase64に変換するヘルパー
+    // 外部URLの画像をJavaScript側でロードしBase64に変換するヘルパー (カスタムURL用のフォールバック)
     function convertUrlToBase64(imgUrl, callback) {
         if (!imgUrl) {
             callback(null);
@@ -209,7 +264,6 @@
                 callback(dataURL);
             } catch (e) {
                 console.warn("キャンバスによるBase64変換に失敗しました（CORS制限等）: ", e);
-                // 変換失敗時はフォールバックとして元のURLをそのまま返す
                 callback(imgUrl);
             }
         };
@@ -220,7 +274,8 @@
         img.src = imgUrl;
     }
 
-    function sendToJigsaw() {
+    // パズル開始ボタン処理 (非同期でGAS経由でBase64をロードする)
+    async function sendToJigsaw() {
         const pieceCount = document.getElementById('pieceCount').value;
         const customUrl = document.getElementById('customUrl').value.trim();
         
@@ -231,7 +286,7 @@
             return;
         }
 
-        // 新しいゲーム起動画面をポップアップ（子ウィンドウ）として開く
+        // 新しいゲーム起動画面をポップアップとして開く
         const playerWindow = window.open('jigsaw_player.html', '_blank');
         if (!playerWindow) {
             alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
@@ -241,7 +296,7 @@
         // データの準備ができたら子ウィンドウへ渡すための共有変数を親側に確保する
         window.selectedPuzzleData = null;
 
-        if (localImageBase64) {
+        if (isLocalFileSelected && localImageBase64) {
             // ローカルファイルが選択されている場合は即座に共有変数を設定
             window.selectedPuzzleData = {
                 imageData: localImageBase64,
@@ -249,14 +304,46 @@
             };
             console.log("ローカルのパズル用データが共有変数に設定されました。");
         } else {
-            // 外部URLの場合は非同期でBase64化を試みる
-            convertUrlToBase64(finalUrl, function(base64OrUrl) {
+            // GAS経由での画像取得、またはカスタムURLの処理
+            try {
+                let targetBase64 = null;
+                
+                // GAS_API_URLが設定されていて、画像パスがURLではなく画像ID（英数字の長い文字列）である場合
+                if (GAS_API_URL && finalUrl && !finalUrl.startsWith('http') && !finalUrl.includes('/')) {
+                    console.log("GASから安全にBase64画像データを取得します。ID:", finalUrl);
+                    const response = await fetch(`${GAS_API_URL}?action=image&id=${finalUrl}`);
+                    const resData = await response.json();
+                    if (resData.success) {
+                        targetBase64 = resData.imageData;
+                        console.log("GASからBase64画像データの取得に成功しました。");
+                    } else {
+                        console.warn("GASからの画像取得に失敗しました:", resData.error);
+                    }
+                }
+                
+                if (targetBase64) {
+                    window.selectedPuzzleData = {
+                        imageData: targetBase64,
+                        pieceCount: parseInt(pieceCount, 10)
+                    };
+                } else {
+                    // GAS経由ではないカスタムURLなどの場合は従来の非同期CORS変換を試みる
+                    convertUrlToBase64(finalUrl, function(base64OrUrl) {
+                        window.selectedPuzzleData = {
+                            imageData: base64OrUrl,
+                            pieceCount: parseInt(pieceCount, 10)
+                        };
+                        console.log("外部URLのパズル用データが共有変数に設定されました。");
+                    });
+                }
+            } catch (e) {
+                console.error("画像データ取得処理中にエラーが発生しました:", e);
+                // エラー時はフォールバックとして元のURLをそのまま渡す
                 window.selectedPuzzleData = {
-                    imageData: base64OrUrl,
+                    imageData: finalUrl,
                     pieceCount: parseInt(pieceCount, 10)
                 };
-                console.log("外部URLのパズル用データが共有変数に設定されました（Base64化試行結果）");
-            });
+            }
         }
     }
 </script>
