@@ -496,7 +496,8 @@ public class PuzzleManager : MonoBehaviour
             pieceRenderer.sharedMaterial = puzzleMaterial;
             
             // 重要：本体を先に描き、影を後に描くことで、Zテストにより「自分の影」だけを消す
-            int baseOrder = (y * cols + x) * 10;
+            // 初期状態は全て N=1 なので、19950ベースで sortingOrder を初期化（最も手前）
+            int baseOrder = (2000 - 5) * 10 + (y * cols + x) % 10;
             pieceRenderer.sortingOrder = baseOrder; 
             
             // Z座標を設定：ピースを手前に、影を僅かに奥に
@@ -891,6 +892,10 @@ public class PuzzleManager : MonoBehaviour
                     Destroy(rootA.gameObject);
                     if (draggingPiece != null && draggingPiece.transform.parent == rootO) rootO.localScale = Vector3.one * 1.05f;
                     RealignGroup(rootO, pO);
+                    
+                    // 合体したグループの SortingOrder を結合ピース数に応じて再計算して沈める
+                    UpdateGroupSortingOrder(rootO);
+                    
                     int currentCount = rootO.GetComponentsInChildren<PuzzlePiece>().Length;
                     if (currentCount > maxConnectedPieces) maxConnectedPieces = currentCount;
                     CheckPuzzleComplete(); PlaySnapEffect(rootO); return;
@@ -949,6 +954,39 @@ public class PuzzleManager : MonoBehaviour
             if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(false);
             if (hudUIDoc != null) SetupHUD(); // ポーズ解除時にHUDを再表示＆イベント再バインド
             foreach (var p in allPieces) if (p != null && p.transform.parent != null) p.transform.parent.gameObject.SetActive(true);
+        }
+    }
+
+    public void UpdateGroupSortingOrder(Transform root)
+    {
+        if (root == null) return;
+        PuzzlePiece[] pieces = root.GetComponentsInChildren<PuzzlePiece>();
+        int N = pieces.Length; // 結合しているピース数
+        
+        // 結合数Nが大きいほど奥（sortingOrderが低い値）、単一ピースは一番手前（高い値）に設定
+        // N = 1 (単一) のとき: 2000 - 5 = 1995 -> 19950 + オフセット
+        // N = 200 (全結合) のとき: 2000 - 1000 = 1000 -> 10000 + オフセット
+        int targetBaseOrder = (2000 - N * 5) * 10;
+        
+        foreach (var p in pieces)
+        {
+            var r = p.GetComponent<Renderer>();
+            if (r != null)
+            {
+                // ピース固有のオフセット（0〜9）を加算してチラつき（Zファイティング）を防止
+                r.sortingOrder = targetBaseOrder + (p.id % 10);
+            }
+            
+            Transform shadow = p.transform.Find("Shadow");
+            if (shadow != null)
+            {
+                var sr = shadow.GetComponent<Renderer>();
+                if (sr != null)
+                {
+                    // 影は常に本体の直後（本体+1）に描画
+                    sr.sortingOrder = targetBaseOrder + (p.id % 10) + 1;
+                }
+            }
         }
     }
 

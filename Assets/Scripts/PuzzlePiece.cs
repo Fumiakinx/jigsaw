@@ -94,6 +94,9 @@ public class PuzzlePiece : MonoBehaviour
         // 移動による微細な位置ズレをリセットしてから吸着判定へ
         manager.RealignGroup(MyRoot, this);
 
+        // ドラッグ終了したグループの SortingOrder を結合ピース数に応じて再計算して沈める
+        manager.UpdateGroupSortingOrder(MyRoot);
+
         manager.CheckForGroupSnap(this);
     }
 
