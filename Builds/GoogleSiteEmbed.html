@@ -115,7 +115,10 @@
             backdrop-filter: blur(8px);
             display: none;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* 🌟 上寄せにして下が切れるのを防ぐ */
+            padding-top: 4vh; /* 🌟 上部に少し余白を作る */
+            padding-bottom: 4vh; /* 🌟 下部にも余白を作り、スクロール可能にする */
+            overflow-y: auto; /* 🌟 画面高さが足りない場合はモーダル自体をスクロール可能にする */
             z-index: 2000;
             animation: fadeIn 0.3s ease;
         }
