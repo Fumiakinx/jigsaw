@@ -10,7 +10,7 @@
             background-color: #1e1e1e;
             color: #ffffff;
             margin: 0;
-            padding: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -18,81 +18,54 @@
         h2 {
             margin-top: 0;
             color: #4CAF50;
+            font-size: 24px;
+            letter-spacing: 0.5px;
         }
         .container {
             width: 100%;
-            max-width: 1200px; /* 🌟 横幅を大幅に拡大して画面を有効活用 */
+            max-width: 1200px;
             background-color: #2d2d2d;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
         }
-        .form-group {
+        .gallery-title-area {
+            border-bottom: 2px solid #3d3d3d;
+            padding-bottom: 12px;
             margin-bottom: 20px;
         }
-        label {
-            display: block;
-            margin-bottom: 8px;
+        .gallery-title-area label {
+            font-size: 16px;
             font-weight: bold;
-            font-size: 15px;
-        }
-        input[type="text"], select {
-            width: 100%;
-            padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #444;
-            background-color: #3b3b3b;
-            color: white;
-            box-sizing: border-box;
-            font-size: 14px;
-        }
-        .btn {
-            background-color: #4CAF50;
-            color: white;
-            padding: 14px 20px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 18px;
-            width: 100%;
-            font-weight: bold;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn:hover {
-            background-color: #45a049;
-        }
-        .btn:active {
-            transform: scale(0.99);
-        }
-        .btn:disabled {
-            background-color: #555;
-            cursor: not-allowed;
+            color: #bbb;
         }
         .image-gallery {
             display: grid;
-            /* 🌟 画面幅に合わせて、横にたくさんの画像をレスポンシブに並べる */
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 12px;
+            /* 🌟 横幅を目一杯有効活用して、たくさんの画像をレスポンシブに綺麗に並べる */
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
             margin-top: 15px;
         }
         .gallery-item {
             border: 2px solid transparent;
-            border-radius: 8px;
+            border-radius: 10px;
             overflow: hidden;
             cursor: pointer;
             transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
             background-color: #242424;
             display: flex;
             flex-direction: column;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
         .gallery-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            border-color: #555;
         }
         .gallery-item.selected {
             border-color: #4CAF50;
-            box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+            box-shadow: 0 0 12px rgba(76, 175, 80, 0.4);
         }
         .gallery-image-wrap {
             width: 100%;
@@ -106,14 +79,14 @@
         .gallery-image-wrap img {
             width: 100%;
             height: 100%;
-            /* 🌟 画像を切り抜かずに、アスペクト比維持のまま全体を縮小表示 */
             object-fit: contain;
         }
         .gallery-info {
-            padding: 8px;
+            padding: 10px;
             text-align: center;
-            font-size: 12px;
-            color: #ccc;
+            font-size: 13px;
+            font-weight: bold;
+            color: #eee;
             background-color: #242424;
             border-top: 1px solid #333;
             white-space: nowrap;
@@ -122,72 +95,15 @@
         }
         .info-text {
             font-size: 12px;
-            color: #aaa;
-            margin-top: 25px;
+            color: #888;
+            margin-top: 30px;
             line-height: 1.5;
             border-top: 1px solid #3d3d3d;
             padding-top: 15px;
-        }
-
-        /* 🌟 2カラムレイアウトのスタイリング */
-        .content-layout {
-            display: flex;
-            gap: 25px;
-            margin-top: 15px;
-        }
-        @media (max-width: 768px) {
-            .content-layout {
-                flex-direction: column;
-            }
-        }
-        .left-column {
-            flex: 2;
-        }
-        .right-column {
-            flex: 1;
-            min-width: 320px;
-        }
-        .leaderboard-card {
-            background-color: #242424;
-            border: 1px solid #3b3b3b;
-            border-radius: 8px;
-            padding: 20px;
-            height: 100%;
-            min-height: 300px;
-        }
-        .leaderboard-placeholder {
-            text-align: center;
-        }
-        .leaderboard-placeholder p {
-            font-size: 16px;
-            font-weight: bold;
-            color: #FFD700;
-            margin-top: 0;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-        .leaderboard-table {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .leaderboard-table th {
-            background-color: #1a1a1a;
-            color: #888;
-            padding: 10px 8px;
-            text-align: left;
-            border-bottom: 2px solid #333;
-        }
-        .leaderboard-table td {
-            padding: 10px 8px;
-            border-bottom: 1px solid #333;
-            color: #ccc;
         }
 
-        /* 🌟 詳細モーダルのスタイリング */
+        /* 🌟 詳細モーダルのスタイリング (背景白・広めの80%幅・2カラム) */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -203,14 +119,14 @@
             animation: fadeIn 0.3s ease;
         }
         .modal-content {
-            background-color: #ffffff; /* 背景は白 */
-            color: #1e1e1e; /* 文字は黒 */
-            width: 60%; /* 画面の60%くらい */
-            max-width: 800px;
+            background-color: #ffffff; /* 🌟 背景は完全な白 */
+            color: #1e1e1e; /* 🌟 文字色は黒 */
+            width: 80%; /* 🌟 画面幅の80%まで大幅拡大 */
+            max-width: 1000px;
             min-width: 320px;
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
             display: flex;
             flex-direction: column;
             position: relative;
@@ -218,34 +134,70 @@
         }
         @media (max-width: 768px) {
             .modal-content {
-                width: 90%;
+                width: 95%;
                 padding: 20px;
             }
         }
         .modal-close {
             position: absolute;
             top: 15px;
-            right: 20px;
-            font-size: 28px;
+            right: 22px;
+            font-size: 32px;
             font-weight: bold;
             color: #888;
             cursor: pointer;
             transition: color 0.2s;
+            line-height: 1;
         }
         .modal-close:hover {
-            color: #1e1e1e;
+            color: #000;
         }
+
+        /* 🌟 モーダル内の2カラムレイアウト */
+        .modal-body {
+            display: flex;
+            gap: 30px;
+            margin-top: 10px;
+        }
+        @media (max-width: 768px) {
+            .modal-body {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+        .modal-left {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-left: 1px solid #e0e0e0;
+            padding-left: 30px;
+        }
+        @media (max-width: 768px) {
+            .modal-right {
+                border-left: none;
+                padding-left: 0;
+                border-top: 1px solid #e0e0e0;
+                padding-top: 20px;
+            }
+        }
+
         .modal-image-wrap {
             width: 100%;
             aspect-ratio: 1.6;
-            background-color: #f0f0f0;
-            border-radius: 8px;
+            background-color: #f5f5f5;
+            border-radius: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            margin-bottom: 20px;
             border: 1px solid #e0e0e0;
+            margin-bottom: 15px;
         }
         .modal-image-wrap img {
             width: 100%;
@@ -253,30 +205,90 @@
             object-fit: contain;
         }
         .modal-title {
-            font-size: 22px;
-            font-weight: bold;
+            font-size: 24px;
+            font-weight: 800;
             margin-bottom: 8px;
             color: #111;
         }
         .modal-genres {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 25px;
+            gap: 6px;
         }
         .genre-badge {
             background-color: #f0f0f0;
             color: #555;
-            padding: 4px 12px;
+            padding: 5px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
-            border: 1px solid #e0e0e0;
+            border: 1px solid #e2e2e2;
         }
+
+        /* パズル設定とリーダーボード */
+        .setting-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .modal-select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background-color: #fdfdfd;
+            color: #333;
+            font-size: 14px;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .modal-select:focus {
+            border-color: #4CAF50;
+        }
+
+        .modal-leaderboard {
+            background-color: #fafafa;
+            border: 1px solid #e6e6e6;
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .leaderboard-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #444;
+            margin-top: 0;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .modal-leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .modal-leaderboard-table th {
+            background-color: #eaeaea;
+            color: #666;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 2px solid #ddd;
+        }
+        .modal-leaderboard-table td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+        }
+
         .modal-action {
             margin-top: auto;
+            padding-top: 10px;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -292,79 +304,34 @@
 <div class="container">
     <h2>🧩 じぐそう - 画像選択</h2>
     
-    <div class="form-group">
-        <label>1. ピース数を選択</label>
-        <select id="pieceCount">
-            <option value="24">24 ピース (かんたん)</option>
-            <option value="96" selected>96 ピース (ふつう)</option>
-            <option value="216">216 ピース (むずかしい)</option>
-            <option value="486">486 ピース (超むずかしい)</option>
-        </select>
-    </div>
-
-    <!-- 🌟 2カラムコンテンツレイアウト -->
-    <div class="content-layout">
-        <!-- 左カラム: ギャラリー選択 -->
-        <div class="left-column">
-            <div class="form-group">
-                <label>2. パズルにしたい画像を選択</label>
-                
-                <!-- 画像ギャラリー (デフォルト画像も名前表示の新しい構造に修正) -->
-                <div class="image-gallery" id="gallery">
-                    <div class="gallery-item selected" onclick="selectImage(this, 'images/beer1.jpg', 'ビール缶 1', 'ビール缶 1,飲み物')">
-                        <div class="gallery-image-wrap">
-                            <img src="images/beer1.jpg" alt="ビール缶 1">
-                        </div>
-                        <div class="gallery-info">ビール缶 1</div>
-                    </div>
-                    <div class="gallery-item" onclick="selectImage(this, 'images/beer2.jpg', 'ビール缶 2', 'ビール缶 2,飲み物')">
-                        <div class="gallery-image-wrap">
-                            <img src="images/beer2.jpg" alt="ビール缶 2">
-                        </div>
-                        <div class="gallery-info">ビール缶 2</div>
-                    </div>
-                    <div class="gallery-item" onclick="selectImage(this, 'images/beer3.jpg', 'ビール缶 3', 'ビール缶 3,飲み物')">
-                        <div class="gallery-image-wrap">
-                            <img src="images/beer3.jpg" alt="ビール缶 3">
-                        </div>
-                        <div class="gallery-info">ビール缶 3</div>
-                    </div>
-                    <div class="gallery-item" onclick="selectImage(this, 'images/berry.jpg', 'ベリー', 'ベリー,果物')">
-                        <div class="gallery-image-wrap">
-                            <img src="images/berry.jpg" alt="ベリー">
-                        </div>
-                        <div class="gallery-info">ベリー</div>
-                    </div>
+    <div class="gallery-title-area">
+        <label>パズルにしたい画像を選んでください</label>
+        
+        <!-- 画像ギャラリー (初期状態はローカルの4枚画像で安全に構築) -->
+        <div class="image-gallery" id="gallery">
+            <div class="gallery-item" onclick="selectImage(this, 'images/beer1.jpg', 'ビール缶 1', 'ビール缶 1,飲み物')">
+                <div class="gallery-image-wrap">
+                    <img src="images/beer1.jpg" alt="ビール缶 1">
                 </div>
+                <div class="gallery-info">ビール缶 1</div>
             </div>
-        </div>
-
-        <!-- 右カラム: クリアタイム順位表 (準備中のプレースホルダー) -->
-        <div class="right-column">
-            <div class="form-group">
-                <label>🏆 クリアタイム順位表</label>
-                <div class="leaderboard-card">
-                    <div class="leaderboard-placeholder">
-                        <p>👑 タイムアタックランキング</p>
-                        <table class="leaderboard-table">
-                            <thead>
-                                <tr>
-                                    <th>順位</th>
-                                    <th>プレイヤー</th>
-                                    <th>タイム</th>
-                                    <th>ピース</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="4" style="text-align: center; color: #888; padding: 40px 10px; line-height: 1.6;">
-                                        ⏱️ パズルクリア後に<br>ここにタイムが記録されます（準備中）
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+            <div class="gallery-item" onclick="selectImage(this, 'images/beer2.jpg', 'ビール缶 2', 'ビール缶 2,飲み物')">
+                <div class="gallery-image-wrap">
+                    <img src="images/beer2.jpg" alt="ビール缶 2">
                 </div>
+                <div class="gallery-info">ビール缶 2</div>
+            </div>
+            <div class="gallery-item" onclick="selectImage(this, 'images/beer3.jpg', 'ビール缶 3', 'ビール缶 3,飲み物')">
+                <div class="gallery-image-wrap">
+                    <img src="images/beer3.jpg" alt="ビール缶 3">
+                </div>
+                <div class="gallery-info">ビール缶 3</div>
+            </div>
+            <div class="gallery-item" onclick="selectImage(this, 'images/berry.jpg', 'ベリー', 'ベリー,果物')">
+                <div class="gallery-image-wrap">
+                    <img src="images/berry.jpg" alt="ベリー">
+                </div>
+                <div class="gallery-info">ベリー</div>
             </div>
         </div>
     </div>
@@ -374,19 +341,63 @@
     </div>
 </div>
 
-<!-- 🌟 プレミアム詳細モーダル (背景白・60%サイズ) -->
+<!-- 🌟 プレミアム詳細モーダル (背景白・広めの80%幅・左右2カラム) -->
 <div class="modal-overlay" id="detailModal">
     <div class="modal-content">
         <span class="modal-close" onclick="closeModal()">&times;</span>
-        <div class="modal-image-wrap">
-            <img id="modalImg" src="" alt="プレビュー">
-        </div>
-        <div id="modalTitle" class="modal-title">パズル画像名</div>
-        <div id="modalGenres" class="modal-genres">
-            <!-- 動的にジャンルバッジが挿入されます -->
-        </div>
-        <div class="modal-action">
-            <button id="startBtn" class="btn" onclick="sendToJigsaw()">パズルを開始する！</button>
+        
+        <div class="modal-body">
+            <!-- 左カラム: プレビュー＆情報 -->
+            <div class="modal-left">
+                <div class="modal-image-wrap">
+                    <img id="modalImg" src="" alt="プレビュー">
+                </div>
+                <div id="modalTitle" class="modal-title">パズル画像名</div>
+                <div id="modalGenres" class="modal-genres">
+                    <!-- 動的にジャンルバッジが挿入されます -->
+                </div>
+            </div>
+            
+            <!-- 右カラム: 設定＆リーダーボード＆アクション -->
+            <div class="modal-right">
+                <!-- 1. ピース数選択 -->
+                <div>
+                    <span class="setting-label">⚙️ 1. ピース数を選択</span>
+                    <select id="pieceCount" class="modal-select">
+                        <option value="24">24 ピース (かんたん)</option>
+                        <option value="96" selected>96 ピース (ふつう)</option>
+                        <option value="216">216 ピース (むずかしい)</option>
+                        <option value="486">486 ピース (超むずかしい)</option>
+                    </select>
+                </div>
+                
+                <!-- 2. クリアタイム順位表 -->
+                <div class="modal-leaderboard">
+                    <p class="leaderboard-title">🏆 ⏱️ クリアタイム順位表</p>
+                    <table class="modal-leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>順位</th>
+                                <th>プレイヤー</th>
+                                <th>タイム</th>
+                                <th>ピース</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">
+                                    パズルをクリアすると、<br>ここにランキングが表示されます（準備中）
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 3. ゲーム開始アクション -->
+                <div class="modal-action">
+                    <button id="startBtn" class="btn" onclick="sendToJigsaw()">パズルを開始する！</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -394,6 +405,14 @@
 <script>
     // 💡 デプロイ後に発行されるGASのWebアプリURLをここに貼り付けてください
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec"; 
+
+    // デフォルト画像リスト (GASロード失敗時や未設定時のフォールバック用)
+    const DEFAULT_IMAGES = [
+        { id: 'images/beer1.jpg', name: 'ビール缶 1', description: 'ビール缶 1,飲み物' },
+        { id: 'images/beer2.jpg', name: 'ビール缶 2', description: 'ビール缶 2,飲み物' },
+        { id: 'images/beer3.jpg', name: 'ビール缶 3', description: 'ビール缶 3,飲み物' },
+        { id: 'images/berry.jpg', name: 'ベリー', description: 'ベリー,果物' }
+    ];
 
     let selectedImageUrl = 'images/beer1.jpg';
     let selectedImageName = 'ビール缶 1';
@@ -404,72 +423,84 @@
         const galleryContainer = document.getElementById('gallery');
         if (!GAS_API_URL) {
             console.log("GAS_API_URLが未設定です。ローカルのデフォルトアセットを使用します。");
+            buildGallery(DEFAULT_IMAGES);
             return;
         }
-        galleryContainer.innerHTML = "<div style='grid-column: span 4; text-align: center; color: #aaa; padding: 20px;'>ドライブから画像を読み込み中...</div>";
 
         try {
             const response = await fetch(`${GAS_API_URL}?action=list`);
             const data = await response.json();
             
             if (data.success && data.images.length > 0) {
-                galleryContainer.innerHTML = ""; // 読み込み中表示をクリア
-                
-                data.images.forEach((imgInfo, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'gallery-item' + (index === 0 ? ' selected' : '');
-                    
-                    // サムネイル画像はGoogleドライブの軽量サムネイルURLを使用 (CORS不要で表示可能)
-                    const thumbUrl = `https://drive.google.com/thumbnail?sz=w200&id=${imgInfo.id}`;
-                    
-                    // 名前とジャンルのパース (最初は名前、それ以降は複数ジャンル)
-                    let name = imgInfo.name;
-                    let description = imgInfo.description || '';
-                    if (description) {
-                        const parts = description.split(',');
-                        if (parts.length > 0 && parts[0].trim()) {
-                            name = parts[0].trim();
-                        }
-                    } else {
-                        // 拡張子を除去してきれいな名前にフォールバック
-                        name = name.substring(0, name.lastIndexOf('.')) || name;
-                    }
-                    
-                    item.innerHTML = `
-                        <div class="gallery-image-wrap">
-                            <img src="${thumbUrl}" alt="${name}">
-                        </div>
-                        <div class="gallery-info">${name}</div>
-                    `;
-                    
-                    // クリック時に画像IDを選択状態にし、モーダルを開く
-                    item.onclick = function() {
-                        selectImage(this, imgInfo.id, name, description);
-                    };
-                    
-                    galleryContainer.appendChild(item);
-                    
-                    // 初期選択状態として最初の画像を設定
-                    if (index === 0) {
-                        selectedImageUrl = imgInfo.id;
-                        selectedImageName = name;
-                        selectedImageDescription = description;
-                    }
-                });
+                buildGallery(data.images, true);
             } else {
-                galleryContainer.innerHTML = "<div style='grid-column: span 4; text-align: center; color: #ff8888; padding: 20px;'>画像が見つかりませんでした。</div>";
+                console.warn("GASから画像が取得できませんでした。デフォルトアセットを使用します。");
+                buildGallery(DEFAULT_IMAGES);
             }
         } catch (error) {
-            console.error("GASからの画像リスト取得に失敗しました:", error);
-            galleryContainer.innerHTML = "<div style='grid-column: span 4; text-align: center; color: #ff8888; padding: 20px;'>ギャラリーの読み込みに失敗しました。</div>";
+            console.error("GASからの画像リスト取得中にエラーが発生しました。デフォルトアセットに切り替えます:", error);
+            buildGallery(DEFAULT_IMAGES);
         }
     }
 
-    // ページロード時に自動的にGASからロード
+    // ギャラリーHTMLを動的構築するヘルパー
+    function buildGallery(imagesList, isFromGAS = false) {
+        const galleryContainer = document.getElementById('gallery');
+        galleryContainer.innerHTML = ""; // 初期クリア
+        
+        imagesList.forEach((imgInfo, index) => {
+            const item = document.createElement('div');
+            item.className = 'gallery-item';
+            
+            // ドライブ画像の場合は軽量サムネイルを使用し、ローカルの場合はパスをそのまま使用
+            const thumbUrl = isFromGAS 
+                ? `https://drive.google.com/thumbnail?sz=w300&id=${imgInfo.id}`
+                : imgInfo.id;
+            
+            // 名前と説明のパース
+            let name = imgInfo.name;
+            let description = imgInfo.description || '';
+            if (description) {
+                const parts = description.split(',');
+                if (parts.length > 0 && parts[0].trim()) {
+                    name = parts[0].trim();
+                }
+            } else if (!isFromGAS) {
+                // デフォルトデータ用
+                name = imgInfo.name;
+            } else {
+                name = name.substring(0, name.lastIndexOf('.')) || name;
+            }
+            
+            item.innerHTML = `
+                <div class="gallery-image-wrap">
+                    <img src="${thumbUrl}" alt="${name}">
+                </div>
+                <div class="gallery-info">${name}</div>
+            `;
+            
+            // クリック時にモーダルを開く
+            item.onclick = function() {
+                selectImage(this, imgInfo.id, name, description);
+            };
+            
+            galleryContainer.appendChild(item);
+            
+            // 初期値をセット (モーダルはまだ開かない)
+            if (index === 0) {
+                selectedImageUrl = imgInfo.id;
+                selectedImageName = name;
+                selectedImageDescription = description;
+            }
+        });
+    }
+
+    // ページロード時に自動ロードを実行
     window.addEventListener('DOMContentLoaded', loadGalleryFromGAS);
 
+    // 画像選択時のコールバック
     function selectImage(element, url, name, description) {
-        // 選択表示の切り替え
+        // ギャラリーの選択枠更新
         const items = document.querySelectorAll('.gallery-item');
         items.forEach(item => item.classList.remove('selected'));
         element.classList.add('selected');
@@ -482,6 +513,7 @@
         openModal(url, name, description);
     }
 
+    // 詳細モーダルを開く
     function openModal(url, name, description) {
         const modal = document.getElementById('detailModal');
         const modalImg = document.getElementById('modalImg');
@@ -497,7 +529,7 @@
         modalImg.src = displayUrl;
         modalTitle.innerText = name;
         
-        // ジャンルの生成 (最初は名前なので、2つ目以降がジャンル)
+        // ジャンルの生成 (1番目が名前なので、2番目以降がジャンル)
         modalGenres.innerHTML = '';
         let genres = [];
         if (description) {
@@ -524,6 +556,7 @@
         modal.style.display = 'flex';
     }
 
+    // 詳細モーダルを閉じる
     function closeModal() {
         document.getElementById('detailModal').style.display = 'none';
     }
