@@ -286,28 +286,54 @@
             return;
         }
 
-        // 新しいゲーム起動画面をポップアップとして開く
-        const playerWindow = window.open('jigsaw_player.html', '_blank');
+        // 1. ボタンをローディング表示にして多重クリックを防止
+        const btn = document.querySelector('.btn');
+        const originalText = btn.innerText;
+        btn.innerText = "⏳ パズル画像を準備中...";
+        btn.disabled = true;
+
+        // 2. ポップアップブロックを完全に回避するため、まず「空のローディング画面」でウィンドウを開いておく
+        const playerWindow = window.open('about:blank', '_blank');
         if (!playerWindow) {
             alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
+            btn.innerText = originalText;
+            btn.disabled = false;
             return;
         }
+        
+        // ローディング中の仮画面をレンダリング
+        playerWindow.document.write(`
+            <html>
+            <head>
+                <title>準備中...</title>
+                <style>
+                    body { background: #121214; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; margin: 0; }
+                    .load-box { text-align: center; padding: 30px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; }
+                    h2 { margin: 0 0 10px 0; color: #4CAF50; }
+                    p { margin: 0; color: #aaa; font-size: 14px; }
+                </style>
+            </head>
+            <body>
+                <div class="load-box">
+                    <h2>🧩 パズル画像を準備しています...</h2>
+                    <p>Googleドライブから高品質な画像データを読み込んでいます。しばらくお待ちください。</p>
+                </div>
+            </body>
+            </html>
+        `);
 
-        // データの準備ができたら子ウィンドウへ渡すための共有変数を親側に確保する
+        // 親ウィンドウ側の共有変数をクリア
         window.selectedPuzzleData = null;
 
-        if (isLocalFileSelected && localImageBase64) {
-            // ローカルファイルが選択されている場合は即座に共有変数を設定
-            window.selectedPuzzleData = {
-                imageData: localImageBase64,
-                pieceCount: parseInt(pieceCount, 10)
-            };
-            console.log("ローカルのパズル用データが共有変数に設定されました。");
-        } else {
-            // GAS経由での画像取得、またはカスタムURLの処理
-            try {
-                let targetBase64 = null;
-                
+        try {
+            let targetBase64 = null;
+            
+            if (isLocalFileSelected && localImageBase64) {
+                // ローカルファイルが選択されている場合
+                targetBase64 = localImageBase64;
+                console.log("ローカルのパズル用画像を使用します。");
+            } else {
+                // GAS経由での画像取得、またはカスタムURLの処理
                 // GAS_API_URLが設定されていて、画像パスがURLではなく画像ID（英数字の長い文字列）である場合
                 if (GAS_API_URL && finalUrl && !finalUrl.startsWith('http') && !finalUrl.includes('/')) {
                     console.log("GASから安全にBase64画像データを取得します。ID:", finalUrl);
@@ -321,29 +347,38 @@
                     }
                 }
                 
-                if (targetBase64) {
-                    window.selectedPuzzleData = {
-                        imageData: targetBase64,
-                        pieceCount: parseInt(pieceCount, 10)
-                    };
-                } else {
+                if (!targetBase64) {
                     // GAS経由ではないカスタムURLなどの場合は従来の非同期CORS変換を試みる
-                    convertUrlToBase64(finalUrl, function(base64OrUrl) {
-                        window.selectedPuzzleData = {
-                            imageData: base64OrUrl,
-                            pieceCount: parseInt(pieceCount, 10)
-                        };
-                        console.log("外部URLのパズル用データが共有変数に設定されました。");
+                    console.log("外部URLの画像をCORS経由でBase64変換します。");
+                    targetBase64 = await new Promise((resolve) => {
+                        convertUrlToBase64(finalUrl, function(base64OrUrl) {
+                            resolve(base64OrUrl);
+                        });
                     });
                 }
-            } catch (e) {
-                console.error("画像データ取得処理中にエラーが発生しました:", e);
-                // エラー時はフォールバックとして元のURLをそのまま渡す
-                window.selectedPuzzleData = {
-                    imageData: finalUrl,
-                    pieceCount: parseInt(pieceCount, 10)
-                };
             }
+
+            // 3. データの準備完了！共有変数に確実に格納
+            window.selectedPuzzleData = {
+                imageData: targetBase64 ? targetBase64 : finalUrl,
+                pieceCount: parseInt(pieceCount, 10)
+            };
+
+            // 4. 準備完了後に、最初に開いておいたウィンドウを本番のゲームプレイヤーにリダイレクトさせる！
+            playerWindow.location.href = 'jigsaw_player.html';
+
+        } catch (e) {
+            console.error("画像データ取得処理中にエラーが発生しました:", e);
+            // エラー時はフォールバックとして元のURLをそのまま渡す
+            window.selectedPuzzleData = {
+                imageData: finalUrl,
+                pieceCount: parseInt(pieceCount, 10)
+            };
+            playerWindow.location.href = 'jigsaw_player.html';
+        } finally {
+            // 5. ボタンのローディング表示を元に戻す
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
     }
 </script>
