@@ -106,21 +106,21 @@
     </div>
 
     <div class="form-group">
-        <label>2. 画像を選択 (Googleドライブ画像など)</label>
+        <label>2. 画像を選択</label>
         
-        <!-- 画像ギャラリー (Googleドライブの「じぐそう」フォルダ内画像の直リンクを設定) -->
+        <!-- 画像ギャラリー (GitHub Pages内の同居画像に切り替え、CORSエラーを回避) -->
         <div class="image-gallery" id="gallery">
-            <div class="gallery-item selected" onclick="selectImage(this, 'https://lh3.googleusercontent.com/d/1IpPrnbfpXlDU5U4_S1pqbn5Yl7EwkAih')">
-                <img src="https://lh3.googleusercontent.com/d/1IpPrnbfpXlDU5U4_S1pqbn5Yl7EwkAih" alt="ビール缶 1">
+            <div class="gallery-item selected" onclick="selectImage(this, 'images/beer1.jpg')">
+                <img src="images/beer1.jpg" alt="ビール缶 1">
             </div>
-            <div class="gallery-item" onclick="selectImage(this, 'https://lh3.googleusercontent.com/d/16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K')">
-                <img src="https://lh3.googleusercontent.com/d/16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K" alt="ビール缶 2">
+            <div class="gallery-item" onclick="selectImage(this, 'images/beer2.jpg')">
+                <img src="images/beer2.jpg" alt="ビール缶 2">
             </div>
-            <div class="gallery-item" onclick="selectImage(this, 'https://lh3.googleusercontent.com/d/1zkJSYPG2vZ4sq9pOu8ssgYRLZy3pj6T1')">
-                <img src="https://lh3.googleusercontent.com/d/1zkJSYPG2vZ4sq9pOu8ssgYRLZy3pj6T1" alt="ビール缶 3">
+            <div class="gallery-item" onclick="selectImage(this, 'images/beer3.jpg')">
+                <img src="images/beer3.jpg" alt="ビール缶 3">
             </div>
-            <div class="gallery-item" onclick="selectImage(this, 'https://lh3.googleusercontent.com/d/1g3KQBjFDuAgjqvXqdxU7Ba6QjkQuHh3g')">
-                <img src="https://lh3.googleusercontent.com/d/1g3KQBjFDuAgjqvXqdxU7Ba6QjkQuHh3g" alt="ベリー">
+            <div class="gallery-item" onclick="selectImage(this, 'images/berry.jpg')">
+                <img src="images/berry.jpg" alt="ベリー">
             </div>
         </div>
 
@@ -143,7 +143,7 @@
 </div>
 
 <script>
-    let selectedImageUrl = 'https://lh3.googleusercontent.com/d/1IpPrnbfpXlDU5U4_S1pqbn5Yl7EwkAih';
+    let selectedImageUrl = 'images/beer1.jpg';
     let localImageBase64 = null; // ローカル選択ファイル用Base64データ
 
     function selectImage(element, url) {
