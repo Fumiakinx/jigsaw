@@ -1090,7 +1090,7 @@ public class PuzzleManager : MonoBehaviour
         cam.orthographic = true; 
         cam.orthographicSize = 6f; 
         cam.transform.position = new Vector3(0, 0, -10f); 
-        cam.backgroundColor = new Color(0.3f, 0.3f, 0.3f);
+        cam.backgroundColor = new Color(0.55f, 0.55f, 0.55f);
     }
     private EdgeData CreateRandomEdge(bool isBoundary)
     {
