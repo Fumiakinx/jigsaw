@@ -141,14 +141,25 @@
             background: #000;
         }
         
+        /* マウス検知用トリガーエリア */
+        .control-trigger {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 35px; /* 上部35pxのエリアにマウスが近づくと検知 */
+            z-index: 99;
+            background: transparent;
+        }
+        
         /* コントロールバー */
         .control-bar {
             position: absolute;
-            top: 20px;
+            top: -60px; /* 普段は画面外に隠す */
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(18, 18, 20, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(18, 18, 20, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 30px;
             padding: 8px 24px;
             display: flex;
@@ -156,13 +167,18 @@
             gap: 20px;
             z-index: 100;
             backdrop-filter: blur(12px);
-            opacity: 0.4;
-            transition: opacity 0.3s ease, background 0.3s ease;
+            opacity: 0;
+            pointer-events: none; /* 隠れている時はクリックを透過してピースを掴めるようにする */
+            transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, background 0.3s ease;
         }
         
+        /* トリガーにホバーするか、コントロールバー自体にホバーしたときに出現 */
+        .control-trigger:hover + .control-bar,
         .control-bar:hover {
+            top: 15px; /* スッと降りてくる */
             opacity: 1;
-            background: rgba(18, 18, 20, 0.9);
+            pointer-events: auto; /* 出現したときはボタンを押せるようにする */
+            background: rgba(18, 18, 20, 0.95);
         }
         
         .game-title {
@@ -201,6 +217,9 @@
     </style>
 </head>
 <body>
+
+    <!-- マウス検知用トリガーエリア -->
+    <div class="control-trigger"></div>
 
     <!-- プレミアムコントロールバー -->
     <div class="control-bar">
