@@ -4,11 +4,13 @@
 }
 
 .selection-button {
-    width: 280px;
-    height: 180px;
-    margin: 10px;
-    flex-grow: 1;
-    max-width: 320px;
+    width: 11.5%;
+    height: auto;
+    aspect-ratio: 1.55;
+    margin: 0.5%;
+    flex-grow: 0;
+    flex-shrink: 0;
+    max-width: none;
     border-width: 4px;
     border-color: white;
     border-radius: 15px;
@@ -59,7 +61,7 @@
     flex-wrap: wrap;
     justify-content: flex-start;
     align-items: flex-start;
-    padding: 20px;
+    padding: 10px;
 }
 
 #ImageGrid .unity-scroller,
@@ -148,4 +150,26 @@
     color: white;
     font-size: 16px;
     min-width: auto;
+}
+
+.instruction-btn {
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 6px 12px;
+    font-size: 16px;
+    transition-property: background-color, scale, border-color;
+    transition-duration: 0.2s;
+}
+
+.instruction-btn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    scale: 1.05;
+}
+
+.instruction-btn:active {
+    scale: 0.95;
 }

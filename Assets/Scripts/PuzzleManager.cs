@@ -31,6 +31,9 @@ public class PuzzleManager : MonoBehaviour
     public UIDocument completionUIDoc;
     public UIDocument loadingUIDoc;
     public UIDocument pauseUIDoc;
+    public UIDocument hudUIDoc; // 追加：スマホ用HUD UI
+    private Button btnShowGuide; // 追加：見本表示用の目のボタン
+    private Button btnPause; // 追加：一時停止用のボタン
     public PuzzleSelectionManager selectionManager;
     public AudioClip clearSound;
 
@@ -40,6 +43,13 @@ public class PuzzleManager : MonoBehaviour
     private bool isPaused = false;
     private bool isFinished = false;
     private bool pauseEventsBound = false;
+    private bool hudEventsBound = false; // 追加：HUDイベントがバインドされているか
+
+    // タッチ＆ダブルタップ回転用の変数
+    private float lastClickTime = 0f;
+    private int lastClickedPieceId = -1;
+    private const float DOUBLE_TAP_TIME = 0.3f;
+    private int lastTouchCount = 0;
 
     [Range(0, 0.1f)] public float bevelWidth = 0.02f; 
     public float bevelFalloff = 1.0f;
@@ -97,6 +107,7 @@ public class PuzzleManager : MonoBehaviour
         if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
         if (completionUIDoc != null) completionUIDoc.gameObject.SetActive(false);
         if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(false);
+        if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false); // 初期状態ではHUDを非表示に
     }
 
     void OnDestroy()
@@ -170,6 +181,9 @@ public class PuzzleManager : MonoBehaviour
         isPaused = false;
         maxConnectedPieces = 1;
 
+        // スマホ用HUDのセットアップ
+        SetupHUD();
+
         SetupCamera();
         ClearTrackedAssets();
         StopAllCoroutines();
@@ -215,6 +229,86 @@ public class PuzzleManager : MonoBehaviour
         trackedMeshes.Clear();
     }
 
+    // 一時停止画面の「画像選択に戻る」ボタン用コールバック
+    private void OnReturnToSelectionClicked()
+    {
+        TogglePause(); // ポーズ状態を解除
+        ReturnToTitle(); // 画像選択画面に戻る
+    }
+
+    // 目玉ボタン（見本表示用）のコールバック群
+    // Pointerイベント (モバイル/一部のPC環境用)
+    private void OnGuideShowPointerDown(PointerDownEvent evt) { SetGuideVisible(true); }
+    private void OnGuideShowPointerUp(PointerUpEvent evt) { SetGuideVisible(false); }
+    private void OnGuideShowPointerLeave(PointerLeaveEvent evt) { SetGuideVisible(false); }
+
+    // マウスイベント (PC環境用)
+    private void OnGuideShowMouseDown(MouseDownEvent evt) { SetGuideVisible(true); }
+    private void OnGuideShowMouseUp(MouseUpEvent evt) { SetGuideVisible(false); }
+    private void OnGuideShowMouseLeave(MouseLeaveEvent evt) { SetGuideVisible(false); }
+
+    private void SetupHUD()
+    {
+        if (hudUIDoc == null) return;
+        
+        hudUIDoc.gameObject.SetActive(true);
+        
+        var root = hudUIDoc.rootVisualElement;
+        if (root != null)
+        {
+            btnPause = root.Q<Button>("btnPause");
+            if (btnPause != null)
+            {
+                // 二重登録防止のため、一度登録解除してから登録
+                btnPause.clicked -= TogglePause;
+                btnPause.clicked += TogglePause;
+            }
+
+            btnShowGuide = root.Q<Button>("btnShowGuide");
+            if (btnShowGuide != null)
+            {
+                // Pointer系イベントの解除と登録
+                btnShowGuide.UnregisterCallback<PointerDownEvent>(OnGuideShowPointerDown);
+                btnShowGuide.RegisterCallback<PointerDownEvent>(OnGuideShowPointerDown);
+                
+                btnShowGuide.UnregisterCallback<PointerUpEvent>(OnGuideShowPointerUp);
+                btnShowGuide.RegisterCallback<PointerUpEvent>(OnGuideShowPointerUp);
+                
+                btnShowGuide.UnregisterCallback<PointerLeaveEvent>(OnGuideShowPointerLeave);
+                btnShowGuide.RegisterCallback<PointerLeaveEvent>(OnGuideShowPointerLeave);
+
+                // Mouse系イベントの解除と登録
+                btnShowGuide.UnregisterCallback<MouseDownEvent>(OnGuideShowMouseDown);
+                btnShowGuide.RegisterCallback<MouseDownEvent>(OnGuideShowMouseDown);
+                
+                btnShowGuide.UnregisterCallback<MouseUpEvent>(OnGuideShowMouseUp);
+                btnShowGuide.RegisterCallback<MouseUpEvent>(OnGuideShowMouseUp);
+                
+                btnShowGuide.UnregisterCallback<MouseLeaveEvent>(OnGuideShowMouseLeave);
+                btnShowGuide.RegisterCallback<MouseLeaveEvent>(OnGuideShowMouseLeave);
+            }
+            
+            Debug.Log("[PuzzleManager] HUD events bound successfully.");
+        }
+    }
+
+    private int GetTouchCount()
+    {
+        // 新しいInput Systemでタッチ数を取得
+        var touchscreen = UnityEngine.InputSystem.Touchscreen.current;
+        if (touchscreen != null)
+        {
+            int activeTouches = 0;
+            foreach (var touch in touchscreen.touches)
+            {
+                if (touch.press.isPressed) activeTouches++;
+            }
+            return activeTouches;
+        }
+        // フォールバックとして旧Inputを使用
+        return UnityEngine.Input.touchCount;
+    }
+
     void Update()
     {
         Vector2 mousePos;
@@ -257,13 +351,40 @@ public class PuzzleManager : MonoBehaviour
             if (target != null) target.RotateGroup(Camera.main.ScreenToWorldPoint(mousePos));
         }
 
+        // スマホでのドラッグ中マルチタップによる回転の検知
+        int currentTouchCount = GetTouchCount();
+        if (draggingPiece != null && currentTouchCount >= 2 && lastTouchCount < 2)
+        {
+            // 掴んでいるピースを回転
+            draggingPiece.RotateGroup(Camera.main.ScreenToWorldPoint(mousePos));
+        }
+        lastTouchCount = currentTouchCount;
+
         if (leftDown)
         {
             PuzzlePiece piece = GetTopmostPiece(mousePos);
             if (piece != null)
             {
-                draggingPiece = piece;
-                draggingPiece.BeginDrag(Camera.main.ScreenToWorldPoint(mousePos));
+                float currentTime = Time.time;
+                if (piece.id == lastClickedPieceId && (currentTime - lastClickTime) < DOUBLE_TAP_TIME)
+                {
+                    // ダブルタップ成立
+                    if (draggingPiece != null)
+                    {
+                        draggingPiece.EndDrag();
+                        draggingPiece = null;
+                    }
+                    piece.RotateGroup(Camera.main.ScreenToWorldPoint(mousePos));
+                    lastClickedPieceId = -1; // ダブルタップ後はIDリセット
+                }
+                else
+                {
+                    lastClickedPieceId = piece.id;
+                    lastClickTime = currentTime;
+
+                    draggingPiece = piece;
+                    draggingPiece.BeginDrag(Camera.main.ScreenToWorldPoint(mousePos));
+                }
             }
         }
         else if (leftPressed && draggingPiece != null)
@@ -819,6 +940,7 @@ public class PuzzleManager : MonoBehaviour
             Label l = root.Q<Label>("TimeValue"); if (l != null) l.text = string.Format("{0:00}:{1:00}:{2:00}", (int)ts.TotalHours, ts.Minutes, ts.Seconds);
             Button btn = root.Q<Button>("ReturnToSelectionButton"); if (btn != null) btn.clicked += ReturnToTitle;
         }
+        if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false); // パズルクリア時にHUDを非表示に
         if (audioSource != null && clearSound != null) audioSource.PlayOneShot(clearSound); 
     }
 
@@ -839,27 +961,23 @@ public class PuzzleManager : MonoBehaviour
                 pauseUIDoc.gameObject.SetActive(true); 
                 
                 // 表示された直後に安全にボタンイベントをバインド
-                if (!pauseEventsBound)
+                var root = pauseUIDoc.rootVisualElement;
+                if (root != null)
                 {
-                    var root = pauseUIDoc.rootVisualElement;
-                    if (root != null)
+                    Button btn = root.Q<Button>("ReturnToSelectionButton");
+                    if (btn != null)
                     {
-                        Button btn = root.Q<Button>("ReturnToSelectionButton");
-                        if (btn != null)
-                        {
-                            btn.clicked += () => {
-                                TogglePause(); // ポーズ状態を解除
-                                ReturnToTitle(); // 画像選択画面に戻る
-                            };
-                            pauseEventsBound = true;
-                        }
+                        btn.clicked -= OnReturnToSelectionClicked;
+                        btn.clicked += OnReturnToSelectionClicked;
                     }
                 }
             }
+            if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false); // ポーズ中はHUDを非表示に
             foreach (var p in allPieces) if (p != null && p.transform.parent != null) p.transform.parent.gameObject.SetActive(false);
         } else {
             totalPausedTime += (Time.time - pauseStartTime);
             if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(false);
+            if (hudUIDoc != null) SetupHUD(); // ポーズ解除時にHUDを再表示＆イベント再バインド
             foreach (var p in allPieces) if (p != null && p.transform.parent != null) p.transform.parent.gameObject.SetActive(true);
         }
     }
@@ -867,6 +985,7 @@ public class PuzzleManager : MonoBehaviour
     private void ReturnToTitle() {
         isFinished = false;
         if (completionUIDoc != null) completionUIDoc.gameObject.SetActive(false);
+        if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false); // タイトルに戻る際にHUDを非表示に
         if (selectionManager != null) selectionManager.Open();
         SetGuideVisible(false);
     }

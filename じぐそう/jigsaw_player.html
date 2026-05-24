@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧩 JIGSAW WEB PLAYER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #121214 0%, #1a1a24 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        /* プレミアムローディング画面 */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(18, 18, 20, 0.96);
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loading-container {
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+        }
+        
+        .spinner-outer {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 25px;
+        }
+        
+        .spinner {
+            width: 100%;
+            height: 100%;
+            border: 4px solid rgba(255, 255, 255, 0.03);
+            border-top-color: #4CAF50;
+            border-bottom-color: #2196F3;
+            border-radius: 50%;
+            animation: spin 1.5s infinite cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        
+        .spinner-inner {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 50px;
+            height: 50px;
+            border: 3px solid transparent;
+            border-left-color: #FF9800;
+            border-right-color: #E91E63;
+            border-radius: 50%;
+            animation: spin-reverse 1.2s infinite linear;
+        }
+        
+        .loading-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            background: linear-gradient(45deg, #4CAF50, #2196F3, #FF9800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .loading-status {
+            font-size: 13px;
+            color: #8a8a93;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        /* プレミアム進捗バー */
+        .progress-bar-empty {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-bar-full {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4CAF50 0%, #2196F3 50%, #E91E63 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        
+        /* ゲームコンテナ */
+        #unity-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0d0d0f;
+        }
+        
+        #unity-canvas {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100vw;
+            max-height: 100vh;
+            aspect-ratio: 16 / 10;
+            object-fit: contain;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            background: #000;
+        }
+        
+        /* コントロールバー */
+        .control-bar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18, 18, 20, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 30px;
+            padding: 8px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            opacity: 0.4;
+            transition: opacity 0.3s ease, background 0.3s ease;
+        }
+        
+        .control-bar:hover {
+            opacity: 1;
+            background: rgba(18, 18, 20, 0.9);
+        }
+        
+        .game-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #4CAF50;
+        }
+        
+        .btn-control {
+            background: transparent;
+            border: none;
+            color: #a0a0a5;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: color 0.2s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            outline: none;
+        }
+        
+        .btn-control:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes spin-reverse {
+            to { transform: rotate(-360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- プレミアムコントロールバー -->
+    <div class="control-bar">
+        <span class="game-title">🧩 JIGSAW WEB</span>
+        <button class="btn-control" onclick="toggleFullScreen()">
+            <span>📺</span> フルスクリーン
+        </button>
+        <button class="btn-control" onclick="window.close()">
+            <span>❌</span> ゲームを閉じる
+        </button>
+    </div>
+
+    <!-- プレミアムローディング画面 -->
+    <div id="loading-overlay">
+        <div class="loading-container">
+            <div class="spinner-outer">
+                <div class="spinner"></div>
+                <div class="spinner-inner"></div>
+            </div>
+            <div class="loading-title">JIGSAW PUZZLE</div>
+            <div id="status-text" class="loading-status">画像を準備しています...</div>
+            <div class="progress-bar-empty">
+                <div id="progress-bar" class="progress-bar-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゲーム描画領域 -->
+    <div id="unity-container">
+        <canvas id="unity-canvas" tabindex="-1"></canvas>
+    </div>
+
+    <script>
+        var canvas = document.querySelector("#unity-canvas");
+        var progressBar = document.querySelector("#progress-bar");
+        var statusText = document.querySelector("#status-text");
+        var loadingOverlay = document.querySelector("#loading-overlay");
+        
+        var unityInstance = null;
+        var selectedData = null;
+
+        // 1. 親ウィンドウからのデータ受け渡しを待機 (ポーリング処理)
+        function checkParentData() {
+            return new Promise((resolve) => {
+                let attempts = 0;
+                const maxAttempts = 50; // 最大約5秒待機
+                
+                const interval = setInterval(() => {
+                    attempts++;
+                    
+                    // 親ウィンドウの共有データがあるか確認
+                    if (window.opener && window.opener.selectedPuzzleData) {
+                        selectedData = window.opener.selectedPuzzleData;
+                        clearInterval(interval);
+                        resolve(true);
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(interval);
+                        console.warn("親ウィンドウからのパズルデータが見つかりませんでした。デフォルト画像で起動します。");
+                        resolve(false);
+                    }
+                }, 100);
+            });
+        }
+
+        // 2. Unityのロード設定
+        // 「じぐそう」フォルダから起動される場合は、Buildsフォルダへの相対パスを指定
+        var buildUrl = "../Builds/Build"; 
+        var loaderUrl = "../Builds/Build/Builds.loader.js";
+        
+        // 開発環境と本番サーバー環境の両方に対応するためのパス自動検出ロジックを追加
+        // 同一フォルダ内にBuildが存在する場合はそれを使用し、無ければ "../Builds/" を見に行く
+        var checkConfig = {
+            dataUrl: "Build/Builds.data",
+            frameworkUrl: "Build/Builds.framework.js",
+            codeUrl: "Build/Builds.wasm"
+        };
+        
+        var config = {
+            arguments: [],
+            dataUrl: "Build/Builds.data",
+            frameworkUrl: "Build/Builds.framework.js",
+            codeUrl: "Build/Builds.wasm",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "DefaultCompany",
+            productName: "Jigsaw",
+            productVersion: "1.4",
+            showBanner: function(msg, type) {
+                console.log("Unity Banner:", msg, type);
+            }
+        };
+
+        // ローカルの開発テスト用、または本番デプロイ用の相対パス自己判定
+        // 同一ディレクトリにBuildフォルダが無いかフェッチで簡易チェックする、あるいは単にエラーキャッチで切り替える
+        // ここでは最も確実な、現在のスクリプトURLやフォルダ構成に基づく判定を行います
+        
+        // 3. 画面に合わせたレスポンシブなサイズ調整
+        function resizeCanvas() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            canvas.style.width = width + "px";
+            canvas.style.height = height + "px";
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 4. ゲーム起動プロセス
+        async function initGame() {
+            statusText.innerText = "画像をデコード中...";
+            await checkParentData();
+            
+            statusText.innerText = "パズルエンジンを起動しています...";
+
+            // パス解決：現在の階層にBuildフォルダがあるかチェック
+            try {
+                const response = await fetch("Build/Builds.loader.js", { method: 'HEAD' });
+                if (response.ok) {
+                    console.log("ローカルのBuildフォルダを使用します。");
+                    buildUrl = "Build";
+                    loaderUrl = "Build/Builds.loader.js";
+                    config.dataUrl = "Build/Builds.data";
+                    config.frameworkUrl = "Build/Builds.framework.js";
+                    config.codeUrl = "Build/Builds.wasm";
+                } else {
+                    throw new Error("Local loader not found");
+                }
+            } catch (e) {
+                console.log("親のBuildsフォルダを参照します。");
+                buildUrl = "../Builds/Build";
+                loaderUrl = "../Builds/Build/Builds.loader.js";
+                config.dataUrl = "../Builds/Build/Builds.data";
+                config.frameworkUrl = "../Builds/Build/Builds.framework.js";
+                config.codeUrl = "../Builds/Build/Builds.wasm";
+            }
+
+            var script = document.createElement("script");
+            script.src = loaderUrl;
+            script.onload = () => {
+                createUnityInstance(canvas, config, (progress) => {
+                    progressBar.style.width = (100 * progress) + "%";
+                    statusText.innerText = "ゲームデータを読み込み中... (" + Math.round(progress * 100) + "%)";
+                }).then((instance) => {
+                    unityInstance = instance;
+                    statusText.innerText = "パズルを開始します...";
+                    
+                    // Unityインスタンスが完全に動作するまで少しだけ待機して送信
+                    setTimeout(() => {
+                        if (selectedData && selectedData.imageData) {
+                            console.log("Unityにパズル開始リクエストを送信します。ピース数:", selectedData.pieceCount);
+                            // メッセージ形式: "画像Base64_または_URL,ピース数"
+                            const message = selectedData.imageData + "," + selectedData.pieceCount;
+                            unityInstance.SendMessage('JigsawWebBridge', 'StartPuzzleFromWeb', message);
+                        } else {
+                            console.log("データがロードされていないため、Unity側での画像選択を有効にします。");
+                        }
+                        
+                        // ローディング画面をフェードアウト
+                        loadingOverlay.style.opacity = 0;
+                        setTimeout(() => {
+                            loadingOverlay.style.visibility = "hidden";
+                        }, 500);
+                    }, 800);
+
+                }).catch((message) => {
+                    statusText.innerText = "起動エラーが発生しました。";
+                    alert("Unity起動エラー: " + message);
+                });
+            };
+            document.body.appendChild(script);
+        }
+
+        // 5. ユーティリティ
+        function toggleFullScreen() {
+            if (unityInstance) {
+                unityInstance.SetFullscreen(1);
+            }
+        }
+
+        // 実行開始
+        initGame();
+    </script>
+</body>
+</html>

@@ -26,6 +26,11 @@ public class PuzzleSelectionManager : MonoBehaviour
     private Sprite pendingSprite;
     private int pendingPieces;
 
+    [Header("Instructions UI")]
+    private VisualElement instructionsOverlay;
+    private Button btnShowInstructions;
+    private Button btnInstructionsClose;
+
     // スクロール用変数
     private bool isDraggingGrid = false;
     private bool wasDraggingGrid = false;
@@ -120,6 +125,10 @@ public class PuzzleSelectionManager : MonoBehaviour
         btnYes = root.Q<Button>("ConfirmYes");
         btnNo = root.Q<Button>("ConfirmNo");
 
+        instructionsOverlay = root.Q<VisualElement>("InstructionsOverlay");
+        btnShowInstructions = root.Q<Button>("BtnShowInstructions");
+        btnInstructionsClose = root.Q<Button>("InstructionsClose");
+
         if (btnYes != null) {
             btnYes.clicked -= OnConfirmYes;
             btnYes.clicked += OnConfirmYes;
@@ -127,6 +136,14 @@ public class PuzzleSelectionManager : MonoBehaviour
         if (btnNo != null) {
             btnNo.clicked -= OnConfirmNo;
             btnNo.clicked += OnConfirmNo;
+        }
+        if (btnShowInstructions != null) {
+            btnShowInstructions.clicked -= OnShowInstructions;
+            btnShowInstructions.clicked += OnShowInstructions;
+        }
+        if (btnInstructionsClose != null) {
+            btnInstructionsClose.clicked -= OnHideInstructions;
+            btnInstructionsClose.clicked += OnHideInstructions;
         }
 
         RefreshImageGrid();
@@ -263,5 +280,15 @@ public class PuzzleSelectionManager : MonoBehaviour
         lastOpenTime = Time.time;
         uiDoc.gameObject.SetActive(true);
         RefreshImageGrid();
+    }
+
+    private void OnShowInstructions()
+    {
+        if (instructionsOverlay != null) instructionsOverlay.style.display = DisplayStyle.Flex;
+    }
+
+    private void OnHideInstructions()
+    {
+        if (instructionsOverlay != null) instructionsOverlay.style.display = DisplayStyle.None;
     }
 }

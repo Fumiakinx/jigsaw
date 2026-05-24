@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>じぐそう - 画像選択パネル</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h2 {
+            margin-top: 0;
+            color: #4CAF50;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: #2d2d2d;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background-color: #3b3b3b;
+            color: white;
+            box-sizing: border-box;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .gallery-item {
+            border: 2px solid transparent;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            aspect-ratio: 1;
+            position: relative;
+            background-color: #111;
+        }
+        .gallery-item.selected {
+            border-color: #4CAF50;
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .info-text {
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🧩 じぐそう - 画像選択</h2>
+    
+    <div class="form-group">
+        <label>1. ピース数を選択</label>
+        <select id="pieceCount">
+            <option value="24">24 ピース (かんたん)</option>
+            <option value="96" selected>96 ピース (ふつう)</option>
+            <option value="216">216 ピース (むずかしい)</option>
+            <option value="486">486 ピース (超むずかしい)</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>2. 画像を選択 (Googleドライブ画像など)</label>
+        
+        <!-- 画像ギャラリー (Googleドライブの「じぐそう」フォルダ内画像の直リンクを設定) -->
+        <div class="image-gallery" id="gallery">
+            <div class="gallery-item selected" onclick="selectImage(this, 'https://lh3.googleusercontent.com/d/1IpPrnbfpXlDU5U4_S1pqbn5Yl7EwkAih')">
+                <img src="https://lh3.googleusercontent.com/d/1IpPrnbfpXlDU5U4_S1pqbn5Yl7EwkAih" alt="ビール缶 1">
+            </div>
+            <div class="gallery-item" onclick="selectImage(this, 'https://lh3.googleusercontent.com/d/16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K')">
+                <img src="https://lh3.googleusercontent.com/d/16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K" alt="ビール缶 2">
+            </div>
+            <div class="gallery-item" onclick="selectImage(this, 'https://lh3.googleusercontent.com/d/1zkJSYPG2vZ4sq9pOu8ssgYRLZy3pj6T1')">
+                <img src="https://lh3.googleusercontent.com/d/1zkJSYPG2vZ4sq9pOu8ssgYRLZy3pj6T1" alt="ビール缶 3">
+            </div>
+            <div class="gallery-item" onclick="selectImage(this, 'https://lh3.googleusercontent.com/d/1g3KQBjFDuAgjqvXqdxU7Ba6QjkQuHh3g')">
+                <img src="https://lh3.googleusercontent.com/d/1g3KQBjFDuAgjqvXqdxU7Ba6QjkQuHh3g" alt="ベリー">
+            </div>
+        </div>
+
+        <div style="margin-top: 15px;">
+            <label>または直接URLを入力:</label>
+            <input type="text" id="customUrl" placeholder="https://drive.google.com/uc?export=download&id=画像ID" oninput="clearGallerySelection()">
+        </div>
+
+        <div style="margin-top: 15px;">
+            <label>または手元の画像ファイルを使用（CORSエラーなし）:</label>
+            <input type="file" id="localFile" accept="image/*" onchange="handleLocalFile(event)" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #444; background-color: #3b3b3b; color: white;">
+        </div>
+    </div>
+
+    <button class="btn" onclick="sendToJigsaw()">パズルを開始する！</button>
+
+    <div class="info-text">
+        ※ Googleドライブの画像を使用する場合、画像を「リンクを知っている全員に閲覧可能」に設定した上で、直リンク用URL形式（<code>https://drive.google.com/uc?export=download&id=【画像ID】</code>）に変換して使用してください。手元の画像ファイルを選択した場合は、ブラウザ内で高速に読み込まれるため、CORSエラーを完全に回避できます。
+    </div>
+</div>
+
+<script>
+    let selectedImageUrl = 'https://lh3.googleusercontent.com/d/1IpPrnbfpXlDU5U4_S1pqbn5Yl7EwkAih';
+    let localImageBase64 = null; // ローカル選択ファイル用Base64データ
+
+    function selectImage(element, url) {
+        // 選択表示の切り替え
+        const items = document.querySelectorAll('.gallery-item');
+        items.forEach(item => item.classList.remove('selected'));
+        element.classList.add('selected');
+        
+        selectedImageUrl = url;
+        document.getElementById('customUrl').value = ''; // カスタム入力をクリア
+        document.getElementById('localFile').value = ''; // ローカルファイルをクリア
+        localImageBase64 = null;
+    }
+
+    function clearGallerySelection() {
+        const items = document.querySelectorAll('.gallery-item');
+        items.forEach(item => item.classList.remove('selected'));
+        selectedImageUrl = '';
+        document.getElementById('localFile').value = ''; // ローカルファイルをクリア
+        localImageBase64 = null;
+    }
+
+    function handleLocalFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // ギャラリーとカスタムURLの選択状態を解除
+        const items = document.querySelectorAll('.gallery-item');
+        items.forEach(item => item.classList.remove('selected'));
+        selectedImageUrl = '';
+        document.getElementById('customUrl').value = '';
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            localImageBase64 = e.target.result;
+            console.log("ローカル画像をBase64に変換しました。");
+        };
+        reader.onerror = function(err) {
+            console.error("ローカルファイルの読み込みに失敗しました:", err);
+            alert("画像の読み込みに失敗しました。");
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 外部URLの画像をJavaScript側でロードしBase64に変換するヘルパー
+    function convertUrlToBase64(imgUrl, callback) {
+        if (!imgUrl) {
+            callback(null);
+            return;
+        }
+
+        const img = new Image();
+        img.crossOrigin = 'Anonymous'; // CORS許可を要求
+        img.onload = function() {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                const dataURL = canvas.toDataURL('image/png');
+                callback(dataURL);
+            } catch (e) {
+                console.warn("キャンバスによるBase64変換に失敗しました（CORS制限等）: ", e);
+                // 変換失敗時はフォールバックとして元のURLをそのまま返す
+                callback(imgUrl);
+            }
+        };
+        img.onerror = function() {
+            console.warn("画像のロードに失敗しました。元のURLのまま実行します:", imgUrl);
+            callback(imgUrl);
+        };
+        img.src = imgUrl;
+    }
+
+    function sendToJigsaw() {
+        const pieceCount = document.getElementById('pieceCount').value;
+        const customUrl = document.getElementById('customUrl').value.trim();
+        
+        let finalUrl = customUrl ? customUrl : selectedImageUrl;
+        
+        if (!finalUrl && !localImageBase64) {
+            alert("画像が選択されていないか、URLが入力されていません。");
+            return;
+        }
+
+        // 新しいゲーム起動画面をポップアップ（子ウィンドウ）として開く
+        const playerWindow = window.open('jigsaw_player.html', '_blank');
+        if (!playerWindow) {
+            alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
+            return;
+        }
+
+        // データの準備ができたら子ウィンドウへ渡すための共有変数を親側に確保する
+        window.selectedPuzzleData = null;
+
+        if (localImageBase64) {
+            // ローカルファイルが選択されている場合は即座に共有変数を設定
+            window.selectedPuzzleData = {
+                imageData: localImageBase64,
+                pieceCount: parseInt(pieceCount, 10)
+            };
+            console.log("ローカルのパズル用データが共有変数に設定されました。");
+        } else {
+            // 外部URLの場合は非同期でBase64化を試みる
+            convertUrlToBase64(finalUrl, function(base64OrUrl) {
+                window.selectedPuzzleData = {
+                    imageData: base64OrUrl,
+                    pieceCount: parseInt(pieceCount, 10)
+                };
+                console.log("外部URLのパズル用データが共有変数に設定されました（Base64化試行結果）");
+            });
+        }
+    }
+</script>
+</body>
+</html>

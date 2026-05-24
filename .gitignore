@@ -4,10 +4,13 @@
 /[Tt]emp/
 /[Oo]bj/
 /[Bb]uild/
-/[Bb]uilds/
+# /[Bb]uilds/
 /[Ll]ogs/
 /[Mm]emoryCaptures/
 /[Uu]serSettings/
+
+# Exclude large zip files
+*.zip
 
 # Asset meta files must be tracked, but some other meta files don't need to be
 !/[Aa]ssets/**/*.meta

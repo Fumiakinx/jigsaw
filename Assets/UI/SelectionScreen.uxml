@@ -1,7 +1,11 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <Style src="project:/Assets/UI/SelectionScreen.uss" />
     <ui:VisualElement style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.9); align-items: center; justify-content: center; padding: 30px;">
-        <ui:Label text="JIGSAW PUZZLE" style="font-size: 50px; color: gold; -unity-font-style: bold; margin-bottom: 5px;" />
+        <!-- タイトルと操作説明ボタンのコンテナ -->
+        <ui:VisualElement style="flex-direction: row; align-items: center; justify-content: center; width: 96%; margin-bottom: 5px; position: relative;">
+            <ui:Label text="JIGSAW PUZZLE" style="font-size: 50px; color: gold; -unity-font-style: bold;" />
+            <ui:Button name="BtnShowInstructions" text="操作説明" class="instruction-btn" style="position: absolute; right: 0;" />
+        </ui:VisualElement>
         <ui:Label text="パズル画像と難易度を選択" style="font-size: 20px; color: white; margin-bottom: 15px;" />
         
         <!-- 枚数選択セクション -->
@@ -15,7 +19,7 @@
             </ui:VisualElement>
         </ui:VisualElement>
 
-        <ui:ScrollView name="ImageGrid" mode="Vertical" vertical-scroller-visibility="Hidden" style="width: 90%; height: 73%; background-color: rgba(255, 255, 255, 0.05); border-radius: 20px;">
+        <ui:ScrollView name="ImageGrid" mode="Vertical" vertical-scroller-visibility="Hidden" style="width: 96%; height: 73%; background-color: rgba(255, 255, 255, 0.05); border-radius: 20px;">
             <ui:Button name="GridButton0" class="selection-button" style="display: none;">
                 <ui:VisualElement class="thumbnail-image" />
                 <ui:Label class="button-label" />
@@ -116,6 +120,39 @@
                 <ui:Button name="ConfirmYes" text="はい（開始）" class="confirm-button yes" style="width: 160px; height: 50px; font-size: 18px;" />
                 <ui:Button name="ConfirmNo" text="いいえ（戻る）" class="confirm-button no" style="width: 160px; height: 50px; font-size: 18px;" />
             </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- 操作説明ダイアログオーバーレイ -->
+    <ui:VisualElement name="InstructionsOverlay" style="position: absolute; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); align-items: center; justify-content: center; display: none;">
+        <ui:VisualElement name="InstructionsCard" style="width: 550px; padding: 25px; background-color: rgba(35, 35, 35, 0.95); border-width: 2px; border-color: gold; border-radius: 20px; align-items: center;">
+            <ui:Label text="操作説明" style="font-size: 26px; color: gold; margin-bottom: 20px; -unity-font-style: bold;" />
+            
+            <ui:ScrollView style="width: 100%; max-height: 380px; margin-bottom: 20px;">
+                <!-- PC用 -->
+                <ui:VisualElement style="margin-bottom: 20px; background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px;">
+                    <ui:Label text="💻 PC での操作" style="font-size: 18px; color: #4CAF50; -unity-font-style: bold; margin-bottom: 10px;" />
+                    <ui:VisualElement style="margin-left: 10px;">
+                        <ui:Label text="・ドラッグ : ピースを移動" style="color: white; font-size: 14px; margin-bottom: 5px;" />
+                        <ui:Label text="・右クリック : ピースの回転（90度）" style="color: white; font-size: 14px; margin-bottom: 5px;" />
+                        <ui:Label text="・スペースキー : 完成見本（ガイド）の表示（長押し）" style="color: white; font-size: 14px; margin-bottom: 5px;" />
+                        <ui:Label text="・Esc キー : 一時停止（ポーズ）" style="color: white; font-size: 14px;" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                
+                <!-- スマホ用 -->
+                <ui:VisualElement style="background-color: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 10px;">
+                    <ui:Label text="📱 スマホ / タブレット での操作" style="font-size: 18px; color: #FF9800; -unity-font-style: bold; margin-bottom: 10px;" />
+                    <ui:VisualElement style="margin-left: 10px;">
+                        <ui:Label text="・ドラッグ : ピースを移動" style="color: white; font-size: 14px; margin-bottom: 8px;" />
+                        <ui:Label text="・ダブルタップ : ピースの回転（90度）" style="color: white; font-size: 14px; margin-bottom: 8px;" />
+                        <ui:Label text="・ドラッグ中のマルチタップ : ピースの回転（90度）" style="color: white; font-size: 14px; margin-bottom: 8px;" />
+                        <ui:Label text="・目のボタン（👁）: 完成見本（ガイド）の表示（長押し）" style="color: white; font-size: 14px;" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:ScrollView>
+
+            <ui:Button name="InstructionsClose" text="閉じる" class="confirm-button" style="width: 150px; height: 45px; font-size: 16px; background-color: #333333; color: white;" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

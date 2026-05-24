@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/HUDScreen.uss?fileID=7433465301887827888&amp;guid=00000000000000000000000000000000&amp;type=3" />
+    <ui:VisualElement name="HUDRoot" class="hud-root">
+        <!-- 画面右上に見本表示用ボタンと一時停止ボタンを配置 -->
+        <ui:VisualElement name="HeaderGroup" class="header-group">
+            <ui:Button name="btnPause" class="hud-btn hud-btn-pause" tooltip="一時停止">
+                <ui:Label text="⏸" class="hud-icon" />
+            </ui:Button>
+            <ui:Button name="btnShowGuide" class="hud-btn" tooltip="見本を表示（押している間だけ表示）">
+                <ui:Label text="👁" class="hud-icon" />
+            </ui:Button>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

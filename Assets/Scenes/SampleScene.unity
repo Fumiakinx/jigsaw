@@ -558,6 +558,61 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1359673685
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1359673687}
+  - component: {fileID: 1359673686}
+  m_Layer: 0
+  m_Name: MobileHUD
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1359673686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1359673685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: fbaf166e741f816468e83c8063068b97, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: e565fe8c4180a7749b544913150eb305, type: 3}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!4 &1359673687
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1359673685}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1543443955
 GameObject:
   m_ObjectHideFlags: 0
@@ -678,6 +733,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1854154458}
   - component: {fileID: 1854154457}
+  - component: {fileID: 1854154459}
   m_Layer: 0
   m_Name: PuzzleManager
   m_TagString: Untagged
@@ -1004,6 +1060,7 @@ MonoBehaviour:
   completionUIDoc: {fileID: 1543443956}
   loadingUIDoc: {fileID: 106772836}
   pauseUIDoc: {fileID: 1816337616}
+  hudUIDoc: {fileID: 1359673686}
   selectionManager: {fileID: 290483519}
   clearSound: {fileID: 0}
   bevelWidth: 0.091
@@ -1029,6 +1086,20 @@ Transform:
   - {fileID: 1816337617}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1854154459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854154456}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf53540f8acc82d49b8eaf2c3d535b04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::JigsawWebBridge
+  puzzleManager: {fileID: 1854154457}
+  selectionManager: {fileID: 290483519}
 --- !u!1 &1951168264
 GameObject:
   m_ObjectHideFlags: 0
@@ -1094,3 +1165,4 @@ SceneRoots:
   - {fileID: 1854154458}
   - {fileID: 290483521}
   - {fileID: 106772837}
+  - {fileID: 1359673687}

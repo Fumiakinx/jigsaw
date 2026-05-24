@@ -1,0 +1,41 @@
+【Googleサイト × Unity WebGL 連携設定ガイド】
+
+Googleサイト上でGoogleドライブの「じぐそう」フォルダから画像を選択し、Unity WebGLのジグソーパズルに送信して開始するための連携手順です。
+
+■ 1. Unity側の事前準備
+(1) 作成した `JigsawWebBridge.cs` をUnityシーン内の常時存在するGameObject（例: `PuzzleManager` がアタッチされているオブジェクト）にアタッチします。
+(2) インスペクター上で、`JigsawWebBridge` の `PuzzleManager` と `PuzzleSelectionManager` の参照をそれぞれアタッチします。
+(3) Unityプロジェクトに `JigsawWebBridge` という名前のGameObjectを作成してそこにアタッチするか、スクリプトアタッチ先のGameObject名を「JigsawWebBridge」という名前にしておくと、JavaScriptからの呼び出し（SendMessage）が非常にスムーズになります。
+
+■ 2. Unity WebGL ビルドインデックス（index.html）の修正
+ビルドされたWebGLフォルダ内にある `index.html` に以下のJavaScriptを追加します。これにより、外部（Googleサイトの埋め込みHTML）からの画像URL送信をキャッチして、Unityへと橋渡しします。
+
+index.html 内の `<script>` タグの末尾付近（または `createUnityInstance` のコールバック内）に以下を追記してください。
+
+--------------------------------------------------
+// 外部（Googleサイトの埋め込みiframe等）からの postMessage を受信する
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'START_JIGSAW') {
+        var messageData = event.data.data; // "画像URL,ピース数" の形式
+        
+        // unityInstance がグローバルまたはスコープ内でアクセス可能な状態である必要があります
+        if (typeof unityInstance !== 'undefined') {
+            unityInstance.SendMessage('JigsawWebBridge', 'StartPuzzleFromWeb', messageData);
+            console.log("Unityへメッセージを送信しました:", messageData);
+        } else {
+            console.error("unityInstance が見つかりません。");
+        }
+    }
+});
+--------------------------------------------------
+
+■ 3. Googleサイトでの設定手順
+(1) Googleドライブ上の「じぐそう」フォルダおよび画像を「リンクを知っている全員が閲覧可能」に共有設定します。
+(2) Googleサイトの編集画面を開き、「埋め込み」＞「コードを埋め込む」を選択します。
+(3) 作成した `GoogleSiteEmbed.html` の中身をコピーして貼り付けます。
+    ※ ギャラリーの画像部分（URLなど）は、必要に応じてご自身のGoogleドライブの直リンクURLに書き換えてください。
+    ※ Googleドライブ直リンクURLの形式:
+       https://drive.google.com/uc?export=download&id=【画像ID】
+(4) 同じページに、WebGLビルド（index.html）をホスティングしたページもiframe等で埋め込みます。
+
+これで、Googleサイトで画像をクリックすると、Unity WebGL側で自動的に画像がロードされ、選んだピース数でジグソーパズルが始まります！
