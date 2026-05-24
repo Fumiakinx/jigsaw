@@ -146,22 +146,12 @@
                 <img src="images/berry.jpg" alt="ベリー">
             </div>
         </div>
-
-        <div style="margin-top: 15px;">
-            <label>または直接URLを入力:</label>
-            <input type="text" id="customUrl" placeholder="https://drive.google.com/uc?export=download&id=画像ID" oninput="clearGallerySelection()">
-        </div>
-
-        <div style="margin-top: 15px;">
-            <label>または手元の画像ファイルを使用（CORSエラーなし）:</label>
-            <input type="file" id="localFile" accept="image/*" onchange="handleLocalFile(event)" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #444; background-color: #3b3b3b; color: white;">
-        </div>
     </div>
 
     <button class="btn" onclick="sendToJigsaw()">パズルを開始する！</button>
 
     <div class="info-text">
-        ※ Googleドライブの画像を使用する場合、画像を「リンクを知っている全員に閲覧可能」に設定した上で、直リンク用URL形式（<code>https://drive.google.com/uc?export=download&id=【画像ID】</code>）に変換して使用してください。手元の画像ファイルを選択した場合は、ブラウザ内で高速に読み込まれるため、CORSエラーを完全に回避できます。
+        ※ ドライブから自動取得された画像を一覧から選ぶだけで、パズルをすぐに開始できます。
     </div>
 </div>
 
@@ -170,8 +160,6 @@
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec"; 
 
     let selectedImageUrl = 'images/beer1.jpg';
-    let localImageBase64 = null; // ローカル選択ファイル用Base64データ
-    let isLocalFileSelected = false;
 
     // 1. ページロード時にGASからドライブ内の画像一覧を自動取得してギャラリーを作る
     async function loadGalleryFromGAS() {
@@ -222,20 +210,12 @@
     window.addEventListener('DOMContentLoaded', loadGalleryFromGAS);
 
     function selectImage(element, url) {
-        // 選択表示 of 切り替え
+        // 選択表示の切り替え
         const items = document.querySelectorAll('.gallery-item');
         items.forEach(item => item.classList.remove('selected'));
         element.classList.add('selected');
         
         selectedImageUrl = url;
-        document.getElementById('customUrl').value = ''; // カスタム入力をクリア
-        document.getElementById('localFile').value = ''; // ローカルファイルをクリア
-        localImageBase64 = null;
-        isLocalFileSelected = false;
-    }
-
-    function clearGallerySelection() {
-        const items = document.querySelectorAll('.gallery-item');
         items.forEach(item => item.classList.remove('selected'));
         selectedImageUrl = '';
         document.getElementById('localFile').value = ''; // ローカルファイルをクリア
@@ -266,46 +246,14 @@
         reader.readAsDataURL(file);
     }
 
-    // 外部URLの画像をJavaScript側でロードしBase64に変換するヘルパー (カスタムURL用のフォールバック)
-    function convertUrlToBase64(imgUrl, callback) {
-        if (!imgUrl) {
-            callback(null);
-            return;
-        }
-
-        const img = new Image();
-        img.crossOrigin = 'Anonymous'; // CORS許可を要求
-        img.onload = function() {
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                
-                const dataURL = canvas.toDataURL('image/png');
-                callback(dataURL);
-            } catch (e) {
-                console.warn("キャンバスによるBase64変換に失敗しました（CORS制限等）: ", e);
-                callback(imgUrl);
-            }
-        };
-        img.onerror = function() {
-            console.warn("画像のロードに失敗しました。元のURLのまま実行します:", imgUrl);
-            callback(imgUrl);
-        };
-        img.src = imgUrl;
-    }
-
     // パズル開始ボタン処理 (非同期でGAS経由でBase64をロードする)
     async function sendToJigsaw() {
         const pieceCount = document.getElementById('pieceCount').value;
-        const customUrl = document.getElementById('customUrl').value.trim();
         
-        let finalUrl = customUrl ? customUrl : selectedImageUrl;
+        let finalUrl = selectedImageUrl;
         
-        if (!finalUrl && !localImageBase64) {
-            alert("画像が選択されていないか、URLが入力されていません。");
+        if (!finalUrl) {
+            alert("画像が選択されていません。");
             return;
         }
 
@@ -330,33 +278,17 @@
         try {
             let targetBase64 = null;
             
-            if (isLocalFileSelected && localImageBase64) {
-                // ローカルファイルが選択されている場合
-                targetBase64 = localImageBase64;
-                console.log("ローカルのパズル用画像を使用します。");
-            } else {
-                // GAS経由での画像取得、またはカスタムURLの処理
-                // GAS_API_URLが設定されていて、画像パスがURLではなく画像ID（英数字の長い文字列）である場合
-                if (GAS_API_URL && finalUrl && !finalUrl.startsWith('http') && !finalUrl.includes('/')) {
-                    console.log("GASから安全にBase64画像データを取得します。ID:", finalUrl);
-                    const response = await fetch(`${GAS_API_URL}?action=image&id=${finalUrl}`);
-                    const resData = await response.json();
-                    if (resData.success) {
-                        targetBase64 = resData.imageData;
-                        console.log("GASからBase64画像データの取得に成功しました。");
-                    } else {
-                        console.warn("GASからの画像取得に失敗しました:", resData.error);
-                    }
-                }
-                
-                if (!targetBase64) {
-                    // GAS経由ではないカスタムURLなどの場合は従来の非同期CORS変換を試みる
-                    console.log("外部URLの画像をCORS経由でBase64変換します。");
-                    targetBase64 = await new Promise((resolve) => {
-                        convertUrlToBase64(finalUrl, function(base64OrUrl) {
-                            resolve(base64OrUrl);
-                        });
-                    });
+            // GAS経由での画像取得
+            // GAS_API_URLが設定されていて、画像ID（英数字の長い文字列）である場合
+            if (GAS_API_URL && finalUrl && !finalUrl.startsWith('http') && !finalUrl.includes('/')) {
+                console.log("GASから安全にBase64画像データを取得します。ID:", finalUrl);
+                const response = await fetch(`${GAS_API_URL}?action=image&id=${finalUrl}`);
+                const resData = await response.json();
+                if (resData.success) {
+                    targetBase64 = resData.imageData;
+                    console.log("GASからBase64画像データの取得に成功しました。");
+                } else {
+                    console.warn("GASからの画像取得に失敗しました:", resData.error);
                 }
             }
 
