@@ -137,10 +137,10 @@ public class JigsawWebBridge : MonoBehaviour
         {
             selectionManager.uiDoc.gameObject.SetActive(false);
         }
-
         // パズル生成を開始
         if (puzzleManager != null)
         {
+            puzzleManager.isLoadedFromWeb = true; // Web経由での通常起動であることをマーク
             puzzleManager.StartPuzzle(sprite, pieceCount);
         }
         else

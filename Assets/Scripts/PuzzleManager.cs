@@ -6,9 +6,16 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 using UnityEngine.Rendering;
+using System.Runtime.InteropServices;
 
 public class PuzzleManager : MonoBehaviour
 {
+    #if UNITY_WEBGL && !UNITY_EDITOR
+    [DllImport("__Internal")]
+    private static extern void CloseCanvasWindow();
+    #endif
+
+    public bool isLoadedFromWeb = false; // Webからの通常起動かどうかのフラグ
     public Sprite sourceSprite;
     public int targetPieces = 200;
     
@@ -949,6 +956,22 @@ public class PuzzleManager : MonoBehaviour
         isFinished = false;
         if (completionUIDoc != null) completionUIDoc.gameObject.SetActive(false);
         if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false); // タイトルに戻る際にHUDを非表示に
+        
+        #if UNITY_WEBGL && !UNITY_EDITOR
+        if (isLoadedFromWeb) {
+            SetGuideVisible(false);
+            CloseCanvasWindow(); // Web通常起動時は、子ウィンドウ自体を閉じて親画面に戻る
+            return;
+        }
+        #elif UNITY_EDITOR
+        if (isLoadedFromWeb) {
+            Debug.Log("[PuzzleManager] Web通常起動の終了要求：エディタ上なのでシミュレーションします。");
+            SetGuideVisible(false);
+            if (selectionManager != null) selectionManager.Open();
+            return;
+        }
+        #endif
+
         if (selectionManager != null) selectionManager.Open();
         SetGuideVisible(false);
     }
