@@ -10,7 +10,7 @@ Shader "Custom/Jigsaw2D"
     {
         Tags { "RenderType"="Transparent" "Queue"="Transparent" }
         Cull Off
-        ZWrite On
+        ZWrite Off
         ZTest LEqual
         Blend SrcAlpha OneMinusSrcAlpha
 

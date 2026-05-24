@@ -1090,7 +1090,50 @@ public class PuzzleManager : MonoBehaviour
         cam.orthographic = true; 
         cam.orthographicSize = 6f; 
         cam.transform.position = new Vector3(0, 0, -10f); 
-        cam.backgroundColor = new Color(0.55f, 0.55f, 0.55f);
+        cam.backgroundColor = GetDynamicBackgroundColor();
+    }
+
+    private Color GetDynamicBackgroundColor()
+    {
+        if (sourceSprite == null || sourceSprite.texture == null)
+        {
+            return new Color(0.55f, 0.55f, 0.55f); // デフォルト
+        }
+
+        try
+        {
+            Texture2D tex = sourceSprite.texture;
+            // 1x1のRenderTextureを使ってGPU上で安全かつ高速に平均色を取得
+            RenderTexture rt = RenderTexture.GetTemporary(1, 1, 0, RenderTextureFormat.ARGB32);
+            Graphics.Blit(tex, rt);
+
+            RenderTexture activeRT = RenderTexture.active;
+            RenderTexture.active = rt;
+
+            Texture2D result = new Texture2D(1, 1, TextureFormat.ARGB32, false);
+            result.ReadPixels(new Rect(0, 0, 1, 1), 0, 0);
+            result.Apply();
+
+            RenderTexture.active = activeRT;
+            RenderTexture.ReleaseTemporary(rt);
+
+            Color avgColor = result.GetPixel(0, 0);
+            Destroy(result);
+
+            // 輝度（Luminance）の算出
+            float L = 0.299f * avgColor.r + 0.587f * avgColor.g + 0.114f * avgColor.b;
+
+            // 画像が明るいほど背景を暗く（ドロップシャドウ視認性の限界 0.40f まで）、
+            // 画像が暗いほど背景を明るく（目に優しいオフホワイト 0.82f まで）マッピング
+            float bgLuminance = Mathf.Lerp(0.82f, 0.40f, L);
+
+            return new Color(bgLuminance, bgLuminance, bgLuminance, 1.0f);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"[PuzzleManager] Failed to calculate dynamic background: {e.Message}");
+            return new Color(0.55f, 0.55f, 0.55f); // エラー時のフォールバック
+        }
     }
     private EdgeData CreateRandomEdge(bool isBoundary)
     {
