@@ -275,21 +275,33 @@
         var unityInstance = null;
         var selectedData = null;
 
-        // 1. 親ウィンドウからのデータ受け渡しを待機 (ポーリング処理)
+        // 1. 親ウィンドウからのデータ受け渡しを待機 (ポーリング処理・クロスドメイン安全対策)
         function checkParentData() {
             return new Promise((resolve) => {
                 let attempts = 0;
-                const maxAttempts = 300; // 最大約30秒待機 (大容量画像のGASロード遅延に対応)
+                const maxAttempts = 300; // 最大約30秒待機
                 
                 const interval = setInterval(() => {
                     attempts++;
                     
-                    // 親ウィンドウの共有データがあるか確認
-                    if (window.opener && window.opener.selectedPuzzleData) {
-                        selectedData = window.opener.selectedPuzzleData;
+                    try {
+                        // 親ウィンドウの共有データがあるか確認
+                        if (window.opener && window.opener.selectedPuzzleData) {
+                            selectedData = window.opener.selectedPuzzleData;
+                            clearInterval(interval);
+                            resolve(true);
+                            return;
+                        }
+                    } catch (securityError) {
+                        // Googleサイトの埋め込みコード（異なるドメイン）によるアクセス拒否をキャッチ
                         clearInterval(interval);
-                        resolve(true);
-                    } else if (attempts >= maxAttempts) {
+                        console.error("【セキュリティ制限】親画面とドメインが異なるため、ブラウザにアクセスをブロックされました:", securityError);
+                        showConnectionError("【セキュリティエラー】Googleサイトに『埋め込みコード（HTML）』で貼り付けられているため、ブラウザが画像データの転送をブロックしました。『URL埋め込み』で直接ページのURLを貼り付けて配置し直してください。");
+                        resolve(false);
+                        return;
+                    }
+                    
+                    if (attempts >= maxAttempts) {
                         clearInterval(interval);
                         console.warn("親ウィンドウからのパズルデータが見つかりませんでした。デフォルト画像で起動します。");
                         resolve(false);
