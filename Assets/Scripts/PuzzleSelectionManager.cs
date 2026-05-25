@@ -119,6 +119,15 @@ public class PuzzleSelectionManager : MonoBehaviour
             pieceRadioButtons.Add(pieceCountGroup.Q<RadioButton>("pieces-486"));
         }
 
+        // モバイル環境を検知した場合、デフォルトを24枚(初級)にする
+        bool isMobilePlatform = Application.isMobilePlatform;
+        if (isMobilePlatform && pieceRadioButtons.Count > 1)
+        {
+            if (pieceRadioButtons[0] != null) pieceRadioButtons[0].value = true;
+            if (pieceRadioButtons[1] != null) pieceRadioButtons[1].value = false;
+            Debug.Log("[PuzzleSelectionManager] モバイル環境を検出: デフォルトピース数を 24枚 に最適化しました。");
+        }
+
         confirmationOverlay = root.Q<VisualElement>("ConfirmationOverlay");
         confirmImage = root.Q<VisualElement>("ConfirmImage");
         confirmPieces = root.Q<Label>("ConfirmPieces");

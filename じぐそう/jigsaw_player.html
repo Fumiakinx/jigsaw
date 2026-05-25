@@ -291,6 +291,10 @@
             <span>👁</span> 完成図表示
         </button>
 
+        <button class="btn-control" onclick="openInstructionsModal()">
+            <span>ℹ️</span> 操作説明
+        </button>
+
         <button class="btn-control" onclick="toggleFullScreen()">
             <span>📺</span> フルスクリーン
         </button>
@@ -298,6 +302,44 @@
         <button class="btn-control" onclick="window.close()">
             <span>❌</span> ゲームを閉じる
         </button>
+    </div>
+
+    <!-- 🌟 操作説明モーダル -->
+    <div class="modal-overlay" id="instructionsModal" onclick="closeInstructionsModal()" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 5000;">
+        <div class="modal" onclick="event.stopPropagation()" style="background: rgba(26, 26, 36, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); width: 90%; max-width: 500px; border-radius: 24px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); display: flex; flex-direction: column; position: relative;">
+            <span class="modal-close" onclick="closeInstructionsModal()" style="position: absolute; top: 15px; right: 20px; font-size: 30px; font-weight: bold; color: rgba(255,255,255,0.4); cursor: pointer; line-height: 1;">&times;</span>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: #4CAF50; margin-bottom: 20px; text-align: center; letter-spacing: 0.5px;">🎮 じぐそう 操作説明</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <!-- PC用 -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 14px;">
+                    <div style="font-size: 15px; color: #4CAF50; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <span>💻</span> PC での操作
+                    </div>
+                    <ul style="list-style: none; padding-left: 5px; font-size: 13px; color: #d0d0d5; line-height: 1.8;">
+                        <li>🖱️ <strong style="color: white;">ドラッグ</strong> : ピースを移動</li>
+                        <li>🖱️ <strong style="color: white;">右クリック</strong> : ピースを回転（90度）</li>
+                        <li>⌨️ <strong style="color: white;">スペースキー</strong> : 完成見本（ガイド）の表示（長押し）</li>
+                        <li>⌨️ <strong style="color: white;">Esc キー</strong> : 一時停止（ポーズ）</li>
+                    </ul>
+                </div>
+                
+                <!-- スマホ用 -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 14px;">
+                    <div style="font-size: 15px; color: #FF9800; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <span>📱</span> スマホ / タブレット での操作
+                    </div>
+                    <ul style="list-style: none; padding-left: 5px; font-size: 13px; color: #d0d0d5; line-height: 1.8;">
+                        <li>👉 <strong style="color: white;">ドラッグ</strong> : ピースを移動</li>
+                        <li>👉 <strong style="color: white;">ダブルタップ</strong> : ピースを回転（90度）</li>
+                        <li>👉 <strong style="color: white;">ドラッグ中のマルチタップ</strong> : ピースを回転（90度）</li>
+                        <li>👁️ <strong style="color: white;">完成図表示（長押し）</strong> : コントロールバーの 👁 ボタンを長押し</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <button onclick="closeInstructionsModal()" style="margin-top: 20px; background: #333338; color: white; border: none; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s ease;">閉じる</button>
+        </div>
     </div>
 
     <!-- プレミアムローディング画面 -->
@@ -601,6 +643,16 @@
             if (unityInstance) {
                 unityInstance.SetFullscreen(1);
             }
+        }
+
+        // 🌟 操作説明モーダルの開閉
+        function openInstructionsModal() {
+            closeControlBar(); // コントロールバーを閉じる
+            document.getElementById("instructionsModal").style.display = "flex";
+        }
+        
+        function closeInstructionsModal() {
+            document.getElementById("instructionsModal").style.display = "none";
         }
 
         // 実行開始

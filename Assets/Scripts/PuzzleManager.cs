@@ -286,17 +286,44 @@ public class PuzzleManager : MonoBehaviour
 
         var mouse = UnityEngine.InputSystem.Mouse.current;
         var kb = UnityEngine.InputSystem.Keyboard.current;
+        var touchscreen = UnityEngine.InputSystem.Touchscreen.current;
 
-        if (mouse != null && kb != null)
+        // タッチスクリーンの入力を検知
+        bool isTouchActive = false;
+        Vector2 activeTouchPos = Vector2.zero;
+        bool activeTouchPressed = false;
+        bool activeTouchDown = false;
+        bool activeTouchUp = false;
+
+        if (touchscreen != null && touchscreen.primaryTouch.press.isPressed)
+        {
+            isTouchActive = true;
+            activeTouchPos = touchscreen.primaryTouch.position.ReadValue();
+            activeTouchPressed = true;
+            activeTouchDown = touchscreen.primaryTouch.press.wasPressedThisFrame;
+            activeTouchUp = touchscreen.primaryTouch.press.wasReleasedThisFrame;
+        }
+
+        if (isTouchActive)
+        {
+            mousePos = activeTouchPos;
+            leftPressed = activeTouchPressed;
+            leftDown = activeTouchDown;
+            leftUp = activeTouchUp;
+            rightDown = false;
+            spaceDown = false;
+            spaceUp = false;
+        }
+        else if (mouse != null)
         {
             mousePos = mouse.position.ReadValue();
             leftPressed = mouse.leftButton.isPressed;
             leftDown = mouse.leftButton.wasPressedThisFrame;
             leftUp = mouse.leftButton.wasReleasedThisFrame;
             rightDown = mouse.rightButton.wasPressedThisFrame;
-            spaceDown = kb.spaceKey.wasPressedThisFrame;
-            spaceUp = kb.spaceKey.wasReleasedThisFrame;
-            if (kb.escapeKey.wasPressedThisFrame) TogglePause();
+            spaceDown = (kb != null) && kb.spaceKey.wasPressedThisFrame;
+            spaceUp = (kb != null) && kb.spaceKey.wasReleasedThisFrame;
+            if (kb != null && kb.escapeKey.wasPressedThisFrame) TogglePause();
         }
         else
         {

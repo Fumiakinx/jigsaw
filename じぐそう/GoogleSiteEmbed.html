@@ -116,30 +116,33 @@
             display: none;
             justify-content: center;
             align-items: flex-start; /* 🌟 上寄せにして下が切れるのを防ぐ */
-            padding-top: 4vh; /* 🌟 上部に少し余白を作る */
-            padding-bottom: 4vh; /* 🌟 下部にも余白を作り、スクロール可能にする */
+            padding: 20px; /* 🌟 画面端との余白を十分に確保してはみ出しを防ぐ */
             overflow-y: auto; /* 🌟 画面高さが足りない場合はモーダル自体をスクロール可能にする */
             z-index: 2000;
+            box-sizing: border-box;
             animation: fadeIn 0.3s ease;
         }
         .modal-content {
             background-color: #ffffff; /* 🌟 背景は完全な白 */
             color: #1e1e1e; /* 🌟 文字色は黒 */
             width: 90%; /* 🌟 画面幅の90%までダイナミックに拡大 */
-            max-width: 1200px; /* 🌟 最大横幅も1200pxに拡張して画像表示を巨大化 */
-            min-width: 320px;
+            max-width: 1000px; /* 🌟 最大横幅を1000pxに調整し、タブレットでもはみ出ないようにバランスを改善 */
+            min-width: 280px;
             border-radius: 24px;
             padding: 35px;
             box-shadow: 0 25px 70px rgba(0, 0, 0, 0.6);
             display: flex;
             flex-direction: column;
             position: relative;
+            box-sizing: border-box;
+            margin: 20px auto; /* 🌟 スクロール用上下マージン */
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             .modal-content {
                 width: 95%;
-                padding: 20px;
+                padding: 24px;
+                border-radius: 20px;
             }
         }
         .modal-close {
@@ -152,27 +155,29 @@
             cursor: pointer;
             transition: color 0.2s;
             line-height: 1;
+            z-index: 10;
         }
         .modal-close:hover {
             color: #000;
         }
-
+ 
         /* 🌟 モーダル内の2カラムレイアウト */
         .modal-body {
             display: flex;
             gap: 40px;
             margin-top: 10px;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             .modal-body {
                 flex-direction: column;
                 gap: 20px;
             }
         }
         .modal-left {
-            flex: 1.6; /* 🌟 左カラム（画像）の比率を大幅に引き上げて画像をダイナミックに拡大 */
+            flex: 1.5; /* 🌟 左カラム（画像）の比率を大幅に引き上げて画像をダイナミックに拡大 */
             display: flex;
             flex-direction: column;
+            min-width: 0;
         }
         .modal-right {
             flex: 1;
@@ -181,16 +186,18 @@
             gap: 24px;
             border-left: 1px solid #e0e0e0;
             padding-left: 40px;
+            min-width: 0;
         }
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             .modal-right {
                 border-left: none;
                 padding-left: 0;
                 border-top: 1px solid #e0e0e0;
                 padding-top: 20px;
+                gap: 20px;
             }
         }
-
+ 
         .modal-image-wrap {
             width: 100%;
             aspect-ratio: 1.6;
@@ -202,6 +209,11 @@
             overflow: hidden;
             border: 1px solid #e0e0e0;
             margin-bottom: 15px;
+        }
+        @media (max-width: 1024px) {
+            .modal-image-wrap {
+                max-height: 35vh; /* 🌟 縦並び時にプレビューが巨大化してボタンがはみ出さないように高さを制限 */
+            }
         }
         .modal-image-wrap img {
             width: 100%;
@@ -431,17 +443,35 @@
     // 💡 デプロイ後に発行されるGASのWebアプリURLをここに貼り付けてください
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec"; 
 
+    // 💡 本番環境（Googleサイトなどの埋め込み環境）で公開している jigsaw_player.html の絶対URL
+    // ※ Googleサイトに埋め込んでプレイする場合、この変数に公開されている jigsaw_player ページの絶対URL（https://...）を設定してください。
+    // ※ 空欄または "jigsaw_player.html" の場合は、ローカルテスト用として相対パスで起動します。
+    const PUBLISHED_PLAYER_URL = "https://fumiakinx.github.io/jigsaw/%E3%81%98%E3%81%90%E3%81%9D%E3%81%86/jigsaw_player.html"; 
+
     // デフォルト画像リスト (GASロード失敗時や未設定時のフォールバック用)
     const DEFAULT_IMAGES = [
-        { id: 'images/beer1.jpg', name: 'ビール缶 1', description: 'ビール缶 1,飲み物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: 'images/beer2.jpg', name: 'ビール缶 2', description: 'ビール缶 2,飲み物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: 'images/beer3.jpg', name: 'ビール缶 3', description: 'ビール缶 3,飲み物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: 'images/berry.jpg', name: 'ベリー', description: 'ベリー,果物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' }
+        { id: '16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K', name: '日本のビール', description: '日本のビール,飲み物,缶|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1IpPrnbfpXlDU5U4_S1pqbn5Yl7EwkAih', name: '日本のビール', description: '日本のビール,飲み物,缶|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '17ehA-dLd30wboSgO7qSQfIz0fkiG4cr-', name: 'トヨタ 2000GT', description: 'トヨタ 2000GT,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1UeqknDR9xAMnuLfP1xqQX7DHWvuNgtIA', name: 'ディーノ 246GT', description: 'ディーノ 246GT,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1UnfSiKB-nZE-ky4IRQp7zL_dNgzlgc9p', name: 'ロータス ヨーロッパ', description: 'ロータス ヨーロッパ,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1t9OjMlc8uyzjx5ThLFr0TV4yNHrOK6me', name: 'ポルシェ 911カレラRS', description: 'ポルシェ 911カレラRS,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1M-k7YBPfz7Tik_FODePIqH7H6csaRNWI', name: '紫電改', description: '紫電改,飛行機,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1jHSGWe4fcrguLWekEvmk8VtNW7yAcL0i', name: '震電', description: '震電,飛行機,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1FoXrZ8e1ox-Nppcq1zMyVcDrXoxR6LT4', name: '零式艦上戦闘機', description: '零式艦上戦闘機,飛行機,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1qX6zU1NnxIjUHx48G0Z0GbLGudKRacTI', name: '昭和のお菓子', description: '昭和のお菓子,昭和,お菓子|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1zkJSYPG2vZ4sq9pOu8ssgYRLZy3pj6T1', name: '日本のビール', description: '日本のビール,飲み物,缶|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '13lKZZnghkVJEkbh-1JwHb7GetKbGWvaz', name: 'ドーナツ', description: 'ドーナツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '145SPy2TKIWzd9AeiSIc_0tBpPZkiMDEy', name: 'ドーナツ', description: 'ドーナツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1nimiWLzN19mxZO4hDbt8dYxbZlFv9Cua', name: 'ドーナツ', description: 'ドーナツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1g3KQBjFDuAgjqvXqdxU7Ba6QjkQuHh3g', name: 'ベリー', description: 'ベリー,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1uEXOZmhN3kFfVQZ8SoG11wmY3lHaMoq8', name: 'ケーキ', description: 'ケーキ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: '1bD-rtuhi4MNuFhplO6ZZ_0uGVvsyvobY', name: 'フルーツ', description: 'フルーツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' }
     ];
 
-    let selectedImageUrl = 'images/beer1.jpg';
-    let selectedImageName = 'ビール缶 1';
-    let selectedImageDescription = 'ビール缶 1,飲み物';
+    let selectedImageUrl = '16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K';
+    let selectedImageName = '日本のビール';
+    let selectedImageDescription = '日本のビール,飲み物,缶';
     let selectedImageAuthor = 'Google AI画像生成 (Imagen 3)';
     let selectedImageLink = 'https://deepmind.google/technologies/imagen/';
 
@@ -572,8 +602,46 @@
         });
     }
 
+    // 超高精度モバイル・タブレット端末判定 (Fire HD カスタム環境・iPad Pro PC偽装モード・物理タッチ端末完全対応)
+    function isMobileOrTablet() {
+        const ua = navigator.userAgent.toLowerCase();
+        
+        // 1. 標準判定 (iOS, Android, Fireシリーズ, Silk, Amazon, Fire)
+        const isMobileUA = /iphone|ipod|android.*mobile|windows.*phone|blackberry|iemobile|opera mini/i.test(ua);
+        const isTabletUA = /ipad|android(?!.*mobile)|kftt|kindle|silk|amazon|fire/i.test(ua);
+        
+        if (isMobileUA || isTabletUA) return true;
+
+        // 2. iPad Pro等のPC偽装対策 (Mac表示だがマルチタッチ対応)
+        const isMacTouch = navigator.maxTouchPoints > 1 && ua.includes('macintosh');
+        if (isMacTouch) return true;
+
+        // 3. 🌟 最強の物理特性フォールバック (Fire HD 10「2021改」等のPC偽装ブラウザ対策)
+        // デバイスが「物理的にタッチ可能」であり、かつ「画面幅または画面高さが1300px以下（高解像度タブレットサイズ）」の場合
+        // ※ Fire HD 10 (1920x1200) の横画面論理ピクセル幅 (1280px) などをカバーするため 1300px に引き上げました
+        const hasTouchPoints = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
+        const isTabletOrPhoneSize = window.innerWidth <= 1300 || window.innerHeight <= 1300;
+        
+        if (hasTouchPoints && isTabletOrPhoneSize) {
+            console.log("📱 物理特性によりタブレット/モバイルとして判定しました（タッチ対応 ＆ 1024px以下）");
+            return true;
+        }
+
+        return false;
+    }
+
     // ページロード時に自動ロードを実行
-    window.addEventListener('DOMContentLoaded', loadGalleryFromGAS);
+    window.addEventListener('DOMContentLoaded', () => {
+        // モバイル・タブレット環境検出によるデフォルトピース数の最適化
+        if (isMobileOrTablet()) {
+            const pieceSelect = document.getElementById('pieceCount');
+            if (pieceSelect) {
+                pieceSelect.value = "24";
+                console.log("📱 モバイル/タブレット環境を検知したため、デフォルトピース数を24ピース（かんたん）に最適化しました。");
+            }
+        }
+        loadGalleryFromGAS();
+    });
 
     // 画像選択時のコールバック
     function selectImage(element, url, name, description, author, link) {
@@ -691,7 +759,22 @@
         btn.disabled = true;
 
         // 2. ポップアップブロックを完全に回避するため、即座にゲームプレイヤー画面を開く
-        const playerWindow = window.open('jigsaw_player.html', '_blank');
+        let playerUrl = 'jigsaw_player.html';
+        
+        // 起動環境のホストを判定（ローカルファイルまたはローカルサーバー）
+        const isLocal = window.location.protocol === 'file:' || 
+                        window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1';
+        
+        // Googleサイトの埋め込み環境（googleusercontent.comなど）の場合で、本番用絶対URLが設定されている場合は自動適用
+        if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
+            if (window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('google.com')) {
+                playerUrl = PUBLISHED_PLAYER_URL;
+                console.log("🌐 Google Sites埋め込み環境を検知したため、本番用絶対URLでプレイヤーを起動します:", playerUrl);
+            }
+        }
+
+        const playerWindow = window.open(playerUrl, '_blank');
         if (!playerWindow) {
             alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
             btn.innerText = originalText;
