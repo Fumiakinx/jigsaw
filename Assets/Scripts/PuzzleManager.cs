@@ -284,43 +284,19 @@ public class PuzzleManager : MonoBehaviour
         Vector2 mousePos;
         bool leftPressed, leftDown, leftUp, rightDown, spaceDown, spaceUp;
 
-        var mouse = UnityEngine.InputSystem.Mouse.current;
+        var pointer = UnityEngine.InputSystem.Pointer.current;
         var kb = UnityEngine.InputSystem.Keyboard.current;
-        var touchscreen = UnityEngine.InputSystem.Touchscreen.current;
 
-        // タッチスクリーンの入力を検知
-        bool isTouchActive = false;
-        Vector2 activeTouchPos = Vector2.zero;
-        bool activeTouchPressed = false;
-        bool activeTouchDown = false;
-        bool activeTouchUp = false;
+        if (pointer != null)
+        {
+            mousePos = pointer.position.ReadValue();
+            leftPressed = pointer.press.isPressed;
+            leftDown = pointer.press.wasPressedThisFrame;
+            leftUp = pointer.press.wasReleasedThisFrame;
 
-        if (touchscreen != null && touchscreen.primaryTouch.press.isPressed)
-        {
-            isTouchActive = true;
-            activeTouchPos = touchscreen.primaryTouch.position.ReadValue();
-            activeTouchPressed = true;
-            activeTouchDown = touchscreen.primaryTouch.press.wasPressedThisFrame;
-            activeTouchUp = touchscreen.primaryTouch.press.wasReleasedThisFrame;
-        }
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+            rightDown = (mouse != null) && mouse.rightButton.wasPressedThisFrame;
 
-        if (isTouchActive)
-        {
-            mousePos = activeTouchPos;
-            leftPressed = activeTouchPressed;
-            leftDown = activeTouchDown;
-            leftUp = activeTouchUp;
-            rightDown = false;
-            spaceDown = false;
-            spaceUp = false;
-        }
-        else if (mouse != null)
-        {
-            mousePos = mouse.position.ReadValue();
-            leftPressed = mouse.leftButton.isPressed;
-            leftDown = mouse.leftButton.wasPressedThisFrame;
-            leftUp = mouse.leftButton.wasReleasedThisFrame;
-            rightDown = mouse.rightButton.wasPressedThisFrame;
             spaceDown = (kb != null) && kb.spaceKey.wasPressedThisFrame;
             spaceUp = (kb != null) && kb.spaceKey.wasReleasedThisFrame;
             if (kb != null && kb.escapeKey.wasPressedThisFrame) TogglePause();
