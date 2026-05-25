@@ -13,6 +13,8 @@ public class PuzzleManager : MonoBehaviour
     #if UNITY_WEBGL && !UNITY_EDITOR
     [DllImport("__Internal")]
     private static extern void CloseCanvasWindow();
+    [DllImport("__Internal")]
+    private static extern void OnPuzzleComplete(float elapsedTime);
     #endif
 
     public bool isLoadedFromWeb = false; // Webからの通常起動かどうかのフラグ
@@ -912,6 +914,11 @@ public class PuzzleManager : MonoBehaviour
     private void ShowClearEffect() 
     { 
         isFinished = true; float elapsed = (Time.time - startTime) - totalPausedTime; TimeSpan ts = TimeSpan.FromSeconds(elapsed);
+
+        #if UNITY_WEBGL && !UNITY_EDITOR
+        OnPuzzleComplete(elapsed);
+        #endif
+
         if (completionUIDoc != null) {
             completionUIDoc.gameObject.SetActive(true);
             var root = completionUIDoc.rootVisualElement;

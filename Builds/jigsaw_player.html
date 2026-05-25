@@ -619,6 +619,33 @@
             }
         }
 
+        // 🏆 パズルクリア時にUnity側から呼び出されるコールバック
+        window.onPuzzleComplete = async function (elapsedTime) {
+            console.log("🏆 パズルクリア！タイム:", elapsedTime, "秒");
+            
+            // 親画面から渡された名前がある場合のみランキングに登録する
+            if (selectedData && selectedData.playerName && selectedData.playerName.trim() !== "") {
+                const name = selectedData.playerName.trim();
+                const imageId = selectedData.imageId;
+                const pieceCount = selectedData.pieceCount;
+                const GAS_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec";
+                
+                console.log(`🏆 ランキング登録を送信します。名: ${name}, タイム: ${elapsedTime}秒, 画像ID: ${imageId}, ピース数: ${pieceCount}`);
+                
+                try {
+                    await fetch(`${GAS_URL}?action=add_score&id=${imageId}&pieceCount=${pieceCount}&name=${encodeURIComponent(name)}&time=${elapsedTime}`, {
+                        method: 'GET',
+                        mode: 'no-cors' // CORS問題を完全に回避
+                    });
+                    console.log("🏆 ランキング登録リクエストの送信に成功しました！");
+                } catch (e) {
+                    console.error("❌ ランキング登録の送信中にエラーが発生しました:", e);
+                }
+            } else {
+                console.log("⚪ プレイヤー名が未設定（匿名プレイ）のため、ランキング登録はスキップされました。");
+            }
+        };
+
         // 実行開始
         initGame();
     </script>
