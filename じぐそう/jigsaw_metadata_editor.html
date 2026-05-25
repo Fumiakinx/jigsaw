@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>じぐそう - メタデータ一括編集エディター</title>
+    <!-- 🌟 Google Fontsから Inter と Outfit をインポートして極上のタイポグラフィを実現 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0d11;
+            --card-bg: #16161f;
+            --card-border: rgba(255, 255, 255, 0.05);
+            --text-main: #f3f3f7;
+            --text-muted: #8e8e9f;
+            --primary: #4cbd6b;
+            --primary-hover: #3fa55b;
+            --primary-glow: rgba(76, 189, 107, 0.25);
+            --danger: #ff4d4d;
+            --danger-hover: #e63939;
+            --accent: #5e6ad2;
+            --accent-glow: rgba(94, 106, 210, 0.25);
+            --input-bg: #1e1e28;
+            --input-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2b2b3d;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3e3e56;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 1300px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 28px;
+            margin: 0;
+            background: linear-gradient(135deg, #ffffff 30%, #a2a2bd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h1 span {
+            font-size: 24px;
+        }
+
+        /* 🌟 プレミアム設定パネル */
+        .config-card {
+            width: 100%;
+            max-width: 1300px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 20px 25px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            margin-bottom: 25px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .config-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent);
+        }
+
+        .config-label {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .config-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .config-input {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .config-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .btn-save {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px var(--accent-glow);
+            white-space: nowrap;
+        }
+
+        .btn-save:hover {
+            background-color: #4c57b5;
+            transform: translateY(-1px);
+        }
+
+        .btn-save:active {
+            transform: translateY(0);
+        }
+
+        /* 🌟 メインレイアウト */
+        .workspace {
+            width: 100%;
+            max-width: 1300px;
+            display: flex;
+            gap: 25px;
+            align-items: stretch;
+        }
+
+        @media (max-width: 950px) {
+            .workspace {
+                flex-direction: column;
+            }
+        }
+
+        /* 🌟 左カラム: リストパネル */
+        .list-panel {
+            flex: 1.1;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            max-height: 780px;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title span.count-badge {
+            background-color: #242436;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .search-box {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-main);
+            font-size: 13px;
+            outline: none;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .search-box:focus {
+            border-color: var(--accent);
+        }
+
+        .image-list-container {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 5px;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-sizing: border-box;
+        }
+
+        .list-item:hover {
+            transform: translateY(-2px);
+            background-color: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .list-item.selected {
+            background-color: rgba(76, 189, 107, 0.08);
+            border-color: var(--primary);
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .list-thumb {
+            width: 65px;
+            height: 48px;
+            border-radius: 6px;
+            overflow: hidden;
+            background-color: #09090e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            flex-shrink: 0;
+        }
+
+        .list-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .list-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .list-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .list-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 🌟 右カラム: 編集パネル */
+        .edit-panel {
+            flex: 1.3;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-container {
+            width: 100%;
+            aspect-ratio: 1.8;
+            background-color: #0b0b0f;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid var(--card-border);
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .preview-placeholder {
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: block;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        .form-control:disabled {
+            background-color: #121218;
+            color: var(--text-muted);
+            cursor: not-allowed;
+            border-color: rgba(255,255,255,0.03);
+        }
+
+        .genre-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            min-height: 22px;
+        }
+
+        .genre-badge {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #b0b0c5;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* 🌟 アクションエリア */
+        .actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            transform: translateY(-1.5px);
+            box-shadow: 0 6px 20px var(--primary-glow);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background-color: #2b3a30;
+            color: #65856e;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background-color: #1e1e28;
+            color: #b0b0c5;
+            border: 1px solid var(--input-border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #262635;
+            border-color: rgba(255,255,255,0.15);
+            color: white;
+            transform: translateY(-1.5px);
+        }
+
+        .btn-secondary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        /* 🌟 トースト通知 */
+        .toast {
+            position: fixed;
+            top: 25px;
+            background-color: #161622;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 9999;
+            transform: translateY(-50px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast-success {
+            border-left: 4px solid var(--primary);
+        }
+
+        .toast-info {
+            border-left: 4px solid var(--accent);
+        }
+
+        .toast-error {
+            border-left: 4px solid var(--danger);
+        }
+
+        /* ローディングスピナー */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.05);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        .btn-spinner {
+            border: 2px solid rgba(255,255,255,0.2);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border-left-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 🌟 モーダル: 生成コード表示用 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+        }
+
+        .modal {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            width: 90%;
+            max-width: 800px;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 30px;
+            font-weight: bold;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: white;
+        }
+
+        .code-area {
+            background-color: #0b0b0f;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            color: #a5d6a7;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            height: 380px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            white-space: pre;
+            tab-size: 4;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🧩 じぐそう <span>|</span> メタデータ一括編集エディター</h1>
+</div>
+
+<!-- 🌟 設定カード -->
+<div class="config-card">
+    <div class="config-label">GAS API URL</div>
+    <div class="config-input-wrapper">
+        <input type="text" id="gasUrlInput" class="config-input" placeholder="デプロイされたGAS WebアプリのURL（https://script.google.com/macros/s/xxxx/exec）を入力してください">
+    </div>
+    <button class="btn-save" onclick="saveGasUrl()">設定を保存</button>
+</div>
+
+<!-- 🌟 メインワークスペース -->
+<div class="workspace">
+    <!-- 左カラム: リストパネル -->
+    <div class="list-panel">
+        <div class="panel-title">
+            画像一覧
+            <span class="count-badge" id="imageCount">0 / 0</span>
+        </div>
+        <input type="text" id="searchBox" class="search-box" placeholder="パズル名やタグで絞り込む..." oninput="filterImages()">
+        
+        <div class="image-list-container" id="imageList">
+            <!-- ロード中のプレースホルダー -->
+            <div id="listLoader" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; gap: 15px; color: var(--text-muted);">
+                <div class="spinner"></div>
+                <div style="font-size: 13px; font-weight: bold;">画像をロードしています...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右カラム: 編集パネル -->
+    <div class="edit-panel">
+        <!-- 画像プレビュー -->
+        <div class="preview-container" id="previewArea">
+            <div class="preview-placeholder">
+                <span>🖼️</span>
+                <span>左側のリストから画像を選択してください。</span>
+            </div>
+        </div>
+
+        <!-- フォーム -->
+        <div class="form-group">
+            <label class="form-label">画像ID (GoogleドライブID)</label>
+            <input type="text" id="formId" class="form-control" disabled>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">パズル名 (画像タイトル)</label>
+            <input type="text" id="formName" class="form-control" placeholder="パズルの名称を入力" oninput="updatePreviewData()" disabled>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">タグ / ジャンル (カンマ区切りで複数指定)</label>
+            <input type="text" id="formTags" class="form-control" placeholder="例: 乗り物, 車, レトロ" oninput="updatePreviewData()" disabled>
+            <div class="genre-preview" id="genrePreview">
+                <!-- 動的にバッジが表示されます -->
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">🎨 作成者</label>
+            <input type="text" id="formAuthor" class="form-control" placeholder="例: Google AI画像生成 (Imagen 3)" disabled>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">🔗 宣伝用リンク (公式サイトなど)</label>
+            <input type="text" id="formLink" class="form-control" placeholder="例: https://deepmind.google/technologies/imagen/" disabled>
+        </div>
+
+        <!-- アクション -->
+        <div class="actions">
+            <button id="btnCopyLocal" class="btn btn-secondary" onclick="openGeneratorModal()" disabled>ローカル用コードを生成</button>
+            <button id="btnSaveGas" class="btn btn-primary" onclick="saveToGas()" disabled>Googleドライブを更新する</button>
+        </div>
+    </div>
+</div>
+
+<!-- 🌟 ローカルコードジェネレーターモーダル -->
+<div class="modal-overlay" id="codeModal">
+    <div class="modal" onclick="event.stopPropagation()">
+        <span class="modal-close" onclick="closeGeneratorModal()">&times;</span>
+        <div class="panel-title" style="margin-bottom: 10px;">ローカル用フォールバックコード</div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">
+            以下のコードをコピーし、<b>[GoogleSiteEmbed.html](file:///c:/Users/nakam/UnityProject/Jigsaw/%E3%81%98%E3%81%90%E3%81%9D%E3%81%86/GoogleSiteEmbed.html)</b> 内の <code>const DEFAULT_IMAGES = [ ... ];</code> の配列部分にそのまま上書きコピーして貼り付けることで、GASが使えない環境でも編集したメタデータで動作します。
+        </div>
+        <div class="code-area" id="codeOutput"></div>
+        <button class="btn btn-primary" onclick="copyGeneratedCode()">このコードをクリップボードにコピー</button>
+    </div>
+</div>
+
+<!-- 🌟 トースト通知 -->
+<div class="toast" id="toast">
+    <span id="toastIcon"></span>
+    <span id="toastMessage"></span>
+</div>
+
+<script>
+    // デフォルト画像リスト (GASロード失敗時や未設定時のフォールバック用)
+    const DEFAULT_IMAGES = [
+        { id: 'images/beer1.jpg', name: 'ビール缶 1', description: 'ビール缶 1,飲み物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: 'images/beer2.jpg', name: 'ビール缶 2', description: 'ビール缶 2,飲み物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: 'images/beer3.jpg', name: 'ビール缶 3', description: 'ビール缶 3,飲み物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+        { id: 'images/berry.jpg', name: 'ベリー', description: 'ベリー,果物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' }
+    ];
+
+    let imageList = []; // 現在ロードされている画像リスト
+    let selectedImage = null; // 現在選択されている画像オブジェクト
+    let isFromGas = false; // 現在ロードしているデータがGAS経由かどうか
+
+    // 1. 起動時に localStorage から GAS URL を復元してロード
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedUrl = localStorage.getItem('JIGSAW_GAS_URL');
+        if (savedUrl) {
+            document.getElementById('gasUrlInput').value = savedUrl;
+        }
+        loadImages();
+    });
+
+    // GAS URLの保存
+    function saveGasUrl() {
+        const url = document.getElementById('gasUrlInput').value.trim();
+        localStorage.setItem('JIGSAW_GAS_URL', url);
+        showToast("設定を保存しました。画像を再ロードします。", "info");
+        loadImages();
+    }
+
+    // 2. 画像のロード (GASまたはローカルフォールバック)
+    async function loadImages() {
+        const listLoader = document.getElementById('listLoader');
+        const imageListContainer = document.getElementById('imageList');
+        
+        // ローダーを再表示
+        listLoader.style.display = 'flex';
+        // 一旦リストを消す
+        const items = imageListContainer.querySelectorAll('.list-item');
+        items.forEach(item => item.remove());
+
+        const gasUrl = localStorage.getItem('JIGSAW_GAS_URL');
+
+        if (!gasUrl) {
+            console.log("GAS_API_URLが設定されていません。デフォルト画像でシミュレートします。");
+            isFromGas = false;
+            imageList = JSON.parse(JSON.stringify(DEFAULT_IMAGES)); // ディープコピー
+            buildListHTML(imageList);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${gasUrl}?action=list`);
+            const data = await response.json();
+            
+            if (data.success && data.images && data.images.length > 0) {
+                isFromGas = true;
+                imageList = data.images;
+                buildListHTML(imageList);
+                showToast("Googleドライブからアセットの読み込みに成功しました。", "success");
+            } else {
+                console.warn("GASからアセットが取得できませんでした。デフォルトアセットを使用します。");
+                isFromGas = false;
+                imageList = JSON.parse(JSON.stringify(DEFAULT_IMAGES));
+                buildListHTML(imageList);
+                showToast("GASからの取得結果が空です。デフォルト画像を読み込みました。", "info");
+            }
+        } catch (e) {
+            console.error("画像一覧ロードエラー。デフォルトにフォールバック:", e);
+            isFromGas = false;
+            imageList = JSON.parse(JSON.stringify(DEFAULT_IMAGES));
+            buildListHTML(imageList);
+            showToast("接続エラー。ローカルのデフォルト画像を表示しています。", "error");
+        }
+    }
+
+    // 取得した画像データからHTMLリストを動的に構築
+    function buildListHTML(list) {
+        const imageListContainer = document.getElementById('imageList');
+        const listLoader = document.getElementById('listLoader');
+        
+        listLoader.style.display = 'none';
+
+        // 既存のリストアイテムを全クリア
+        const items = imageListContainer.querySelectorAll('.list-item');
+        items.forEach(item => item.remove());
+
+        document.getElementById('imageCount').innerText = `0 / ${list.length}`;
+
+        list.forEach((img, idx) => {
+            const parsed = parseDescription(img.name, img.description);
+            
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            item.id = `item_${idx}`;
+            
+            // ドライブ画像の場合は軽量サムネイルを使用し、ローカルの場合はパスを使用
+            const thumbUrl = isFromGas 
+                ? `https://drive.google.com/thumbnail?sz=w150&id=${img.id}`
+                : img.id;
+
+            item.innerHTML = `
+                <div class="list-thumb">
+                    <img src="${thumbUrl}" alt="${parsed.name}">
+                </div>
+                <div class="list-info">
+                    <div class="list-name">${parsed.name}</div>
+                    <div class="list-meta">${parsed.genres.join(' • ') || 'タグなし'}</div>
+                </div>
+            `;
+
+            item.onclick = () => selectListItem(img, idx, parsed, thumbUrl);
+            imageListContainer.appendChild(item);
+        });
+        
+        // ロード成功後、編集フォームとボタン類をリセット
+        resetForm();
+    }
+
+    // リストアイテムの選択時の処理
+    function selectListItem(img, index, parsed, thumbUrl) {
+        // 既存の選択解除
+        const items = document.querySelectorAll('.list-item');
+        items.forEach(item => item.classList.remove('selected'));
+        
+        // 該当を選択状態にする
+        const target = document.getElementById(`item_${index}`);
+        if (target) target.classList.add('selected');
+
+        selectedImage = {
+            index: index,
+            raw: img,
+            parsed: parsed
+        };
+
+        document.getElementById('imageCount').innerText = `${index + 1} / ${imageList.length}`;
+
+        // プレビューの更新 (高解像度プレビュー)
+        const previewArea = document.getElementById('previewArea');
+        let displayUrl = img.id;
+        if (isFromGas) {
+            displayUrl = `https://drive.google.com/thumbnail?sz=w800&id=${img.id}`;
+        }
+        previewArea.innerHTML = `<img src="${displayUrl}" alt="${parsed.name}">`;
+
+        // フォームの活性化と値のバインド
+        enableForm(true);
+        document.getElementById('formId').value = img.id;
+        document.getElementById('formName').value = parsed.name;
+        document.getElementById('formTags').value = parsed.genres.join(', ');
+        document.getElementById('formAuthor').value = parsed.author;
+        document.getElementById('formLink').value = parsed.link;
+
+        updatePreviewData();
+    }
+
+    // フォームの活性化・非活性化
+    function enableForm(enable) {
+        const controls = [
+            'formName', 'formTags', 'formAuthor', 'formLink',
+            'btnCopyLocal', 'btnSaveGas'
+        ];
+        controls.forEach(id => {
+            document.getElementById(id).disabled = !enable;
+        });
+        
+        // GASが未設定の場合は、GAS保存ボタンは非活性のままにする
+        if (enable && !isFromGas) {
+            document.getElementById('btnSaveGas').disabled = true;
+        }
+    }
+
+    // フォームのリセット
+    function resetForm() {
+        selectedImage = null;
+        enableForm(false);
+        document.getElementById('formId').value = '';
+        document.getElementById('formName').value = '';
+        document.getElementById('formTags').value = '';
+        document.getElementById('formAuthor').value = '';
+        document.getElementById('formLink').value = '';
+        document.getElementById('genrePreview').innerHTML = '';
+        
+        document.getElementById('previewArea').innerHTML = `
+            <div class="preview-placeholder">
+                <span>🖼️</span>
+                <span>左側のリストから画像を選択してください。</span>
+            </div>
+        `;
+    }
+
+    // 🌟 説明文メタデータのパースヘルパー
+    // フォーマット: "名前,ジャンル1,ジャンル2|作成者|リンク"
+    function parseDescription(fileName, descRaw) {
+        let name = fileName || '';
+        let description = '';
+        let author = '';
+        let link = '';
+        
+        if (descRaw) {
+            if (descRaw.includes('|')) {
+                const pipeParts = descRaw.split('|');
+                description = pipeParts[0].trim();
+                if (pipeParts.length > 1) author = pipeParts[1].trim();
+                if (pipeParts.length > 2) link = pipeParts[2].trim();
+            } else {
+                description = descRaw;
+            }
+        }
+        
+        let genres = [];
+        if (description) {
+            const parts = description.split(',');
+            if (parts.length > 0 && parts[0].trim()) {
+                name = parts[0].trim();
+            }
+            if (parts.length > 1) {
+                genres = parts.slice(1).map(g => g.trim());
+            }
+        } else {
+            // ドライブの説明（メタデータ）が空の場合、ファイル名から自動パース
+            let nameWithoutExt = '';
+            if (name) {
+                const lastDotIndex = name.lastIndexOf('.');
+                nameWithoutExt = lastDotIndex !== -1 ? name.substring(0, lastDotIndex) : name;
+            }
+            if (!nameWithoutExt) nameWithoutExt = name || '名称未設定';
+
+            const separators = ['_', '-', ','];
+            let foundSeparator = false;
+            for (let sep of separators) {
+                if (nameWithoutExt.includes(sep)) {
+                    const parts = nameWithoutExt.split(sep);
+                    name = parts[0].trim();
+                    genres = parts.slice(1).map(p => p.trim());
+                    foundSeparator = true;
+                    break;
+                }
+            }
+            if (!foundSeparator) {
+                name = nameWithoutExt;
+            }
+        }
+
+        // デフォルト作成者
+        if (!author) {
+            author = "Google AI画像生成 (Imagen 3)";
+            link = "https://deepmind.google/technologies/imagen/";
+        }
+
+        return {
+            name: name,
+            genres: genres,
+            author: author,
+            link: link
+        };
+    }
+
+    // フォームに入力中にリアルタイムでバッジなどのプレビューを更新
+    function updatePreviewData() {
+        const tagsInput = document.getElementById('formTags').value;
+        const genrePreview = document.getElementById('genrePreview');
+        
+        genrePreview.innerHTML = '';
+        
+        const genres = tagsInput.split(',')
+            .map(g => g.trim())
+            .filter(g => g.length > 0);
+            
+        if (genres.length > 0) {
+            genres.forEach(genre => {
+                const badge = document.createElement('span');
+                badge.className = 'genre-badge';
+                badge.innerText = genre;
+                genrePreview.appendChild(badge);
+            });
+        } else {
+            const badge = document.createElement('span');
+            badge.className = 'genre-badge';
+            badge.innerText = 'タグなし';
+            genrePreview.appendChild(badge);
+        }
+
+        // 編集中のデータをオンメモリの選択画像にリアルタイム同期
+        if (selectedImage) {
+            const index = selectedImage.index;
+            const updatedName = document.getElementById('formName').value.trim() || '名称未設定';
+            const updatedAuthor = document.getElementById('formAuthor').value.trim();
+            const updatedLink = document.getElementById('formLink').value.trim();
+
+            selectedImage.parsed.name = updatedName;
+            selectedImage.parsed.genres = genres;
+            selectedImage.parsed.author = updatedAuthor;
+            selectedImage.parsed.link = updatedLink;
+
+            // 左カラムのリスト側表示もリアルタイム同期
+            const listItem = document.getElementById(`item_${index}`);
+            if (listItem) {
+                listItem.querySelector('.list-name').innerText = updatedName;
+                listItem.querySelector('.list-meta').innerText = genres.join(' • ') || 'タグなし';
+            }
+            
+            // オンメモリの imageList のdescriptionも同期
+            // descriptionフォーマット: "名前,タグ1,タグ2|作成者|リンク"
+            const descTags = [updatedName, ...genres].join(',');
+            const finalDesc = `${descTags}|${updatedAuthor}|${updatedLink}`;
+            imageList[index].name = updatedName;
+            imageList[index].description = finalDesc;
+        }
+    }
+
+    // 🌟 3. Googleドライブ（GAS経由）への保存・更新API通信
+    async function saveToGas() {
+        if (!selectedImage || !isFromGas) return;
+        
+        const gasUrl = localStorage.getItem('JIGSAW_GAS_URL');
+        if (!gasUrl) {
+            showToast("GAS API URLが設定されていません。", "error");
+            return;
+        }
+
+        const id = selectedImage.raw.id;
+        const name = selectedImage.parsed.name;
+        const tags = selectedImage.parsed.genres.join(',');
+        const author = selectedImage.parsed.author;
+        const link = selectedImage.parsed.link;
+
+        const btn = document.getElementById('btnSaveGas');
+        const originalText = btn.innerText;
+        btn.innerHTML = `<span class="btn-spinner"></span> 保存中...`;
+        btn.disabled = true;
+
+        try {
+            // パラメータを構築
+            const params = new URLSearchParams({
+                action: 'update',
+                id: id,
+                name: name,
+                tags: tags,
+                author: author,
+                link: link
+            });
+
+            // GASはGETリクエストのデプロイが簡単なため、パラメータをGETで送信
+            const response = await fetch(`${gasUrl}?${params.toString()}`);
+            const data = await response.json();
+
+            if (data.success) {
+                showToast(`「${name}」のメタデータをGoogleドライブへ直接保存しました。`, "success");
+            } else {
+                showToast("保存に失敗しました: " + (data.error || "不明なエラー"), "error");
+            }
+        } catch (e) {
+            console.error("GASセーブエラー:", e);
+            showToast("通信エラーが発生しました。GASのCORS設定やURLを確認してください。", "error");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // 🌟 4. ローカル用フォールバックコードの生成モーダル表示
+    function openGeneratorModal() {
+        const modal = document.getElementById('codeModal');
+        const codeOutput = document.getElementById('codeOutput');
+        
+        // 配列コードを美しくフォーマットして構築
+        let code = "const DEFAULT_IMAGES = [\n";
+        imageList.forEach((img, idx) => {
+            const escapedName = escapeJsString(img.name);
+            const escapedDesc = escapeJsString(img.description);
+            const isLast = idx === imageList.length - 1;
+            
+            code += `    { id: '${img.id}', name: '${escapedName}', description: '${escapedDesc}' }${isLast ? "" : ","}\n`;
+        });
+        code += "];";
+
+        codeOutput.innerText = code;
+        modal.style.display = 'flex';
+    }
+
+    function closeGeneratorModal() {
+        document.getElementById('codeModal').style.display = 'none';
+    }
+
+    // 文字列エスケープヘルパー
+    function escapeJsString(str) {
+        if (!str) return "";
+        return str.replace(/'/g, "\\'");
+    }
+
+    // 生成コードのコピー
+    function copyGeneratedCode() {
+        const codeText = document.getElementById('codeOutput').innerText;
+        
+        navigator.clipboard.writeText(codeText).then(() => {
+            showToast("フォールバック用コードをクリップボードにコピーしました！", "success");
+            closeGeneratorModal();
+        }).catch(err => {
+            console.error("コピー失敗:", err);
+            showToast("コピーに失敗しました。直接手動で選択してコピーしてください。", "error");
+        });
+    }
+
+    // リストの検索フィルタリング
+    function filterImages() {
+        const query = document.getElementById('searchBox').value.toLowerCase().trim();
+        const items = document.querySelectorAll('.list-item');
+        
+        let visibleCount = 0;
+
+        imageList.forEach((img, idx) => {
+            const item = document.getElementById(`item_${idx}`);
+            if (!item) return;
+
+            const name = img.name.toLowerCase();
+            const desc = (img.description || '').toLowerCase();
+            
+            if (name.includes(query) || desc.includes(query)) {
+                item.style.display = 'flex';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        document.getElementById('imageCount').innerText = `0 / ${visibleCount}`;
+    }
+
+    // 🌟 トースト通知アニメーション
+    function showToast(message, type = "info") {
+        const toast = document.getElementById('toast');
+        const icon = document.getElementById('toastIcon');
+        const msg = document.getElementById('toastMessage');
+
+        toast.className = `toast toast-${type}`;
+        msg.innerText = message;
+
+        if (type === "success") icon.innerText = "✅";
+        else if (type === "error") icon.innerText = "❌";
+        else icon.innerText = "ℹ️";
+
+        toast.classList.add('show');
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3500);
+    }
+</script>
+</body>
+</html>
