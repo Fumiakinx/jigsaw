@@ -628,7 +628,9 @@
                 const name = selectedData.playerName.trim();
                 const imageId = selectedData.imageId;
                 const pieceCount = selectedData.pieceCount;
-                const GAS_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec";
+                const GAS_URL = (selectedData && selectedData.rankingApiUrl) 
+                    ? selectedData.rankingApiUrl 
+                    : "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec";
                 
                 console.log(`🏆 ランキング登録を送信します。名: ${name}, タイム: ${elapsedTime}秒, 画像ID: ${imageId}, ピース数: ${pieceCount}`);
                 

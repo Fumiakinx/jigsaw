@@ -450,6 +450,9 @@
     // 💡 デプロイ後に発行されるGASのWebアプリURLをここに貼り付けてください
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec"; 
 
+    // 💡 新しく作成したランキング用スプレッドシートのApps Scriptから発行されたWebアプリURLをここに貼り付けてください
+    const RANKING_API_URL = "https://script.google.com/macros/s/AKfycbwPq-iE8Lix0_Xq2mY3N2pG9N5Q9w2e3E5_XXX/exec"; 
+
     // 💡 本番環境（Googleサイトなどの埋め込み環境）で公開している jigsaw_player.html の絶対URL
     // ※ Googleサイトに埋め込んでプレイする場合、この変数に公開されている jigsaw_player ページの絶対URL（https://...）を設定してください。
     // ※ 空欄または "jigsaw_player.html" の場合は、ローカルテスト用として相対パスで起動します。
@@ -784,13 +787,13 @@
         if (!tbody) return;
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">⏱️ ランキングを読み込み中...</td></tr>`;
 
-        if (!GAS_API_URL) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">GAS_API_URLが設定されていません。</td></tr>`;
+        if (!RANKING_API_URL || RANKING_API_URL.includes("_XXX")) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">ランキング用のGASのURLが未設定です。</td></tr>`;
             return;
         }
 
         try {
-            const response = await fetch(`${GAS_API_URL}?action=get_leaderboard&id=${imageId}&pieceCount=${pieceCount}`);
+            const response = await fetch(`${RANKING_API_URL}?action=get_leaderboard&id=${imageId}&pieceCount=${pieceCount}`);
             const resData = await response.json();
 
             if (resData.success && resData.leaderboard && resData.leaderboard.length > 0) {
@@ -911,7 +914,8 @@
                 imageData: targetBase64,
                 pieceCount: parseInt(pieceCount, 10),
                 playerName: document.getElementById('playerNameInput').value.trim(),
-                imageId: selectedImageUrl
+                imageId: selectedImageUrl,
+                rankingApiUrl: RANKING_API_URL
             };
 
             // 4. データ設定後、モーダルを閉じる
@@ -924,7 +928,8 @@
                 imageData: finalUrl,
                 pieceCount: parseInt(pieceCount, 10),
                 playerName: document.getElementById('playerNameInput').value.trim(),
-                imageId: selectedImageUrl
+                imageId: selectedImageUrl,
+                rankingApiUrl: RANKING_API_URL
             };
             closeModal();
         } finally {
