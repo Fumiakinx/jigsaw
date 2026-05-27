@@ -32,7 +32,7 @@
             border-radius: 12px;
             backdrop-filter: blur(5px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            max-width: 450px;
+            max-width: 580px;
             width: 90%;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
@@ -63,6 +63,7 @@
             outline: none;
             transition: border-color 0.2s, box-shadow 0.2s;
             width: 100%;
+            min-width: 80px;
         }
         .name-input:focus {
             border-color: #4CAF50;
@@ -73,18 +74,33 @@
             color: rgba(255, 255, 255, 0.3);
             font-weight: 400;
         }
+        .ranking-status {
+            font-size: 11px;
+            font-weight: bold;
+            color: #888;
+            white-space: nowrap;
+            transition: color 0.2s ease;
+            display: flex;
+            align-items: center;
+            min-width: 90px;
+        }
         /* レスポンシブ調整 */
         @media (max-width: 480px) {
             .name-bar-container {
                 width: 95%;
                 padding: 5px 12px;
+                gap: 8px;
             }
             .name-label {
-                font-size: 12px;
+                font-size: 11px;
             }
             .name-input {
                 font-size: 11px;
                 padding: 5px 8px;
+            }
+            .ranking-status {
+                font-size: 10px;
+                min-width: auto;
             }
         }
     </style>
@@ -94,12 +110,26 @@
     <div class="name-bar-container" id="container">
         <span class="name-label">👤 プレイヤーネーム</span>
         <input type="text" id="playerNameInput" placeholder="名前を入力（自動保存）" maxlength="10" class="name-input">
+        <span id="rankingStatus" class="ranking-status">⚪ 匿名プレイ</span>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const nameInput = document.getElementById('playerNameInput');
             const container = document.getElementById('container');
+            const statusText = document.getElementById('rankingStatus');
+
+            function updateStatus() {
+                if (!nameInput || !statusText) return;
+                const name = nameInput.value.trim();
+                if (name) {
+                    statusText.innerText = '🟢 ランキング対象';
+                    statusText.style.color = '#4CAF50';
+                } else {
+                    statusText.innerText = '⚪ 匿名プレイ';
+                    statusText.style.color = '#888';
+                }
+            }
 
             if (nameInput) {
                 // LocalStorageから名前をロード
@@ -107,10 +137,12 @@
                 if (savedName) {
                     nameInput.value = savedName;
                 }
+                updateStatus();
 
                 // 変更をリアルタイムで保存
                 nameInput.addEventListener('input', () => {
                     localStorage.setItem('jigsaw_player_name', nameInput.value.trim());
+                    updateStatus();
                 });
 
                 // フォーカス時の外枠コンテナの光彩アニメーション
