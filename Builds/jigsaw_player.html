@@ -6,6 +6,16 @@
     <title>🧩 JIGSAW WEB PLAYER</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-gradient-start: #121214;
+            --bg-gradient-end: #1a1a24;
+            --handle-bg: rgba(18, 18, 20, 0.85);
+            --handle-color: rgba(255, 255, 255, 0.6);
+            --handle-border: rgba(255, 255, 255, 0.15);
+            --handle-hover-bg: rgba(18, 18, 20, 0.95);
+            --handle-hover-color: #4CAF50;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -13,7 +23,7 @@
         }
         body {
             font-family: 'Inter', 'Outfit', sans-serif;
-            background: linear-gradient(135deg, #121214 0%, #1a1a24 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             color: #ffffff;
             min-height: 100vh;
             display: flex;
@@ -21,6 +31,7 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            transition: background 0.8s ease;
         }
         
         /* プレミアムローディング画面 */
@@ -127,7 +138,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #0d0d0f;
+            background: transparent;
         }
         
         #unity-canvas {
@@ -138,7 +149,7 @@
             aspect-ratio: 16 / 10;
             object-fit: contain;
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
-            background: #000;
+            background: transparent;
         }
         
         /* 非表示時の極小引き下げハンドル */
@@ -147,13 +158,13 @@
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 80px;
-            height: 14px;
-            background: rgba(18, 18, 20, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 90px;
+            height: 16px;
+            background: var(--handle-bg);
+            border: 1px solid var(--handle-border);
             border-top: none;
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
             z-index: 99;
             cursor: pointer;
             display: flex;
@@ -162,39 +173,43 @@
             backdrop-filter: blur(8px);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             opacity: 1;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 255, 255, 0.05);
         }
         
         .control-handle span {
-            font-size: 8px;
-            color: rgba(255, 255, 255, 0.4);
+            font-size: 9px;
+            font-weight: bold;
+            color: var(--handle-color);
             transition: transform 0.3s ease, color 0.3s ease;
         }
         
         .control-handle:hover {
-            height: 18px;
-            background: rgba(18, 18, 20, 0.9);
-            border-color: rgba(255, 255, 255, 0.15);
+            height: 20px;
+            background: var(--handle-hover-bg);
+            border-color: var(--handle-hover-color);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 8px var(--handle-hover-color);
         }
         
         .control-handle:hover span {
-            color: #4CAF50;
+            color: var(--handle-hover-color);
             transform: translateY(1px);
         }
         
         /* メニュー（active）出現時にスライドしてメニュー下端にぶら下がるように自動追従 */
         .control-bar.active ~ .control-handle {
             top: 41px; /* 上端寄せされたメニュー（高さ約41px）のすぐ下にぴったり配置 */
-            background: rgba(18, 18, 20, 0.9);
-            border-bottom-left-radius: 8px;
-            border-bottom-right-radius: 8px;
-            height: 16px;
+            background: var(--handle-hover-bg);
+            border-color: var(--handle-hover-color);
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            height: 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 8px var(--handle-hover-color);
         }
         
         .control-bar.active ~ .control-handle span {
             transform: rotate(180deg); /* 展開中は上向き矢印 ▲ に回転 */
-            color: #4CAF50;
+            color: var(--handle-hover-color);
         }
-        
         /* コントロールバー */
         .control-bar {
             position: absolute;
@@ -208,10 +223,10 @@
             border-bottom-right-radius: 20px;
             border-top-left-radius: 0;
             border-top-right-radius: 0;
-            padding: 8px 24px;
+            padding: 10px 40px; /* パディングを広げる */
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 28px; /* gapを広げる */
             z-index: 100;
             backdrop-filter: blur(12px);
             opacity: 0;
@@ -219,7 +234,27 @@
             transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
+
+        /* プレミアムトグルスイッチのスタイル */
+        .switch input:checked + .slider {
+            background-color: #4CAF50;
+        }
         
+        .slider::before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        
+        .switch input:checked + .slider::before {
+            transform: translateX(14px);
+        }
         /* JSでactiveクラスが付与されたときに出現 */
         .control-bar.active {
             top: 0px; /* 画面最上部にピッタリ寄せる */
@@ -302,6 +337,15 @@
         <button class="btn-control" onclick="window.close()">
             <span>❌</span> ゲームを閉じる
         </button>
+        
+        <!-- オートセーブスイッチ -->
+        <div class="autosave-container" style="display: flex; align-items: center; gap: 8px; border-left: 1px solid rgba(255,255,255,0.15); padding-left: 20px; margin-left: 5px;">
+            <span style="font-size: 12px; font-weight: 600; color: #a0a0a5; user-select: none; -webkit-user-select: none;">🔄 オートセーブ</span>
+            <label class="switch" style="position: relative; display: inline-block; width: 34px; height: 20px; margin: 0;">
+                <input type="checkbox" id="autosave-toggle" checked style="opacity: 0; width: 0; height: 0;">
+                <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333338; transition: .3s; border-radius: 20px;"></span>
+            </label>
+        </div>
     </div>
 
     <!-- 🌟 操作説明モーダル -->
@@ -453,6 +497,11 @@
             await checkParentData();
             
             statusText.innerText = "ゲームエンジンを起動しています...";
+            
+            // 親ウィンドウから共有された画像データを元に背景色とつまみ色を動的に設定
+            if (selectedData && selectedData.imageData) {
+                applyDynamicColors(selectedData.imageData);
+            }
             
             var script = document.createElement("script");
             script.src = loaderUrl;
@@ -647,6 +696,124 @@
                 console.log("⚪ プレイヤー名が未設定（匿名プレイ）のため、ランキング登録はスキップされました。");
             }
         };
+
+        // 🎨 画像から平均色を抽出し、目に優しい背景色と最適なコントラストのつまみ色を動的適用する
+        function applyDynamicColors(imageSrc) {
+            if (!imageSrc) return;
+            
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = function() {
+                try {
+                    // キャンバスを作成（10x10程度の小さなサイズでサンプリング）
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 10;
+                    canvas.height = 10;
+                    ctx.drawImage(img, 0, 0, 10, 10);
+                    
+                    const imgData = ctx.getImageData(0, 0, 10, 10).data;
+                    let r = 0, g = 0, b = 0, count = 0;
+                    
+                    for (let i = 0; i < imgData.length; i += 4) {
+                        // 透明ピクセルや極端に暗い/明るいピクセルを除いて安定したサンプリングを行う
+                        if (imgData[i+3] > 100) {
+                            r += imgData[i];
+                            g += imgData[i+1];
+                            b += imgData[i+2];
+                            count++;
+                        }
+                    }
+                    
+                    if (count === 0) return;
+                    
+                    r = Math.round(r / count);
+                    g = Math.round(g / count);
+                    b = Math.round(b / count);
+                    
+                    // RGBをHSLに変換
+                    const hsl = rgbToHsl(r, g, b);
+                    
+                    // --- 目に優しい背景色の算出 ---
+                    // 目にツンとこないよう、彩度（S）を大幅に落とす（低彩度の落ち着いたニュアンスカラー）
+                    // 12%〜22%程度に抑えてシックにする
+                    const bgS = Math.min(22, Math.max(12, hsl.s * 100 * 0.35));
+                    
+                    // 明度（L）も眩しすぎないダークグレー〜ミドルグレーの中間に調整
+                    // ピースが落とす黒いドロップシャドウがはっきりと見え、立体感が保たれる絶妙な明度（22%〜30%）に調整
+                    const bgL_start = 22;
+                    const bgL_end = 30;
+                    
+                    const h = Math.round(hsl.h * 360);
+                    const bgStartStr = `hsl(${h}, ${Math.round(bgS)}%, ${bgL_start}%)`;
+                    const bgEndStr = `hsl(${h}, ${Math.round(bgS)}%, ${bgL_end}%)`;
+                    
+                    // --- つまみ（ハンドル）の配色算出 ---
+                    // 背景やピースから目立つ色：色相を180度反転（補色）させてアクセンカラーにする
+                    const complementH = (h + 180) % 360;
+                    // つまみのホバー時カラーは目立たせるため高彩度にする
+                    const handleAccentS = 85;
+                    // 暗い背景に映えるよう、明度を明るめに (55%〜65% のビビッドな輝き)
+                    const handleAccentL = 60;
+                    
+                    const handleAccentStr = `hsl(${complementH}, ${handleAccentS}%, ${handleAccentL}%)`;
+                    
+                    // つまみの通常時の文字色も補色をベースにした目に優しい中間色にする
+                    const handleColorStr = `hsl(${complementH}, ${Math.round(handleAccentS * 0.7)}, 70%)`;
+                    
+                    // つまみの標準背景色は平均色を少しブレンドして背景に馴染ませる
+                    const handleBgStr = `rgba(${Math.round(r*0.1 + 18*0.9)}, ${Math.round(g*0.1 + 18*0.9)}, ${Math.round(b*0.1 + 20*0.9)}, 0.85)`;
+                    
+                    // CSS変数に反映
+                    document.documentElement.style.setProperty('--bg-gradient-start', bgStartStr);
+                    document.documentElement.style.setProperty('--bg-gradient-end', bgEndStr);
+                    document.documentElement.style.setProperty('--handle-bg', handleBgStr);
+                    document.documentElement.style.setProperty('--handle-color', handleColorStr);
+                    document.documentElement.style.setProperty('--handle-hover-color', handleAccentStr);
+                    document.documentElement.style.setProperty('--handle-border', `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, 0.3)`);
+                    
+                    console.log(`🎨 Dynamic styling applied: Hue=${h}, BG=[${bgStartStr} -> ${bgEndStr}], HandleAccent=${handleAccentStr}`);
+                } catch (e) {
+                    console.error("平均色の解析・適用に失敗しました:", e);
+                }
+            };
+            img.src = imageSrc;
+        }
+        
+        // RGBをHSLに変換するユーティリティ関数
+        function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            
+            if (max === min) {
+                h = s = 0; // アクロマティック（無彩色）
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: h, s: s, l: l };
+        }
+
+        // オートセーブの初期状態をLocalStorageからロードしてイベントリスナーを登録
+        window.addEventListener('DOMContentLoaded', () => {
+            const autosaveToggle = document.getElementById("autosave-toggle");
+            if (autosaveToggle) {
+                const savedState = localStorage.getItem("jigsaw_autosave");
+                autosaveToggle.checked = savedState !== "false"; // デフォルトON
+                
+                autosaveToggle.addEventListener("change", function() {
+                    localStorage.setItem("jigsaw_autosave", this.checked);
+                    console.log("🔄 Auto-save toggled:", this.checked);
+                });
+            }
+        });
 
         // 実行開始
         initGame();

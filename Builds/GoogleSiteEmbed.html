@@ -345,12 +345,7 @@
     <div class="container">
         <h2>🧩 じぐそう - 画像選択</h2>
 
-        <!-- 👤 プレイヤー名入力欄（ランキング対象） -->
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background-color: #242424; padding: 12px 20px; border-radius: 10px; border: 1px solid #3d3d3d; width: 100%; box-sizing: border-box;">
-            <label style="font-weight: bold; color: #4CAF50; font-size: 14px; white-space: nowrap;">👤 プレイヤー名：</label>
-            <input type="text" id="playerNameInput" placeholder="名前を入力（ランキング対象）" maxlength="10" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #555; background-color: #1a1a1a; color: #fff; font-size: 13px; font-weight: bold; width: 180px; outline: none; transition: border-color 0.2s;">
-            <span id="rankingStatus" style="font-size: 12px; font-weight: bold; color: #888; margin-left: 5px; transition: color 0.2s;">⚪ 匿名プレイ（ランキング対象外）</span>
-        </div>
+        
 
         <div class="gallery-title-area">
             <label>パズルにしたい画像を選んでください</label>
@@ -637,38 +632,9 @@
             return false;
         }
 
-        // ランキング参加ステータスの表示更新
-        function updateRankingStatus() {
-            const nameInput = document.getElementById('playerNameInput');
-            const statusText = document.getElementById('rankingStatus');
-            if (!nameInput || !statusText) return;
-            const name = nameInput.value.trim();
-            if (name) {
-                statusText.innerText = `🟢 ランキング対象（「${name}」で登録されます）`;
-                statusText.style.color = '#4CAF50';
-                nameInput.style.borderColor = '#4CAF50';
-            } else {
-                statusText.innerText = '⚪ 匿名プレイ（ランキング対象外）';
-                statusText.style.color = '#888';
-                nameInput.style.borderColor = '#555';
-            }
-        }
-
         // ページロード時に自動ロードを実行
         window.addEventListener('DOMContentLoaded', () => {
-            // 名前のロードと自動保存設定
-            const nameInput = document.getElementById('playerNameInput');
-            if (nameInput) {
-                const savedName = localStorage.getItem('jigsaw_player_name');
-                if (savedName) {
-                    nameInput.value = savedName;
-                }
-                updateRankingStatus();
-                nameInput.addEventListener('input', () => {
-                    localStorage.setItem('jigsaw_player_name', nameInput.value.trim());
-                    updateRankingStatus();
-                });
-            }
+            
 
             // モバイル・タブレット環境検出によるデフォルトピース数の最適化
             if (isMobileOrTablet()) {
@@ -799,7 +765,7 @@
                         const tr = document.createElement('tr');
                         
                         // 自分の名前だった場合は行をハイライトする
-                        const currentName = document.getElementById('playerNameInput').value.trim();
+                        const currentName = (localStorage.getItem('jigsaw_player_name') || "").trim();
                         if (currentName && row.name === currentName) {
                             tr.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
                             tr.style.fontWeight = 'bold';
@@ -910,7 +876,7 @@
                 window.selectedPuzzleData = {
                     imageData: targetBase64,
                     pieceCount: parseInt(pieceCount, 10),
-                    playerName: document.getElementById('playerNameInput').value.trim(),
+                    playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
                     imageId: selectedImageUrl,
                     rankingApiUrl: RANKING_API_URL
                 };
@@ -924,7 +890,7 @@
                 window.selectedPuzzleData = {
                     imageData: finalUrl,
                     pieceCount: parseInt(pieceCount, 10),
-                    playerName: document.getElementById('playerNameInput').value.trim(),
+                    playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
                     imageId: selectedImageUrl,
                     rankingApiUrl: RANKING_API_URL
                 };

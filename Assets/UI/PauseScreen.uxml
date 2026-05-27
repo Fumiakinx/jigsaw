@@ -2,15 +2,16 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <ui:Style src="PauseScreen.uss" />
     <ui:VisualElement name="PauseRoot" class="pause-root">
-        <ui:VisualElement class="pause-content">
-            <ui:Label text="一時停止中" class="pause-label" />
-            <ui:VisualElement class="instruction-container">
-                <ui:Label text="左ドラッグ：ピースを移動" class="instruction-text" />
-                <ui:Label text="右クリック：ピースを回転" class="instruction-text" />
-                <ui:Label text="スペースキー：下絵を表示" class="instruction-text" />
-                <ui:Label text="ESCキー：一時停止解除" class="instruction-text" />
-            </ui:VisualElement>
-            <ui:Button name="ReturnToSelectionButton" text="画像選択に戻る" class="pause-button" />
+        <!-- 右上の小さめの「画像選択に戻る」ボタン -->
+        <ui:Button name="ReturnToSelectionButton" text="画像選択に戻る" class="pause-top-right-button" />
+        
+        <!-- 中央の「一時停止中」タイトルラベル -->
+        <ui:Label text="一時停止中" class="pause-title-label" />
+
+        <!-- 下部中央の「セーブ」と「ゲームに戻る」ボタンコンテナ -->
+        <ui:VisualElement class="pause-bottom-container">
+            <ui:Button name="SaveButton" text="セーブ" class="pause-bottom-button save-button" />
+            <ui:Button name="ResumeButton" text="ゲームに戻る" class="pause-bottom-button resume-button" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -243,6 +243,12 @@ public class PuzzleManager : MonoBehaviour
         ReturnToTitle(); // 画像選択画面に戻る
     }
 
+    // 一時停止画面の「セーブ」ボタン用コールバック（モック）
+    private void OnSaveClicked()
+    {
+        Debug.Log("[PuzzleManager] セーブ機能が呼び出されました（現在は保存処理を行いません）。");
+    }
+
     // 目玉ボタン（見本表示用）のコールバック群
     // Pointerイベント (モバイル/一部のPC環境用)
     private void OnGuideShowPointerDown(PointerDownEvent evt) { SetGuideVisible(true); }
@@ -943,15 +949,47 @@ public class PuzzleManager : MonoBehaviour
                 pauseUIDoc.sortingOrder = 9999; 
                 pauseUIDoc.gameObject.SetActive(true); 
                 
-                // 表示された直後に安全にボタンイベントをバインド
                 var root = pauseUIDoc.rootVisualElement;
                 if (root != null)
                 {
-                    Button btn = root.Q<Button>("ReturnToSelectionButton");
-                    if (btn != null)
+                    // 1. 背景画像を1〜5の中からランダムにロードして適用
+                    var pauseRoot = root.Q<VisualElement>("PauseRoot");
+                    if (pauseRoot != null)
                     {
-                        btn.clicked -= OnReturnToSelectionClicked;
-                        btn.clicked += OnReturnToSelectionClicked;
+                        int randomIdx = UnityEngine.Random.Range(1, 6); // 1〜5
+                        Texture2D randBg = Resources.Load<Texture2D>($"Images/coffee_break_{randomIdx}_1920x1080");
+                        if (randBg == null)
+                        {
+                            randBg = Resources.Load<Texture2D>("Images/CoffeeBreak");
+                        }
+                        if (randBg != null)
+                        {
+                            pauseRoot.style.backgroundImage = new StyleBackground(randBg);
+                        }
+                    }
+
+                    // 2. 右上の「画像選択に戻る」ボタンのバインド
+                    Button btnReturn = root.Q<Button>("ReturnToSelectionButton");
+                    if (btnReturn != null)
+                    {
+                        btnReturn.clicked -= OnReturnToSelectionClicked;
+                        btnReturn.clicked += OnReturnToSelectionClicked;
+                    }
+
+                    // 3. 下部中央の「セーブ」ボタンのバインド
+                    Button btnSave = root.Q<Button>("SaveButton");
+                    if (btnSave != null)
+                    {
+                        btnSave.clicked -= OnSaveClicked;
+                        btnSave.clicked += OnSaveClicked;
+                    }
+
+                    // 4. 下部中央の「ゲームに戻る」ボタンのバインド
+                    Button btnResume = root.Q<Button>("ResumeButton");
+                    if (btnResume != null)
+                    {
+                        btnResume.clicked -= TogglePause;
+                        btnResume.clicked += TogglePause;
                     }
                 }
             }
