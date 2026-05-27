@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プレイヤーネームバー</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', 'Outfit', sans-serif;
+            background-color: transparent; /* 背景透明で親のGoogleサイトに馴染ませる */
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 50px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .name-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 6px 18px;
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            max-width: 450px;
+            width: 90%;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .name-bar-container:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .name-label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            color: #4CAF50;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.5px;
+        }
+        .name-input {
+            flex: 1;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background-color: rgba(0, 0, 0, 0.4);
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        .name-input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        .name-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 400;
+        }
+        /* レスポンシブ調整 */
+        @media (max-width: 480px) {
+            .name-bar-container {
+                width: 95%;
+                padding: 5px 12px;
+            }
+            .name-label {
+                font-size: 12px;
+            }
+            .name-input {
+                font-size: 11px;
+                padding: 5px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="name-bar-container" id="container">
+        <span class="name-label">👤 プレイヤーネーム</span>
+        <input type="text" id="playerNameInput" placeholder="名前を入力（自動保存）" maxlength="10" class="name-input">
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nameInput = document.getElementById('playerNameInput');
+            const container = document.getElementById('container');
+
+            if (nameInput) {
+                // LocalStorageから名前をロード
+                const savedName = localStorage.getItem('jigsaw_player_name');
+                if (savedName) {
+                    nameInput.value = savedName;
+                }
+
+                // 変更をリアルタイムで保存
+                nameInput.addEventListener('input', () => {
+                    localStorage.setItem('jigsaw_player_name', nameInput.value.trim());
+                });
+
+                // フォーカス時の外枠コンテナの光彩アニメーション
+                nameInput.addEventListener('focus', () => {
+                    container.style.borderColor = 'rgba(76, 175, 80, 0.4)';
+                    container.style.boxShadow = '0 6px 20px rgba(76, 175, 80, 0.15)';
+                });
+
+                nameInput.addEventListener('blur', () => {
+                    container.style.borderColor = '';
+                    container.style.boxShadow = '';
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -51,8 +51,6 @@ public class PuzzleManager : MonoBehaviour
     private float pauseStartTime;
     private bool isPaused = false;
     private bool isFinished = false;
-    private bool pauseEventsBound = false;
-    private bool hudEventsBound = false; // 追加：HUDイベントがバインドされているか
 
     // タッチ＆ダブルタップ回転用の変数
     private float lastClickTime = 0f;
