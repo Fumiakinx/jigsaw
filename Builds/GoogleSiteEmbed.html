@@ -10,7 +10,7 @@
             background-color: #1e1e1e;
             color: #ffffff;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -23,13 +23,14 @@
         }
         .container {
             width: 95%;
-            max-width: 100%;
+            max-width: 1000px;
             background-color: #2d2d2d;
             border-radius: 16px;
             padding: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
             box-sizing: border-box;
+            margin: 20px auto;
         }
         .gallery-title-area {
             border-bottom: 2px solid #3d3d3d;
@@ -404,7 +405,8 @@
             opacity: 0.6;
             cursor: not-allowed;
         
-        /* プレミアム疑似ヘッダーの追加スタイル */
+        
+        /* プレミアム疑似ヘッダーの超高精度再現スタイル */
         .premium-header {
             width: 100%;
             background-color: #121212;
@@ -412,59 +414,83 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 30px;
+            padding: 14px 40px;
             box-sizing: border-box;
             position: sticky;
             top: 0;
             z-index: 1000;
-            font-family: 'Outfit', 'Helvetica Neue', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
         .header-logo {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: bold;
             color: #fff;
             letter-spacing: 0.5px;
             cursor: pointer;
             transition: opacity 0.2s;
+            user-select: none;
         }
         .header-logo:hover {
-            opacity: 0.8;
+            opacity: 0.85;
         }
         .header-name-bar {
             display: flex;
             align-items: center;
-            background: rgba(18, 18, 18, 0.65);
-            border: 1px solid #7B1FA2; /* 紫のアウトライン */
-            padding: 6px 14px;
-            border-radius: 20px;
-            gap: 8px;
-            box-shadow: 0 0 10px rgba(123, 31, 162, 0.15);
+            background-color: rgba(30, 30, 30, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 8px 16px;
+            border-radius: 8px;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+        .header-name-bar:focus-within {
+            border-color: rgba(255, 255, 255, 0.25);
+            background-color: rgba(35, 35, 35, 0.85);
         }
         .header-name-label {
-            font-size: 12px;
-            color: #b388ff;
-            font-weight: 800;
+            font-size: 13px;
+            color: #c084fc; /* 上品な薄紫色 */
+            font-weight: bold;
+            user-select: none;
             letter-spacing: 0.5px;
         }
         .header-name-input {
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-size: 13px;
-            font-weight: bold;
-            outline: none;
-            width: 120px;
-            text-align: center;
+            background: transparent !important;
+            border: none !important;
+            color: #fff !important;
+            font-size: 13px !important;
+            font-weight: bold !important;
+            outline: none !important;
+            width: 140px !important;
+            text-align: left !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }
-        .header-name-badge {
-            background: rgba(76, 175, 80, 0.12);
-            border: 1px solid #4CAF50;
-            color: #4CAF50;
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 12px;
+        /* オートフィル時(自動補完)の強制白背景や枠線を完全に遮断 */
+        .header-name-input:-webkit-autofill,
+        .header-name-input:-webkit-autofill:hover,
+        .header-name-input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #fff !important;
+            transition: background-color 50000s ease-in-out 0s;
+        }
+        .header-name-status {
+            font-size: 12px;
             font-weight: bold;
             letter-spacing: 0.5px;
+            user-select: none;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.25s ease;
+        }
+        .header-name-status.anonymous {
+            color: #d8b4fe; /* 匿名時：薄紫 */
+        }
+        .header-name-status.active {
+            color: #4CAF50; /* ランキング対象時：グリーン */
         }
         .header-menu-container {
             position: relative;
@@ -474,8 +500,8 @@
             background: transparent;
             border: none;
             color: #fff;
-            font-size: 13px;
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -491,15 +517,15 @@
             position: absolute;
             right: 0;
             top: 100%;
-            background: rgba(26, 26, 36, 0.98);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            min-width: 140px;
+            background: #121212;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            min-width: 150px;
             opacity: 0;
             visibility: hidden;
-            transform: translateY(10px);
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(8px);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
             z-index: 1001;
             overflow: hidden;
             backdrop-filter: blur(10px);
@@ -512,7 +538,7 @@
         .header-menu-item {
             display: block;
             color: #ddd;
-            padding: 12px 18px;
+            padding: 12px 20px;
             text-decoration: none;
             font-size: 13px;
             font-weight: bold;
@@ -520,21 +546,21 @@
             text-align: left;
         }
         .header-menu-item:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04);
             color: #4CAF50;
         }
     </style>
 </head>
 <body>
 
-<!-- 🎭 プレミアム疑似ヘッダー -->
+<!-- 🎭 プレミアム疑似ヘッダー (100%完全再現版) -->
 <header class="premium-header">
     <div class="header-logo" onclick="window.location.reload()">いろんなパズル</div>
     
     <div class="header-name-bar">
         <span class="header-name-label">👤 プレイヤーネーム</span>
-        <input type="text" id="header-player-name" class="header-name-input" placeholder="ふみあき">
-        <span class="header-name-badge">🟢 ランキング対象</span>
+        <input type="text" id="header-player-name" class="header-name-input" placeholder="名前を入力（自動保存）">
+        <span id="header-name-status" class="header-name-status anonymous">● 匿名プレイ</span>
     </div>
     
     <div class="header-menu-container">
@@ -1273,18 +1299,35 @@
             btn.disabled = false;
     }
 
-    // 🎭 [NEW] 疑似ヘッダーのプレイヤーネーム同期処理
+    // 🎭 [NEW] 疑似ヘッダーのプレイヤーネーム同期処理（高精度連動版）
     window.addEventListener('DOMContentLoaded', () => {
         const nameInput = document.getElementById('header-player-name');
+        const nameStatus = document.getElementById('header-name-status');
+        
+        function updateStatus(nameVal) {
+            if (!nameStatus) return;
+            const name = (nameVal || "").trim();
+            if (name === "") {
+                nameStatus.innerText = "● 匿名プレイ";
+                nameStatus.className = "header-name-status anonymous";
+            } else {
+                nameStatus.innerText = "● ランキング対象";
+                nameStatus.className = "header-name-status active";
+            }
+        }
+
         if (nameInput) {
             // 初期ロード
             const savedName = localStorage.getItem('jigsaw_player_name') || "";
             nameInput.value = savedName;
+            updateStatus(savedName);
 
-            // 入力時に即時保存
+            // 入力時に即時保存 & ステータス動的更新
             nameInput.addEventListener('input', function() {
-                localStorage.setItem('jigsaw_player_name', this.value.trim());
-                console.log("[LOG: Sync] プレイヤー名をLocalStorageに保存しました:", this.value.trim());
+                const val = this.value;
+                localStorage.setItem('jigsaw_player_name', val.trim());
+                updateStatus(val);
+                console.log("[LOG: Sync] プレイヤー名をLocalStorageに保存しました:", val.trim());
             });
         }
     });
