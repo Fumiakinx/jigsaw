@@ -599,9 +599,9 @@
                     } else {
                         descs.push("空きスロット");
                     }
-                }
                 console.log("[LOG 10: JS] Unityへ送り返す説明テキスト一覧:", descs);
-                unityInstance.SendMessage("PuzzleManager", "UpdateSlotDescriptions", descs[0], descs[1], descs[2]);
+                const combined = descs.join("|");
+                unityInstance.SendMessage("PuzzleManager", "UpdateSlotDescriptions", combined);
             };
 
             script.onload = () => {

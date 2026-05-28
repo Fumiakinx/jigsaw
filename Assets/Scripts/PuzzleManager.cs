@@ -356,19 +356,31 @@ public class PuzzleManager : MonoBehaviour
     }
 
     // セーブポップアップ内のスロット更新用（JavaScript側から呼び出されます）
-    public void UpdateSlotDescriptions(string slot1Info, string slot2Info, string slot3Info)
+    public void UpdateSlotDescriptions(string combinedInfo)
     {
         if (pauseUIDoc == null) return;
         var root = pauseUIDoc.rootVisualElement;
         if (root == null) return;
 
+        string slot1Info = "";
+        string slot2Info = "";
+        string slot3Info = "";
+
+        if (!string.IsNullOrEmpty(combinedInfo))
+        {
+            string[] descs = combinedInfo.Split('|');
+            if (descs.Length > 0) slot1Info = descs[0];
+            if (descs.Length > 1) slot2Info = descs[1];
+            if (descs.Length > 2) slot3Info = descs[2];
+        }
+
         var desc1 = root.Q<Label>("SlotDesc1");
         var desc2 = root.Q<Label>("SlotDesc2");
         var desc3 = root.Q<Label>("SlotDesc3");
 
-        if (desc1 != null && !string.IsNullOrEmpty(slot1Info)) desc1.text = slot1Info;
-        if (desc2 != null && !string.IsNullOrEmpty(slot2Info)) desc2.text = slot2Info;
-        if (desc3 != null && !string.IsNullOrEmpty(slot3Info)) desc3.text = slot3Info;
+        if (desc1 != null) desc1.text = !string.IsNullOrEmpty(slot1Info) ? slot1Info : "空きスロット";
+        if (desc2 != null) desc2.text = !string.IsNullOrEmpty(slot2Info) ? slot2Info : "空きスロット";
+        if (desc3 != null) desc3.text = !string.IsNullOrEmpty(slot3Info) ? slot3Info : "空きスロット";
     }
 
     // 一時停止画面の「セーブ」ボタン用コールバック
