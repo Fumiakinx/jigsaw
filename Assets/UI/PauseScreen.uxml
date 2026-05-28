@@ -9,9 +9,31 @@
         <ui:Label text="一時停止中" class="pause-title-label" />
 
         <!-- 下部中央の「セーブ」と「ゲームに戻る」ボタンコンテナ -->
-        <ui:VisualElement class="pause-bottom-container">
+        <ui:VisualElement name="PauseMenu" class="pause-bottom-container">
             <ui:Button name="SaveButton" text="セーブ" class="pause-bottom-button save-button" />
             <ui:Button name="ResumeButton" text="ゲームに戻る" class="pause-bottom-button resume-button" />
+        </ui:VisualElement>
+
+        <!-- [NEW] セーブスロット選択ポップアップ -->
+        <ui:VisualElement name="SavePopup" class="save-popup-container" style="display: none;">
+            <ui:VisualElement class="save-popup-window">
+                <ui:Label text="セーブスロットを選択してください" class="save-popup-title" />
+                <ui:VisualElement class="save-slots-list">
+                    <ui:Button name="SlotButton1" class="save-slot-btn">
+                        <ui:Label text="スロット 1" class="slot-title" />
+                        <ui:Label name="SlotDesc1" text="空きスロット" class="slot-desc" />
+                    </ui:Button>
+                    <ui:Button name="SlotButton2" class="save-slot-btn">
+                        <ui:Label text="スロット 2" class="slot-title" />
+                        <ui:Label name="SlotDesc2" text="空きスロット" class="slot-desc" />
+                    </ui:Button>
+                    <ui:Button name="SlotButton3" class="save-slot-btn">
+                        <ui:Label text="スロット 3" class="slot-title" />
+                        <ui:Label name="SlotDesc3" text="空きスロット" class="slot-desc" />
+                    </ui:Button>
+                </ui:VisualElement>
+                <ui:Button name="ClosePopupButton" text="キャンセル" class="save-popup-close-btn" />
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

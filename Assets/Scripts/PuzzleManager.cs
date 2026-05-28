@@ -8,6 +8,30 @@ using System;
 using UnityEngine.Rendering;
 using System.Runtime.InteropServices;
 
+[System.Serializable]
+public class PieceSaveData
+{
+    public int id;
+    public float px; // localPosition.x
+    public float py; // localPosition.y
+    public float rx; // parent.position.x
+    public float ry; // parent.position.y
+    public float rz; // parent.eulerAngles.z
+    public string parentName;
+    public bool isLocked;
+}
+
+[System.Serializable]
+public class PuzzleSaveData
+{
+    public string imageName;
+    public int targetPieces;
+    public float elapsedTime;
+    public string saveTime;
+    public string screenshotBase64; // スクショサムネイル (Base64)
+    public System.Collections.Generic.List<PieceSaveData> pieces;
+}
+
 public class PuzzleManager : MonoBehaviour
 {
     #if UNITY_WEBGL && !UNITY_EDITOR
@@ -15,6 +39,8 @@ public class PuzzleManager : MonoBehaviour
     private static extern void CloseCanvasWindow();
     [DllImport("__Internal")]
     private static extern void OnPuzzleComplete(float elapsedTime);
+    [DllImport("__Internal")]
+    private static extern void SaveToBrowser(int slotIndex, string jsonDataStr);
     #endif
 
     public bool isLoadedFromWeb = false; // Webからの通常起動かどうかのフラグ
@@ -23,6 +49,8 @@ public class PuzzleManager : MonoBehaviour
     
     public SpriteRenderer backgroundGuideRenderer;
     public List<PuzzlePiece> allPieces = new List<PuzzlePiece>();
+
+    private PuzzleSaveData pendingLoadData = null; // ロード待機状態のセーブデータ
 
     private int rows;
     private int cols;
@@ -243,10 +271,245 @@ public class PuzzleManager : MonoBehaviour
         ReturnToTitle(); // 画像選択画面に戻る
     }
 
-    // 一時停止画面の「セーブ」ボタン用コールバック（モック）
+    // Webやローカル保存からJSON文字列を受け取ってロード待機状態にするメソッド
+    public void LoadPuzzleFromSaveData(string jsonStr)
+    {
+        try
+        {
+            pendingLoadData = JsonUtility.FromJson<PuzzleSaveData>(jsonStr);
+            Debug.Log($"[PuzzleManager] ロード待機状態にセットされました: {pendingLoadData.imageName}, ピース数: {pendingLoadData.targetPieces}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[PuzzleManager] セーブデータのデコードに失敗しました: {e.Message}");
+        }
+    }
+
+    private void RestorePuzzleFromSaveData(PuzzleSaveData data)
+    {
+        Debug.Log("[PuzzleManager] セーブデータからパズルの状態を復元中...");
+        
+        // 1. 経過時間の復元
+        startTime = Time.time - data.elapsedTime;
+        totalPausedTime = 0f;
+        isPaused = false;
+        
+        // クラスター親オブジェクトのキャッシュ辞書
+        System.Collections.Generic.Dictionary<string, Transform> clusterCache = new System.Collections.Generic.Dictionary<string, Transform>();
+        
+        // ピースを一度すべてシーンルート直下に移動させて、古い親をクリーンアップする準備
+        foreach (var p in allPieces)
+        {
+            if (p == null) continue;
+            p.transform.SetParent(null);
+        }
+        
+        // 古い自動生成された初期クラスター（PieceCluster_x_y）をすべて削除
+        GameObject[] roots = SceneManager.GetActiveScene().GetRootGameObjects();
+        foreach (var root in roots)
+        {
+            if (root == null || root == gameObject) continue;
+            if (root.name.Contains("PieceCluster"))
+            {
+                DestroyImmediate(root);
+            }
+        }
+        
+        // 2. セーブデータをもとに、親クラスターと位置を復元
+        foreach (var pSave in data.pieces)
+        {
+            PuzzlePiece p = allPieces.Find(x => x != null && x.id == pSave.id);
+            if (p == null) continue;
+            
+            p.isLocked = pSave.isLocked;
+            
+            // 親クラスター名のオブジェクトを用意
+            string pName = pSave.parentName;
+            Transform parentCluster = null;
+            
+            if (clusterCache.ContainsKey(pName))
+            {
+                parentCluster = clusterCache[pName];
+            }
+            else
+            {
+                GameObject newCluster = new GameObject(pName);
+                newCluster.transform.SetParent(transform);
+                newCluster.transform.position = new Vector3(pSave.rx, pSave.ry, 0);
+                newCluster.transform.rotation = Quaternion.Euler(0, 0, pSave.rz);
+                
+                parentCluster = newCluster.transform;
+                clusterCache.Add(pName, parentCluster);
+            }
+            
+            // ピースを親クラスターの子に設定
+            p.transform.SetParent(parentCluster);
+            p.transform.localPosition = new Vector3(pSave.px, pSave.py, - (p.id % 10) * 0.0001f);
+            
+            p.UpdateShadowPosition();
+        }
+        
+        // 全グループの順序ソートと表示更新を一括実行
+        UpdateAllGroupsSortingOrder();
+        
+        Debug.Log("[PuzzleManager] セーブデータからの復元が正常に完了しました！");
+    }
+
+    // セーブポップアップ内のスロット更新用（JavaScript側から呼び出されます）
+    public void UpdateSlotDescriptions(string slot1Info, string slot2Info, string slot3Info)
+    {
+        if (pauseUIDoc == null) return;
+        var root = pauseUIDoc.rootVisualElement;
+        if (root == null) return;
+
+        var desc1 = root.Q<Label>("SlotDesc1");
+        var desc2 = root.Q<Label>("SlotDesc2");
+        var desc3 = root.Q<Label>("SlotDesc3");
+
+        if (desc1 != null && !string.IsNullOrEmpty(slot1Info)) desc1.text = slot1Info;
+        if (desc2 != null && !string.IsNullOrEmpty(slot2Info)) desc2.text = slot2Info;
+        if (desc3 != null && !string.IsNullOrEmpty(slot3Info)) desc3.text = slot3Info;
+    }
+
+    // 一時停止画面の「セーブ」ボタン用コールバック
     private void OnSaveClicked()
     {
-        Debug.Log("[PuzzleManager] セーブ機能が呼び出されました（現在は保存処理を行いません）。");
+        if (pauseUIDoc == null) return;
+        var root = pauseUIDoc.rootVisualElement;
+        if (root == null) return;
+
+        var savePopup = root.Q<VisualElement>("SavePopup");
+        var pauseMenu = root.Q<VisualElement>("PauseMenu");
+        
+        if (savePopup != null)
+        {
+            savePopup.style.display = DisplayStyle.Flex;
+            if (pauseMenu != null) pauseMenu.style.display = DisplayStyle.None;
+
+            // 各スロットの説明テキストをブラウザのlocalStorageから取得するためにJavaScriptをコール
+            #if UNITY_WEBGL && !UNITY_EDITOR
+            Application.ExternalEval("if(typeof window.requestSlotDescriptions === 'function') { window.requestSlotDescriptions(); }");
+            #endif
+
+            // ボタンのクリックイベントバインド
+            Button btnSlot1 = root.Q<Button>("SlotButton1");
+            Button btnSlot2 = root.Q<Button>("SlotButton2");
+            Button btnSlot3 = root.Q<Button>("SlotButton3");
+            Button btnClose = root.Q<Button>("ClosePopupButton");
+
+            if (btnSlot1 != null) { btnSlot1.clicked -= () => StartSaveProcess(1); btnSlot1.clicked += () => StartSaveProcess(1); }
+            if (btnSlot2 != null) { btnSlot2.clicked -= () => StartSaveProcess(2); btnSlot2.clicked += () => StartSaveProcess(2); }
+            if (btnSlot3 != null) { btnSlot3.clicked -= () => StartSaveProcess(3); btnSlot3.clicked += () => StartSaveProcess(3); }
+            if (btnClose != null)
+            {
+                btnClose.clicked -= CloseSavePopup;
+                btnClose.clicked += CloseSavePopup;
+            }
+        }
+    }
+
+    private void CloseSavePopup()
+    {
+        if (pauseUIDoc == null) return;
+        var root = pauseUIDoc.rootVisualElement;
+        if (root == null) return;
+
+        var savePopup = root.Q<VisualElement>("SavePopup");
+        var pauseMenu = root.Q<VisualElement>("PauseMenu");
+        if (savePopup != null) savePopup.style.display = DisplayStyle.None;
+        if (pauseMenu != null) pauseMenu.style.display = DisplayStyle.Flex;
+    }
+
+    private void StartSaveProcess(int slotIndex)
+    {
+        CloseSavePopup();
+        StartCoroutine(CaptureAndSaveCoroutine(slotIndex));
+    }
+
+    private IEnumerator CaptureAndSaveCoroutine(int slotIndex)
+    {
+        // UIを一時的に隠してゲーム画面だけをキャプチャする（より綺麗なサムネイルのため）
+        if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(false);
+        if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false);
+        yield return new WaitForEndOfFrame(); // 描画終了まで待つ
+
+        // スクショ撮影用のテクスチャ作成 (アスペクト比 16:9 相当で小さく切り出す)
+        int sw = Screen.width;
+        int sh = Screen.height;
+        int captureW = Mathf.Min(sw, Mathf.RoundToInt(sh * (16f / 9f)));
+        int captureH = Mathf.RoundToInt(captureW * (9f / 16f));
+        int startX = (sw - captureW) / 2;
+        int startY = (sh - captureH) / 2;
+
+        Texture2D screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
+        screenTex.ReadPixels(new Rect(startX, startY, captureW, captureH), 0, 0);
+        screenTex.Apply();
+
+        // 読み込み容量削減のため、さらに極小サムネイル(240x135)に縮小して軽量化
+        Texture2D thumbTex = new Texture2D(240, 135, TextureFormat.RGB24, false);
+        // 単純ピクセルサンプリングによる高速縮小
+        for (int y = 0; y < thumbTex.height; y++)
+        {
+            for (int x = 0; x < thumbTex.width; x++)
+            {
+                float u = (float)x / thumbTex.width;
+                float v = (float)y / thumbTex.height;
+                Color col = screenTex.GetPixelBilinear(u, v);
+                thumbTex.SetPixel(x, y, col);
+            }
+        }
+        thumbTex.Apply();
+
+        byte[] imgBytes = thumbTex.EncodeToJPG(75); // 画質75%の軽量JPGでエンコード
+        string base64Str = System.Convert.ToBase64String(imgBytes);
+
+        // クリーンアップ
+        Destroy(screenTex);
+        Destroy(thumbTex);
+
+        // UIを再表示
+        if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(true);
+        if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(true);
+
+        // セーブデータ（JSON）の構築
+        PuzzleSaveData saveData = new PuzzleSaveData();
+        saveData.imageName = (sourceSprite != null) ? sourceSprite.name : "PuzzleImage";
+        saveData.targetPieces = targetPieces;
+        saveData.elapsedTime = (Time.time - startTime) - totalPausedTime;
+        saveData.saveTime = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+        saveData.screenshotBase64 = base64Str;
+        saveData.pieces = new System.Collections.Generic.List<PieceSaveData>();
+
+        foreach (var p in allPieces)
+        {
+            if (p == null) continue;
+            PieceSaveData pData = new PieceSaveData();
+            pData.id = p.id;
+            pData.px = p.transform.localPosition.x;
+            pData.py = p.transform.localPosition.y;
+            pData.rx = p.transform.parent.position.x;
+            pData.ry = p.transform.parent.position.y;
+            pData.rz = p.transform.parent.eulerAngles.z;
+            pData.parentName = p.transform.parent.name;
+            pData.isLocked = p.isLocked;
+            saveData.pieces.Add(pData);
+        }
+
+        string jsonStr = JsonUtility.ToJson(saveData);
+
+        // ブラウザへの送信処理
+        #if UNITY_WEBGL && !UNITY_EDITOR
+        SaveToBrowser(slotIndex, jsonStr);
+        #else
+        PlayerPrefs.SetString($"jigsaw_save_slot_{slotIndex}", jsonStr);
+        PlayerPrefs.Save();
+        Debug.Log($"[PuzzleManager] セーブスロット {slotIndex} にデータをローカル保存しました（エディタシミュレーション）。");
+        #endif
+
+        // 保存完了のメッセージ表示（ポーズ画面の下部に簡易トースト表示等も可能ですが、スロット説明文を更新して完了）
+        #if UNITY_WEBGL && !UNITY_EDITOR
+        Application.ExternalEval("if(typeof window.requestSlotDescriptions === 'function') { window.requestSlotDescriptions(); }");
+        #endif
     }
 
     // 目玉ボタン（見本表示用）のコールバック群
@@ -455,6 +718,14 @@ public class PuzzleManager : MonoBehaviour
             if (backgroundGuideRenderer != null) {
                 SetGuideVisible(false);
             }
+
+            // [NEW] セーブデータからの復元処理の実行
+            if (pendingLoadData != null)
+            {
+                RestorePuzzleFromSaveData(pendingLoadData);
+                pendingLoadData = null; // 復元が終わったら破棄
+            }
+
             Debug.Log($"[LOG] Generation Complete in {Time.realtimeSinceStartup - genStartTime:F3}s");
             yield break;
         } finally {

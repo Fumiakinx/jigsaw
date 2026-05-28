@@ -505,10 +505,98 @@
         }
     }
 
+    // [NEW] セーブデータ復号ヘルパー
+    function decryptSaveData(encryptedStr, key = 73) {
+        try {
+            let raw = decodeURIComponent(escape(atob(encryptedStr)));
+            let result = "";
+            for (let i = 0; i < raw.length; i++) {
+                result += String.fromCharCode(raw.charCodeAt(i) ^ key);
+            }
+            return result;
+        } catch(e) {
+            return null;
+        }
+    }
+
+    // [NEW] セーブデータから直接プレイヤーを起動する関数
+    function loadGameFromSave(saveJsonData) {
+        let playerUrl = 'jigsaw_player.html';
+        const isLocal = window.location.protocol === 'file:' || 
+                        window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1';
+        
+        if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
+            if (window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('google.com')) {
+                playerUrl = PUBLISHED_PLAYER_URL;
+            }
+        }
+
+        const playerWindow = window.open(playerUrl, '_blank');
+        if (!playerWindow) {
+            alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
+            return;
+        }
+
+        // 親ウィンドウの共有変数にセーブデータをセット
+        window.selectedPuzzleData = {
+            isSaveLoad: true,
+            saveJson: saveJsonData,
+            playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
+            rankingApiUrl: RANKING_API_URL
+        };
+    }
+
     // ギャラリーHTMLを動的構築するヘルパー
     function buildGallery(imagesList, isFromGAS = false) {
         const galleryContainer = document.getElementById('gallery');
         galleryContainer.innerHTML = ""; // 初期クリア
+        
+        // 💾 [NEW] セーブカードの生成・挿入（存在する場合のみ左上に差し込む）
+        for (let i = 1; i <= 3; i++) {
+            const enc = localStorage.getItem("jigsaw_save_slot_" + i);
+            if (enc) {
+                const dec = decryptSaveData(enc);
+                if (dec) {
+                    try {
+                        const saveData = JSON.parse(dec);
+                        const item = document.createElement('div');
+                        item.className = 'gallery-item';
+                        item.style.borderColor = "#FFD700"; // セーブカードはゴールド枠
+                        item.style.borderWidth = "2px";
+                        item.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.25)";
+                        
+                        // 画像サムネイル（セーブ時のスクリーンショット）
+                        const thumbUrl = saveData.screenshotBase64 
+                            ? "data:image/jpeg;base64," + saveData.screenshotBase64
+                            : "images/save_thumbnail_default.png";
+                            
+                        const displayName = saveData.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
+                        
+                        item.innerHTML = `
+                            <div class="gallery-image-wrap" style="position: relative; width: 100%; height: 160px; overflow: hidden; border-radius: 8px;">
+                                <img src="${thumbUrl}" alt="${displayName}" style="object-fit: cover; width: 100%; height: 100%;">
+                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.85); color: #FFD700; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFD700; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">💾 セーブ ${i}</div>
+                            </div>
+                            <div class="gallery-info" style="color: #FFD700; font-weight: bold; padding: 12px 10px; text-align: center;">
+                                ${displayName}
+                                <div style="font-size: 10px; color: rgba(255,255,255,0.6); font-weight: normal; margin-top: 5px;">${saveData.saveTime}</div>
+                            </div>
+                        `;
+                        
+                        item.onclick = function() {
+                            if (confirm(`スロット ${i} のセーブデータ（${displayName}）から再開しますか？`)) {
+                                loadGameFromSave(dec);
+                            }
+                        };
+                        
+                        galleryContainer.appendChild(item);
+                    } catch(e) {
+                        console.error("セーブデータのデコードエラー:", e);
+                    }
+                }
+            }
+        }
         
         imagesList.forEach((imgInfo, index) => {
             try {

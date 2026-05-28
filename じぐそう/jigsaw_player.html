@@ -540,6 +540,65 @@
 
             var script = document.createElement("script");
             script.src = loaderUrl;
+            // [NEW] セーブデータ難読化（暗号化）ヘルパー
+            function encryptSaveData(dataStr, key = 73) {
+                let result = "";
+                for (let i = 0; i < dataStr.length; i++) {
+                    result += String.fromCharCode(dataStr.charCodeAt(i) ^ key);
+                }
+                return btoa(unescape(encodeURIComponent(result)));
+            }
+
+            // [NEW] セーブデータ復号ヘルパー
+            function decryptSaveData(encryptedStr, key = 73) {
+                try {
+                    let raw = decodeURIComponent(escape(atob(encryptedStr)));
+                    let result = "";
+                    for (let i = 0; i < raw.length; i++) {
+                        result += String.fromCharCode(raw.charCodeAt(i) ^ key);
+                    }
+                    return result;
+                } catch(e) {
+                    return null;
+                }
+            }
+
+            // [NEW] Unityから呼ばれるグローバル関数
+            window.saveJigsawData = function(slotIndex, jsonDataStr) {
+                console.log("[JigsawPlayer] セーブデータ保存要求を受信。スロット:", slotIndex);
+                try {
+                    let enc = encryptSaveData(jsonDataStr);
+                    localStorage.setItem("jigsaw_save_slot_" + slotIndex, enc);
+                } catch(e) {
+                    console.error("[JigsawPlayer] セーブデータの保存に失敗:", e);
+                }
+            };
+
+            window.requestSlotDescriptions = function() {
+                if (!unityInstance) return;
+                let descs = [];
+                for (let i = 1; i <= 3; i++) {
+                    let enc = localStorage.getItem("jigsaw_save_slot_" + i);
+                    if (enc) {
+                        let dec = decryptSaveData(enc);
+                        if (dec) {
+                            try {
+                                let d = JSON.parse(dec);
+                                let displayImgName = d.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
+                                descs.push(displayImgName + " \n(" + d.saveTime + ")");
+                            } catch(e) {
+                                descs.push("破損データ");
+                            }
+                        } else {
+                            descs.push("空きスロット");
+                        }
+                    } else {
+                        descs.push("空きスロット");
+                    }
+                }
+                unityInstance.SendMessage("PuzzleManager", "UpdateSlotDescriptions", descs[0], descs[1], descs[2]);
+            };
+
             script.onload = () => {
                 createUnityInstance(canvas, config, (progress) => {
                     progressBar.style.width = (100 * progress) + "%";
@@ -550,13 +609,20 @@
                     
                     // Unityインスタンスが完全に動作するまで少しだけ待機して送信
                     setTimeout(() => {
-                        if (selectedData && selectedData.imageData) {
+                        if (selectedData && selectedData.isSaveLoad && selectedData.saveJson) {
+                            console.log("Unityにセーブデータからのロード再開リクエストを送信します。");
+                            unityInstance.SendMessage('PuzzleManager', 'LoadPuzzleFromWeb', selectedData.saveJson);
+                            
+                            // ローディング画面をフェードアウト
+                            loadingOverlay.style.opacity = 0;
+                            setTimeout(() => {
+                                loadingOverlay.style.visibility = "hidden";
+                            }, 500);
+                        } else if (selectedData && selectedData.imageData) {
                             console.log("Unityにパズル開始リクエストを送信します。ピース数:", selectedData.pieceCount);
-                            // メッセージ形式: "画像Base64_または_URL,ピース数"
                             const message = selectedData.imageData + "," + selectedData.pieceCount;
                             unityInstance.SendMessage('PuzzleManager', 'StartPuzzleFromWeb', message);
                             
-                            // ローディング画面をフェードアウト
                             loadingOverlay.style.opacity = 0;
                             setTimeout(() => {
                                 loadingOverlay.style.visibility = "hidden";

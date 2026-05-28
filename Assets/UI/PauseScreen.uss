@@ -94,3 +94,96 @@
     background-color: #4CAF50;
     color: #FFFFFF;
 }
+
+/* [NEW] セーブポップアップのスタイル */
+.save-popup-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+.save-popup-window {
+    background-color: rgba(22, 22, 22, 0.95);
+    border-width: 3px;
+    border-color: #FFD700;
+    border-radius: 20px;
+    padding: 40px;
+    width: 650px;
+    align-items: center;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.save-popup-title {
+    font-size: 28px;
+    color: #FFFFFF;
+    -unity-font: url("project:/Assets/Fonts/NotoSansJP-Regular.ttf");
+    -unity-font-definition: initial;
+    -unity-font-style: bold;
+    margin-bottom: 30px;
+}
+
+.save-slots-list {
+    width: 100%;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.save-slot-btn {
+    width: 100%;
+    background-color: rgba(44, 44, 44, 0.7);
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 15px 25px;
+    align-items: flex-start;
+    justify-content: center;
+    transition-duration: 0.15s;
+}
+
+.save-slot-btn:hover {
+    border-color: #FFD700;
+    background-color: rgba(255, 215, 0, 0.1);
+    scale: 1.02;
+}
+
+.slot-title {
+    font-size: 22px;
+    color: #FFD700;
+    -unity-font: url("project:/Assets/Fonts/NotoSansJP-Regular.ttf");
+    -unity-font-definition: initial;
+    -unity-font-style: bold;
+}
+
+.slot-desc {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    -unity-font: url("project:/Assets/Fonts/NotoSansJP-Regular.ttf");
+    -unity-font-definition: initial;
+    margin-top: 5px;
+}
+
+.save-popup-close-btn {
+    font-size: 22px;
+    background-color: rgba(66, 66, 66, 0.8);
+    color: #FFFFFF;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    padding: 10px 40px;
+    -unity-font: url("project:/Assets/Fonts/NotoSansJP-Regular.ttf");
+    -unity-font-definition: initial;
+    -unity-font-style: bold;
+    transition-duration: 0.2s;
+}
+
+.save-popup-close-btn:hover {
+    background-color: #FF5252;
+    color: #FFFFFF;
+    border-color: #FF5252;
+}

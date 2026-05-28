@@ -152,7 +152,83 @@ public class JigsawWebBridge : MonoBehaviour
         }
         else
         {
-            Debug.LogError("[JigsawWebBridge] PuzzleManagerが見つかりません。");
+            Debug.LogError("[JigsawWebBridge] PuzzleManagerが見つかりません.");
+        }
+    }
+
+    /// <summary>
+    /// Googleサイトなどからセーブデータをもとにロード再開するためのAPI
+    /// 引数: "saveJsonData"
+    /// </summary>
+    public void LoadPuzzleFromWeb(string saveJsonData)
+    {
+        Debug.Log("[JigsawWebBridge] 外部からロード要求を受信しました。");
+        
+        try
+        {
+            PuzzleSaveData data = JsonUtility.FromJson<PuzzleSaveData>(saveJsonData);
+            if (data == null)
+            {
+                Debug.LogError("[JigsawWebBridge] セーブデータのデコードに失敗しました。");
+                return;
+            }
+
+            // パズルマネージャーにデータを流し込む
+            if (puzzleManager != null)
+            {
+                puzzleManager.LoadPuzzleFromSaveData(saveJsonData);
+                puzzleManager.isLoadedFromWeb = true;
+            }
+
+            // 画像選択管理UIを開いている場合は閉じる
+            if (selectionManager != null && selectionManager.uiDoc != null)
+            {
+                selectionManager.uiDoc.gameObject.SetActive(false);
+            }
+
+            // 既存パズルの削除
+            if (puzzleManager != null)
+            {
+                puzzleManager.ClearExistingPuzzle();
+            }
+
+            string imgName = data.imageName;
+            
+            // Resources内の画像からテクスチャをロード
+            Texture2D texture = Resources.Load<Texture2D>($"Images/{imgName}");
+            if (texture == null)
+            {
+                texture = Resources.Load<Texture2D>($"PuzzleBase/{imgName}");
+            }
+            if (texture == null)
+            {
+                texture = Resources.Load<Texture2D>(imgName);
+            }
+            
+            if (texture != null)
+            {
+                Sprite sprite = Sprite.Create(
+                    texture,
+                    new Rect(0, 0, texture.width, texture.height),
+                    new Vector2(0.5f, 0.5f)
+                );
+                sprite.name = imgName;
+
+                if (puzzleManager != null)
+                {
+                    puzzleManager.StartPuzzle(sprite, data.targetPieces);
+                }
+            }
+            else
+            {
+                // WebのURL等の場合
+                Debug.LogWarning($"[JigsawWebBridge] 画像 '{imgName}' がResources内に見つかりません。Webダウンロードを試みます。");
+                StartCoroutine(LoadImageAndStartPuzzle(imgName, data.targetPieces));
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[JigsawWebBridge] ロード再開処理中にエラーが発生しました: {ex.Message}");
         }
     }
 }
