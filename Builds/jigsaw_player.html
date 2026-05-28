@@ -572,6 +572,7 @@
             };
 
             window.requestSlotDescriptions = function() {
+                console.log("[LOG Origin: Player] 現在のドメイン (Origin):", window.location.origin);
                 console.log("[LOG 7: JS] requestSlotDescriptions呼び出しを受信しました。");
                 if (!unityInstance) {
                     console.error("[LOG 7: ERROR] unityInstanceが存在しません！");

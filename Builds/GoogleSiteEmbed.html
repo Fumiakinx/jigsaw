@@ -623,6 +623,7 @@
 
     // 💾 [NEW] ロード用スロット選択画面 of GoogleSiteEmbed.html の操作関数
     function openLoadModal() {
+        console.log("[LOG Origin: Embed] 現在のドメイン (Origin):", window.location.origin);
         console.log("[LOG C: Embed] openLoadModalが呼び出されました。");
         const container = document.getElementById('loadSlotsContainer');
         container.innerHTML = "";
