@@ -406,6 +406,7 @@
             cursor: not-allowed;
         
         
+        
         /* プレミアム疑似ヘッダーの超高精度再現スタイル */
         .premium-header {
             width: 100%;
@@ -414,7 +415,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 14px 40px;
+            padding: 14px 20px; /* 左右余白を20pxに縮小し、画面の端ぎりぎりに配置 */
             box-sizing: border-box;
             position: sticky;
             top: 0;
@@ -436,37 +437,50 @@
         .header-name-bar {
             display: flex;
             align-items: center;
-            background-color: rgba(30, 30, 30, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            padding: 8px 16px;
-            border-radius: 8px;
+            background-color: rgba(30, 30, 30, 0.65); /* 透過度の高いダークグレー */
+            border: 1px solid rgba(255, 255, 255, 0.15); /* 細い白半透明の境界線 */
+            padding: 6px 14px;
+            border-radius: 24px; /* 丸みのあるバー */
             gap: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
             transition: all 0.2s ease;
         }
         .header-name-bar:focus-within {
-            border-color: rgba(255, 255, 255, 0.25);
-            background-color: rgba(35, 35, 35, 0.85);
+            border-color: rgba(255, 255, 255, 0.3);
+            background-color: rgba(35, 35, 35, 0.8);
         }
         .header-name-label {
             font-size: 13px;
-            color: #c084fc; /* 上品な薄紫色 */
+            color: #2e7d32; /* 深いグリーン */
             font-weight: bold;
             user-select: none;
             letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .header-name-label .name-icon {
+            color: #ab47bc; /* 人マークを紫色に指定 */
+            font-size: 14px;
         }
         .header-name-input {
-            background: transparent !important;
-            border: none !important;
+            background-color: rgba(0, 0, 0, 0.2) !important; /* 内側の薄黒背景 */
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-radius: 10px !important; /* 少し丸みのあるインプット枠 */
             color: #fff !important;
             font-size: 13px !important;
             font-weight: bold !important;
             outline: none !important;
-            width: 140px !important;
-            text-align: left !important;
+            width: 150px !important;
+            text-align: center !important;
             box-shadow: none !important;
-            padding: 0 !important;
+            padding: 4px 10px !important;
             margin: 0 !important;
+            font-family: inherit !important;
+        }
+        .header-name-input::placeholder {
+            color: #888;
+            font-weight: normal;
         }
         /* オートフィル時(自動補完)の強制白背景や枠線を完全に遮断 */
         .header-name-input:-webkit-autofill,
@@ -490,7 +504,7 @@
             color: #d8b4fe; /* 匿名時：薄紫 */
         }
         .header-name-status.active {
-            color: #4CAF50; /* ランキング対象時：グリーン */
+            color: #2e7d32; /* ランキング対象時：深いグリーン */
         }
         .header-menu-container {
             position: relative;
@@ -506,7 +520,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 8px 12px;
+            padding: 8px 0px 8px 12px; /* 右側パディングを0にし、端ぴったりに寄せる */
             letter-spacing: 0.5px;
             transition: color 0.2s;
         }
@@ -558,7 +572,7 @@
     <div class="header-logo" onclick="window.location.reload()">いろんなパズル</div>
     
     <div class="header-name-bar">
-        <span class="header-name-label">👤 プレイヤーネーム</span>
+        <span class="header-name-label"><span class="name-icon">👤</span> プレイヤーネーム</span>
         <input type="text" id="header-player-name" class="header-name-input" placeholder="名前を入力（自動保存）">
         <span id="header-name-status" class="header-name-status anonymous">● 匿名プレイ</span>
     </div>
