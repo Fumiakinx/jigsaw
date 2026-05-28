@@ -428,10 +428,78 @@
         var unityInstance = null;
         var selectedData = null;
 
-        // 1. 親ウィンドウからのデータ受け渡しを待機 (ポーリング処理・クロスドメイン安全対策)
+        // 1. 親ウィンドウからのデータ受け渡しを待機 (クエリパラメータ優先 ➔ ポーリング処理・クロスドメイン安全対策)
         function checkParentData() {
-            return new Promise((resolve) => {
-                // SessionStorageから起動データを優先取得（同一枠内遷移時の対応）[NEW]
+            return new Promise(async (resolve) => {
+                // HSLやテーマ色の設定のために、デクリプトなどの定義も必要に応じてグローバルで使用可能にする
+                
+                // A. URLのクエリパラメータを最優先で解析（クロスドメイン安全対策 [NEW]）
+                const urlParams = new URLSearchParams(window.location.search);
+                const imageId = urlParams.get('imageId');
+                const pieceCount = urlParams.get('pieceCount');
+                const playerName = urlParams.get('playerName');
+                const isSaveLoad = urlParams.get('isSaveLoad');
+                const slotIndex = urlParams.get('slotIndex');
+
+                const GAS_URL = "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
+
+                if (isSaveLoad === 'true' && slotIndex && playerName) {
+                    statusText.innerText = "GASからセーブデータを安全にロードしています...";
+                    try {
+                        const response = await fetch(`${GAS_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${slotIndex}`);
+                        const resData = await response.json();
+                        
+                        if (resData.success && resData.saveDataJson) {
+                            const dec = decryptSaveData(resData.saveDataJson);
+                            if (dec) {
+                                selectedData = {
+                                    isSaveLoad: true,
+                                    saveJson: dec,
+                                    playerName: playerName,
+                                    rankingApiUrl: GAS_URL
+                                };
+                                console.log("[JigsawPlayer] URLパラメータからGAS経由でのセーブデータロードに成功しました。");
+                                resolve(true);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.error("[JigsawPlayer] 自律セーブロード中にエラーが発生しました:", e);
+                    }
+                } else if (imageId) {
+                    statusText.innerText = "GASからパズル画像を安全に読み込んでいます...";
+                    let targetBase64 = null;
+
+                    // GAS経由での画像取得（GoogleドライブID形式の場合のみ）
+                    if (imageId && !imageId.startsWith('http') && !imageId.includes('/')) {
+                        try {
+                            console.log("[JigsawPlayer] ドライブIDから安全に画像を自動取得します:", imageId);
+                            const response = await fetch(`${GAS_URL}?action=image&id=${imageId}`);
+                            const resData = await response.json();
+                            if (resData.success) {
+                                targetBase64 = resData.imageData;
+                            }
+                        } catch (e) {
+                            console.error("[JigsawPlayer] 自律画像ロード中にエラーが発生しました:", e);
+                        }
+                    }
+
+                    if (!targetBase64) {
+                        targetBase64 = imageId; // ローカル用などのフォールバック
+                    }
+
+                    selectedData = {
+                        imageData: targetBase64,
+                        pieceCount: parseInt(pieceCount || "96", 10),
+                        playerName: playerName || "",
+                        imageId: imageId,
+                        rankingApiUrl: GAS_URL
+                    };
+                    resolve(true);
+                    return;
+                }
+
+                // B. SessionStorageから起動データを優先取得（同一枠内遷移時の対応などの互換性維持）
                 try {
                     const sessionData = sessionStorage.getItem('selectedPuzzleData');
                     if (sessionData) {
@@ -445,8 +513,9 @@
                     console.warn("[JigsawPlayer] SessionStorageの読み込みに失敗しました:", sessionError);
                 }
 
+                // C. 以前の動作（window.opener）へのフォールバック
                 let attempts = 0;
-                const maxAttempts = 300; // 最大約30秒待機
+                const maxAttempts = 50; // 最大5秒待機
                 
                 const interval = setInterval(() => {
                     attempts++;
@@ -460,17 +529,17 @@
                             return;
                         }
                     } catch (securityError) {
-                        // Googleサイトの埋め込みコード（異なるドメイン）によるアクセス拒否をキャッチ
+                        // セキュリティブロック時はポーリングを早めに打ち切り、エラー画面にする
                         clearInterval(interval);
-                        console.error("【セキュリティ制限】親画面とドメインが異なるため、ブラウザにアクセスをブロックされました:", securityError);
-                        showConnectionError("【セキュリティエラー】Googleサイトに『埋め込みコード（HTML）』で貼り付けられているため、ブラウザが画像データの転送をブロックしました。『URL埋め込み』で直接ページのURLを貼り付けて配置し直してください。");
+                        console.error("【セキュリティ制限】親画面との通信が遮断されました:", securityError);
+                        showConnectionError("【セキュリティ制限】セキュリティ設定のため親ウィンドウと接続できませんでした。");
                         resolve(false);
                         return;
                     }
                     
                     if (attempts >= maxAttempts) {
                         clearInterval(interval);
-                        console.warn("親ウィンドウからのパズルデータが見つかりませんでした。デフォルト画像で起動します。");
+                        console.warn("パズル起動パラメータが見つかりませんでした。");
                         resolve(false);
                     }
                 }, 100);
