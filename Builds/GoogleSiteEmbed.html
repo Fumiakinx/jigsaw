@@ -22,15 +22,15 @@
             letter-spacing: 0.5px;
         }
         .container {
-            width: 100%;
-            max-width: 100%;
+            width: 95%;
+            max-width: 1000px;
             background-color: #2d2d2d;
-            border-radius: 0px;
-            padding: 20px;
-            box-shadow: none;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
             box-sizing: border-box;
-            margin: 0 auto;
+            margin: 20px auto;
         }
         .gallery-title-area {
             border-bottom: 2px solid #3d3d3d;
@@ -566,12 +566,29 @@
 </head>
 <body>
 
-
+<!-- 🎭 プレミアム疑似ヘッダー (100%完全再現版) -->
+<header class="premium-header">
+    <div class="header-logo" onclick="window.location.reload()">いろんなパズル</div>
+    
+    <div class="header-name-bar">
+        <span class="header-name-label"><span class="name-icon">👤</span> プレイヤーネーム</span>
+        <input type="text" id="header-player-name" class="header-name-input" placeholder="名前を入力（自動保存）">
+        <span id="header-name-status" class="header-name-status anonymous">● 匿名プレイ</span>
+    </div>
+    
+    <div class="header-menu-container">
+        <button class="header-menu-btn">いろんなパズル ホーム ∨</button>
+        <div class="header-menu-dropdown">
+            <a href="GoogleSiteEmbed.html" class="header-menu-item" onclick="window.location.reload(); return false;">じぐそう</a>
+            <a href="../sudoku/index.html" class="header-menu-item" onclick="alert('すうどくのページへ遷移します。');">すうどく</a>
+        </div>
+    </div>
+</header>
 
 <div class="container" style="margin-top: 25px;">
     <div class="header-wrap" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
         <h2 style="margin: 0; color: #4CAF50;">🧩 じぐそう - 画像選択</h2>
-        <button id="btnResumeGame" onclick="openLoadModal()" class="resume-button" style="display: none !important;">
+        <button id="btnResumeGame" onclick="openLoadModal()" class="resume-button">
             💾 ロードして再開
         </button>
     </div>
@@ -855,8 +872,7 @@
         const galleryContainer = document.getElementById('gallery');
         galleryContainer.innerHTML = ""; // 初期クリア
         
-        // 💾 [NEW] セーブカードの生成・挿入（Googleサイト埋め込み復元のため一時的に無効化）
-        /*
+        // 💾 [NEW] セーブカードの生成・挿入（存在する場合のみ左上に差し込む）
         for (let i = 1; i <= 3; i++) {
             const enc = localStorage.getItem("jigsaw_save_slot_" + i);
             if (enc) {
@@ -901,7 +917,6 @@
                 }
             }
         }
-        */
         
         imagesList.forEach((imgInfo, index) => {
             try {
@@ -1218,7 +1233,7 @@
         btn.innerText = "⏳ パズル画像を準備中...";
         btn.disabled = true;
 
-        // 2. 同じタブ（同一iframe内）で起動するために遷移先を決定
+        // 2. ポップアップブロックを完全に回避するため、即座にゲームプレイヤー画面を開く
         let playerUrl = 'jigsaw_player.html';
         
         // 起動環境のホストを判定（ローカルファイルまたはローカルサーバー）
@@ -1226,10 +1241,20 @@
                         window.location.hostname === 'localhost' || 
                         window.location.hostname === '127.0.0.1';
         
-        // Googleサイトの埋め込み環境で同じタブで遷移させる場合、fumiakinx.github.io（別ドメイン）を同じ枠で開くと
-        // ドメインが変わってしまい、埋め込み側の名前等と隔離されてしまうため、同一空間の相対パス "jigsaw_player.html" を使用します。
-        if (!isLocal) {
-            console.log("🌐 Google Sites埋め込み環境のため、同じ枠内の相対パスでゲームを起動します:", playerUrl);
+        // Googleサイトの埋め込み環境（googleusercontent.comなど）の場合で、本番用絶対URLが設定されている場合は自動適用
+        if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
+            if (window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('google.com')) {
+                playerUrl = PUBLISHED_PLAYER_URL;
+                console.log("🌐 Google Sites埋め込み環境を検知したため、本番用絶対URLでプレイヤーを起動します:", playerUrl);
+            }
+        }
+
+        const playerWindow = window.open(playerUrl, '_blank');
+        if (!playerWindow) {
+            alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
+            btn.innerText = originalText;
+            btn.disabled = false;
+            return;
         }
 
         // 親ウィンドウ側の共有変数をクリア
@@ -1239,6 +1264,7 @@
             let targetBase64 = null;
             
             // GAS経由での画像取得
+            // GAS_API_URLが設定されていて、画像パスがURLではなく画像ID（英数字の長い文字列）である場合
             if (GAS_API_URL && finalUrl && !finalUrl.startsWith('http') && !finalUrl.includes('/')) {
                 console.log("GASから安全にBase64画像データを取得します。ID:", finalUrl);
                 const response = await fetch(`${GAS_API_URL}?action=image&id=${finalUrl}`);
@@ -1256,8 +1282,9 @@
                 targetBase64 = finalUrl;
             }
 
-            // 3. データの準備完了！SessionStorageに確実に格納（同一枠内遷移の対応）と、互換性のためにグローバル変数にもセット
-            const puzzleLaunchData = {
+            // 3. データの準備完了！共有変数に確実に格納
+            // 子ウィンドウがこの変数をポーリングで取得して自動的に進行します
+            window.selectedPuzzleData = {
                 imageData: targetBase64,
                 pieceCount: parseInt(pieceCount, 10),
                 playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
@@ -1265,38 +1292,20 @@
                 rankingApiUrl: RANKING_API_URL
             };
 
-            try {
-                sessionStorage.setItem('selectedPuzzleData', JSON.stringify(puzzleLaunchData));
-            } catch (storageErr) {
-                console.error("SessionStorageへの書き込みに失敗しました:", storageErr);
-            }
-
-            window.selectedPuzzleData = puzzleLaunchData;
-
-            // 4. データ設定後、同じタブ内で遷移する
+            // 4. データ設定後、モーダルを閉じる
             closeModal();
-            window.location.href = playerUrl;
 
         } catch (e) {
             console.error("画像データ取得処理中にエラーが発生しました:", e);
             // エラー時はフォールバックとして元のURLをそのまま渡す
-            const puzzleLaunchData = {
+            window.selectedPuzzleData = {
                 imageData: finalUrl,
                 pieceCount: parseInt(pieceCount, 10),
                 playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
                 imageId: selectedImageUrl,
                 rankingApiUrl: RANKING_API_URL
             };
-
-            try {
-                sessionStorage.setItem('selectedPuzzleData', JSON.stringify(puzzleLaunchData));
-            } catch (storageErr) {
-                console.error("SessionStorageへの書き込みに失敗しました:", storageErr);
-            }
-
-            window.selectedPuzzleData = puzzleLaunchData;
             closeModal();
-            window.location.href = playerUrl;
         } finally {
             // 5. ボタンのローディング表示を元に戻す
             btn.innerText = originalText;
@@ -1322,21 +1331,10 @@
         }
 
         if (nameInput) {
-            // URLパラメータから名前を取得して優先適用する [NEW]
-            const urlParams = new URLSearchParams(window.location.search);
-            const urlName = urlParams.get('name');
-            
-            let initialName = "";
-            if (urlName !== null) {
-                initialName = urlName.trim();
-                localStorage.setItem('jigsaw_player_name', initialName);
-                console.log("[LOG: URL-Param-Sync] URLパラメータからプレイヤー名を取得しました:", initialName);
-            } else {
-                initialName = localStorage.getItem('jigsaw_player_name') || "";
-            }
-            
-            nameInput.value = initialName;
-            updateStatus(initialName);
+            // 初期ロード
+            const savedName = localStorage.getItem('jigsaw_player_name') || "";
+            nameInput.value = savedName;
+            updateStatus(savedName);
 
             // 入力時に即時保存 & ステータス動的更新
             nameInput.addEventListener('input', function() {
