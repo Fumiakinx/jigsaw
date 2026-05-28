@@ -356,11 +356,16 @@
 <div class="container">
     <h2>🧩 じぐそう - 画像選択</h2>
     
-    <!-- 👤 プレイヤー名入力欄（ランキング対象） -->
+    <!-- 👤 プレイヤー名入力欄（ランキング対象）＆ 💾 ロードボタン -->
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background-color: #242424; padding: 12px 20px; border-radius: 10px; border: 1px solid #3d3d3d; width: 100%; box-sizing: border-box;">
         <label style="font-weight: bold; color: #4CAF50; font-size: 14px; white-space: nowrap;">👤 プレイヤー名：</label>
         <input type="text" id="playerNameInput" placeholder="名前を入力（ランキング対象）" maxlength="10" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #555; background-color: #1a1a1a; color: #fff; font-size: 13px; font-weight: bold; width: 180px; outline: none; transition: border-color 0.2s;">
         <span id="rankingStatus" style="font-size: 12px; font-weight: bold; color: #888; margin-left: 5px; transition: color 0.2s;">⚪ 匿名プレイ（ランキング対象外）</span>
+        
+        <!-- 💾 GAS直通ロードボタンを追加 -->
+        <button id="btnResumeGame" onclick="openLoadModal()" style="margin-left: auto; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #1e1e24; border: none; padding: 6px 14px; font-size: 12px; font-weight: bold; border-radius: 14px; cursor: pointer; box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3); display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+            💾 ロードして再開
+        </button>
     </div>
 
     <div class="gallery-title-area">
@@ -442,6 +447,17 @@
                     <button id="startBtn" class="modal-btn-start" onclick="sendToJigsaw()">パズルを開始する！</button>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- 💾 ロード用スロット選択モーダル -->
+<div class="modal-overlay" id="loadModal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px; padding: 30px; background: rgba(30, 30, 38, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; backdrop-filter: blur(15px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #fff;">
+        <span class="modal-close" onclick="closeLoadModal()" style="color: #aaa;">&times;</span>
+        <h3 style="margin-top: 0; font-size: 18px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; color: #FFD700;">💾 セーブスロットを選択してください</h3>
+        <div id="loadSlotsContainer" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+            <!-- JavaScriptでスロット要素が動的に挿入されます -->
         </div>
     </div>
 </div>
@@ -610,6 +626,12 @@
                 console.error("個別画像のパース中にエラーが発生しました。スキップします:", imgInfo, innerError);
             }
         });
+        
+        // GASからセーブスロット情報を取得して、セーブカードを画像一覧の左上に非同期で挿入する [NEW]
+        const currentName = document.getElementById('playerNameInput').value.trim();
+        if (currentName) {
+            injectSaveCardsToGallery(galleryContainer, currentName);
+        }
     }
 
     // 超高精度モバイル・タブレット端末判定 (Fire HD カスタム環境・iPad Pro PC偽装モード・物理タッチ端末完全対応)
@@ -668,8 +690,12 @@
             }
             updateRankingStatus();
             nameInput.addEventListener('input', () => {
-                localStorage.setItem('jigsaw_player_name', nameInput.value.trim());
+                const nameVal = nameInput.value.trim();
+                localStorage.setItem('jigsaw_player_name', nameVal);
                 updateRankingStatus();
+                
+                // プレイヤー名が変わったら、セーブカードをリアルタイムに更新表示する [NEW]
+                loadGalleryFromGAS();
             });
         }
 
@@ -859,7 +885,7 @@
         btn.innerText = "⏳ パズル画像を準備中...";
         btn.disabled = true;
 
-        // 2. ポップアップブロックを完全に回避するため、即座にゲームプレイヤー画面を開く
+        // 2. 同じタブ（同一iframe内）で起動するために遷移先を決定
         let playerUrl = 'jigsaw_player.html';
         
         // 起動環境のホストを判定（ローカルファイルまたはローカルサーバー）
@@ -867,20 +893,8 @@
                         window.location.hostname === 'localhost' || 
                         window.location.hostname === '127.0.0.1';
         
-        // Googleサイトの埋め込み環境（googleusercontent.comなど）の場合で、本番用絶対URLが設定されている場合は自動適用
-        if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
-            if (window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('google.com')) {
-                playerUrl = PUBLISHED_PLAYER_URL;
-                console.log("🌐 Google Sites埋め込み環境を検知したため、本番用絶対URLでプレイヤーを起動します:", playerUrl);
-            }
-        }
-
-        const playerWindow = window.open(playerUrl, '_blank');
-        if (!playerWindow) {
-            alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
-            btn.innerText = originalText;
-            btn.disabled = false;
-            return;
+        if (!isLocal) {
+            console.log("🌐 Google Sites埋め込み環境のため、同じ枠内の相対パスでゲームを起動します:", playerUrl);
         }
 
         // 親ウィンドウ側の共有変数をクリア
@@ -890,7 +904,6 @@
             let targetBase64 = null;
             
             // GAS経由での画像取得
-            // GAS_API_URLが設定されていて、画像パスがURLではなく画像ID（英数字の長い文字列）である場合
             if (GAS_API_URL && finalUrl && !finalUrl.startsWith('http') && !finalUrl.includes('/')) {
                 console.log("GASから安全にBase64画像データを取得します。ID:", finalUrl);
                 const response = await fetch(`${GAS_API_URL}?action=image&id=${finalUrl}`);
@@ -908,9 +921,8 @@
                 targetBase64 = finalUrl;
             }
 
-            // 3. データの準備完了！共有変数に確実に格納
-            // 子ウィンドウがこの変数をポーリングで取得して自動的に進行します
-            window.selectedPuzzleData = {
+            // 3. データの準備完了！SessionStorageに確実に格納（同一枠内遷移の対応）と、互換性のためにグローバル変数にもセット
+            const puzzleLaunchData = {
                 imageData: targetBase64,
                 pieceCount: parseInt(pieceCount, 10),
                 playerName: document.getElementById('playerNameInput').value.trim(),
@@ -918,24 +930,243 @@
                 rankingApiUrl: RANKING_API_URL
             };
 
-            // 4. データ設定後、モーダルを閉じる
+            try {
+                sessionStorage.setItem('selectedPuzzleData', JSON.stringify(puzzleLaunchData));
+            } catch (storageErr) {
+                console.error("SessionStorageへの書き込みに失敗しました:", storageErr);
+            }
+
+            window.selectedPuzzleData = puzzleLaunchData;
+
+            // 4. データ設定後、同じタブ内で遷移する
             closeModal();
+            window.location.href = playerUrl;
 
         } catch (e) {
             console.error("画像データ取得処理中にエラーが発生しました:", e);
             // エラー時はフォールバックとして元のURLをそのまま渡す
-            window.selectedPuzzleData = {
+            const puzzleLaunchData = {
                 imageData: finalUrl,
                 pieceCount: parseInt(pieceCount, 10),
                 playerName: document.getElementById('playerNameInput').value.trim(),
                 imageId: selectedImageUrl,
                 rankingApiUrl: RANKING_API_URL
             };
+
+            try {
+                sessionStorage.setItem('selectedPuzzleData', JSON.stringify(puzzleLaunchData));
+            } catch (storageErr) {
+                console.error("SessionStorageへの書き込みに失敗しました:", storageErr);
+            }
+
+            window.selectedPuzzleData = puzzleLaunchData;
             closeModal();
+            window.location.href = playerUrl;
         } finally {
             // 5. ボタンのローディング表示を元に戻す
             btn.innerText = originalText;
             btn.disabled = false;
+        }
+    }
+
+    // ------------------------------------------
+    // 💾 [NEW] GAS直通セーブ＆ロード用JavaScript関数群
+    // ------------------------------------------
+
+    // [NEW] セーブデータ復号ヘレパー
+    function decryptSaveData(encryptedStr) {
+        try {
+            return decodeURIComponent(escape(atob(encryptedStr)));
+        } catch(e) {
+            console.error("[GAS-Load] 復号中にエラーが発生しました:", e);
+            return null;
+        }
+    }
+
+    // [NEW] セーブデータから直接プレイヤーを起動する関数
+    function loadGameFromSave(saveJsonData) {
+        let playerUrl = 'jigsaw_player.html';
+        
+        // sessionStorageに起動データを格納して画面遷移
+        sessionStorage.setItem('selectedPuzzleData', JSON.stringify({
+            isSaveLoad: true,
+            saveJson: saveJsonData,
+            playerName: document.getElementById('playerNameInput').value.trim(),
+            rankingApiUrl: RANKING_API_URL
+        }));
+        
+        window.location.href = playerUrl;
+    }
+
+    // 💾 [NEW] ロード用スロット選択モーダルの操作関数
+    async function openLoadModal() {
+        const playerName = document.getElementById('playerNameInput').value.trim();
+        if (!playerName) {
+            alert("プレイヤー名を入力してください。匿名プレイ状態ではセーブデータのロードはできません。");
+            return;
+        }
+        
+        const container = document.getElementById('loadSlotsContainer');
+        container.innerHTML = `
+            <div style="text-align: center; padding: 20px 0; color: #888;">
+                <div style="border: 3px solid rgba(255,255,255,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #FFD700; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
+                <div style="font-size: 13px;">GASからセーブスロットを読み込んでいます...</div>
+            </div>
+        `;
+        
+        document.getElementById('loadModal').style.display = 'flex';
+        
+        try {
+            const response = await fetch(`${RANKING_API_URL}?action=get_slots&playerName=${encodeURIComponent(playerName)}`);
+            const resData = await response.json();
+            
+            if (resData.success) {
+                container.innerHTML = "";
+                for (let i = 1; i <= 3; i++) {
+                    const slot = resData.slots[i.toString()];
+                    let slotHtml = "";
+                    
+                    if (slot) {
+                        const displayName = slot.imageName;
+                        slotHtml = `
+                            <div class="load-slot-card" onclick="triggerLoadSlot(${i})" style="display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.25);">
+                                <div style="flex: 1; min-width: 0; text-align: left;">
+                                    <div style="font-weight: bold; font-size: 14px; color: #FFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">スロット ${i}: ${displayName}</div>
+                                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">ピース数: ${slot.targetPieces}P | 保存日時: ${slot.saveTime}</div>
+                                </div>
+                                <div style="font-size: 18px; color: #FFD700; padding-right: 5px;">▶</div>
+                            </div>
+                        `;
+                    } else {
+                        slotHtml = `
+                            <div class="load-slot-card-empty" style="display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; opacity: 0.6; cursor: not-allowed;">
+                                <div style="flex: 1; text-align: left;">
+                                    <div style="font-weight: bold; font-size: 14px; color: #666;">スロット ${i}: 空きスロット</div>
+                                    <div style="font-size: 11px; color: #444; margin-top: 4px;">セーブデータがありません</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    container.innerHTML += slotHtml;
+                }
+            } else {
+                container.innerHTML = `<div style="color: #ff6b6b; font-size: 12px; text-align: center; padding: 20px;">セーブデータの取得に失敗しました。</div>`;
+            }
+        } catch(e) {
+            console.error("ロードスロット読み込みエラー:", e);
+            container.innerHTML = `<div style="color: #ff6b6b; font-size: 12px; text-align: center; padding: 20px;">通信エラーが発生しました。</div>`;
+        }
+    }
+    
+    async function triggerLoadSlot(slotIndex) {
+        const playerName = document.getElementById('playerNameInput').value.trim();
+        const container = document.getElementById('loadSlotsContainer');
+        container.innerHTML = `<div style="text-align: center; color: #FFD700; padding: 30px;">⏳ セーブデータを展開中...</div>`;
+        
+        try {
+            const response = await fetch(`${RANKING_API_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${slotIndex}`);
+            const resData = await response.json();
+            
+            if (resData.success && resData.saveDataJson) {
+                const dec = decryptSaveData(resData.saveDataJson);
+                if (dec) {
+                    loadGameFromSave(dec);
+                    closeLoadModal();
+                } else {
+                    alert("セーブデータの破損、または復号に失敗しました。");
+                    openLoadModal();
+                }
+            } else {
+                alert("セーブデータの読み込みに失敗しました。");
+                openLoadModal();
+            }
+        } catch(e) {
+            console.error("スロット選択展開エラー:", e);
+            alert("通信エラーが発生しました。");
+            openLoadModal();
+        }
+    }
+    
+    function closeLoadModal() {
+        document.getElementById('loadModal').style.display = 'none';
+    }
+
+    // 💡 GASからセーブスロットの情報を非同期で取得してギャラリーに差し込む関数
+    async function injectSaveCardsToGallery(galleryContainer, playerName) {
+        if (!playerName || !RANKING_API_URL) return;
+        
+        try {
+            console.log(`[GAS-SaveCard] ギャラリー用のセーブカードをGASから取得します。名: ${playerName}`);
+            const response = await fetch(`${RANKING_API_URL}?action=get_slots&playerName=${encodeURIComponent(playerName)}`);
+            const resData = await response.json();
+            
+            if (resData.success && resData.slots) {
+                for (let i = 1; i <= 3; i++) {
+                    const slot = resData.slots[i.toString()];
+                    if (slot) {
+                        const item = document.createElement('div');
+                        item.className = 'gallery-item';
+                        item.style.borderColor = "#FFD700"; // セーブカードはゴールド枠
+                        item.style.borderWidth = "2px";
+                        item.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.25)";
+                        
+                        const thumbId = `save-thumb-${i}`;
+                        const displayName = slot.imageName;
+                        
+                        item.innerHTML = `
+                            <div class="gallery-image-wrap" style="position: relative; width: 100%; height: 120px; overflow: hidden; border-radius: 8px; background: #1a1a24;">
+                                <img id="${thumbId}" src="images/save_thumbnail_default.png" alt="${displayName}" style="object-fit: cover; width: 100%; height: 100%; opacity: 0.5;">
+                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.85); color: #FFD700; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFD700; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">💾 セーブ ${i}</div>
+                            </div>
+                            <div class="gallery-info" style="color: #FFD700; font-weight: bold; padding: 12px 10px; text-align: center;">
+                                ${displayName}
+                                <div style="font-size: 10px; color: rgba(255,255,255,0.6); font-weight: normal; margin-top: 5px;">${slot.saveTime}</div>
+                            </div>
+                        `;
+                        
+                        // 非同期でサムネイル画像をGASから取得してロードする処理 [NEW] (スクリーンショット復活！)
+                        fetch(`${RANKING_API_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${i}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success && data.saveDataJson) {
+                                    const dec = decryptSaveData(data.saveDataJson);
+                                    if (dec) {
+                                        try {
+                                            const saveData = JSON.parse(dec);
+                                            const imgEl = document.getElementById(thumbId);
+                                            if (imgEl && saveData.screenshotBase64) {
+                                                imgEl.src = "data:image/jpeg;base64," + saveData.screenshotBase64;
+                                                imgEl.style.opacity = "1.0"; // ロード成功したら不透明度を戻す
+                                            }
+                                        } catch(err) {}
+                                    }
+                                }
+                            });
+                        
+                        item.onclick = async function() {
+                            if (confirm(`スロット ${i} のセーブデータ（${displayName}）から再開しますか？`)) {
+                                try {
+                                    const loadRes = await fetch(`${RANKING_API_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${i}`);
+                                    const loadData = await loadRes.json();
+                                    if (loadData.success && loadData.saveDataJson) {
+                                        const dec = decryptSaveData(loadData.saveDataJson);
+                                        if (dec) {
+                                            loadGameFromSave(dec);
+                                        }
+                                    }
+                                } catch(e) {
+                                    alert("データの取得に失敗しました。");
+                                }
+                            }
+                        };
+                        
+                        // ギャラリーの先頭（左上）にゴールドカードを挿入
+                        galleryContainer.insertBefore(item, galleryContainer.firstChild);
+                    }
+                }
+            }
+        } catch(e) {
+            console.error("セーブカード構築エラー:", e);
         }
     }
 </script>
