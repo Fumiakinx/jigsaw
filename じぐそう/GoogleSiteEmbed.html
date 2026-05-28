@@ -10,7 +10,7 @@
             background-color: #1e1e1e;
             color: #ffffff;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -23,14 +23,13 @@
         }
         .container {
             width: 95%;
-            max-width: 1000px;
+            max-width: 100%;
             background-color: #2d2d2d;
             border-radius: 16px;
             padding: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
             box-sizing: border-box;
-            margin: 20px auto;
         }
         .gallery-title-area {
             border-bottom: 2px solid #3d3d3d;
@@ -350,250 +349,19 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-
-        /* 💾 ロード用スロット選択画面の追加スタイル */
-        .resume-button {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-            color: #1e1e24;
-            border: none;
-            padding: 10px 22px;
-            font-size: 14px;
-            font-weight: 800;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35);
-            transition: all 0.3s ease;
-        }
-        .resume-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
-            filter: brightness(1.1);
-        }
-        .resume-button:active {
-            transform: translateY(0);
-        }
-        
-        .load-slot-card {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-        }
-        .load-slot-card:hover {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border-color: #FFD700 !important;
-            transform: translateX(4px);
-        }
-        
-        .load-slot-card-empty {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px dashed rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px;
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        /* プレミアム疑似ヘッダーの超高精度再現スタイル */
-        .premium-header {
-            width: 100%;
-            background-color: #121212;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 20px; /* 左右余白を20pxに縮小し、画面の端ぎりぎりに配置 */
-            box-sizing: border-box;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-        .header-logo {
-            font-size: 15px;
-            font-weight: bold;
-            color: #fff;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            user-select: none;
-        }
-        .header-logo:hover {
-            opacity: 0.85;
-        }
-        .header-name-bar {
-            display: flex;
-            align-items: center;
-            background-color: rgba(30, 30, 30, 0.65); /* 透過度の高いダークグレー */
-            border: 1px solid rgba(255, 255, 255, 0.15); /* 細い白半透明の境界線 */
-            padding: 6px 14px;
-            border-radius: 24px; /* 丸みのあるバー */
-            gap: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-            transition: all 0.2s ease;
-        }
-        .header-name-bar:focus-within {
-            border-color: rgba(255, 255, 255, 0.3);
-            background-color: rgba(35, 35, 35, 0.8);
-        }
-        .header-name-label {
-            font-size: 13px;
-            color: #2e7d32; /* 深いグリーン */
-            font-weight: bold;
-            user-select: none;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .header-name-label .name-icon {
-            color: #ab47bc; /* 人マークを紫色に指定 */
-            font-size: 14px;
-        }
-        .header-name-input {
-            background-color: rgba(0, 0, 0, 0.2) !important; /* 内側の薄黒背景 */
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            border-radius: 10px !important; /* 少し丸みのあるインプット枠 */
-            color: #fff !important;
-            font-size: 13px !important;
-            font-weight: bold !important;
-            outline: none !important;
-            width: 150px !important;
-            text-align: center !important;
-            box-shadow: none !important;
-            padding: 4px 10px !important;
-            margin: 0 !important;
-            font-family: inherit !important;
-        }
-        .header-name-input::placeholder {
-            color: #888;
-            font-weight: normal;
-        }
-        /* オートフィル時(自動補完)の強制白背景や枠線を完全に遮断 */
-        .header-name-input:-webkit-autofill,
-        .header-name-input:-webkit-autofill:hover,
-        .header-name-input:-webkit-autofill:focus {
-            -webkit-text-fill-color: #fff !important;
-            transition: background-color 50000s ease-in-out 0s;
-        }
-        .header-name-status {
-            font-size: 12px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            user-select: none;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: color 0.25s ease;
-        }
-        .header-name-status.anonymous {
-            color: #d8b4fe; /* 匿名時：薄紫 */
-        }
-        .header-name-status.active {
-            color: #2e7d32; /* ランキング対象時：深いグリーン */
-        }
-        .header-menu-container {
-            position: relative;
-            display: inline-block;
-        }
-        .header-menu-btn {
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 0px 8px 12px; /* 右側パディングを0にし、端ぴったりに寄せる */
-            letter-spacing: 0.5px;
-            transition: color 0.2s;
-        }
-        .header-menu-btn:hover {
-            color: #4CAF50;
-        }
-        .header-menu-dropdown {
-            position: absolute;
-            right: 0;
-            top: 100%;
-            background: #121212;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            min-width: 150px;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(8px);
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 1001;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-        }
-        .header-menu-container:hover .header-menu-dropdown {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        .header-menu-item {
-            display: block;
-            color: #ddd;
-            padding: 12px 20px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: bold;
-            transition: all 0.2s ease;
-            text-align: left;
-        }
-        .header-menu-item:hover {
-            background: rgba(255, 255, 255, 0.04);
-            color: #4CAF50;
-        }
     </style>
 </head>
 <body>
 
-<!-- 🎭 プレミアム疑似ヘッダー (100%完全再現版) -->
-<header class="premium-header">
-    <div class="header-logo" onclick="window.location.reload()">いろんなパズル</div>
+<div class="container">
+    <h2>🧩 じぐそう - 画像選択</h2>
     
-    <div class="header-name-bar">
-        <span class="header-name-label"><span class="name-icon">👤</span> プレイヤーネーム</span>
-        <input type="text" id="header-player-name" class="header-name-input" placeholder="名前を入力（自動保存）">
-        <span id="header-name-status" class="header-name-status anonymous">● 匿名プレイ</span>
+    <!-- 👤 プレイヤー名入力欄（ランキング対象） -->
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background-color: #242424; padding: 12px 20px; border-radius: 10px; border: 1px solid #3d3d3d; width: 100%; box-sizing: border-box;">
+        <label style="font-weight: bold; color: #4CAF50; font-size: 14px; white-space: nowrap;">👤 プレイヤー名：</label>
+        <input type="text" id="playerNameInput" placeholder="名前を入力（ランキング対象）" maxlength="10" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #555; background-color: #1a1a1a; color: #fff; font-size: 13px; font-weight: bold; width: 180px; outline: none; transition: border-color 0.2s;">
+        <span id="rankingStatus" style="font-size: 12px; font-weight: bold; color: #888; margin-left: 5px; transition: color 0.2s;">⚪ 匿名プレイ（ランキング対象外）</span>
     </div>
-    
-    <div class="header-menu-container">
-        <button class="header-menu-btn">いろんなパズル ホーム ∨</button>
-        <div class="header-menu-dropdown">
-            <a href="GoogleSiteEmbed.html" class="header-menu-item" onclick="window.location.reload(); return false;">じぐそう</a>
-            <a href="../sudoku/index.html" class="header-menu-item" onclick="alert('すうどくのページへ遷移します。');">すうどく</a>
-        </div>
-    </div>
-</header>
-
-<div class="container" style="margin-top: 25px;">
-    <div class="header-wrap" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-        <h2 style="margin: 0; color: #4CAF50;">🧩 じぐそう - 画像選択</h2>
-        <button id="btnResumeGame" onclick="openLoadModal()" class="resume-button">
-            💾 ロードして再開
-        </button>
-    </div>
-    
-    
 
     <div class="gallery-title-area">
         <label>パズルにしたい画像を選んでください</label>
@@ -678,18 +446,6 @@
     </div>
 </div>
 
-<!-- 💾 ロード用スロット選択モーダル -->
-<div class="modal-overlay" id="loadModal" style="display: none;">
-    <div class="modal-content" style="max-width: 500px; padding: 30px; background: rgba(30, 30, 38, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; backdrop-filter: blur(15px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #fff;">
-        <span class="modal-close" onclick="closeLoadModal()" style="color: #aaa;">&times;</span>
-        <h3 style="margin-top: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; display: flex; align-items: center; gap: 10px; color: #FFD700;">💾 セーブスロットを選択してください</h3>
-        
-        <div id="loadSlotsContainer" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
-            <!-- JavaScriptでスロット要素が動的に挿入されます -->
-        </div>
-    </div>
-</div>
-
 <script>
     // 💡 デプロイ後に発行されるGASのWebアプリURLをここに貼り付けてください
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec"; 
@@ -754,169 +510,10 @@
         }
     }
 
-    // [NEW] セーブデータ復号ヘルパー
-    function decryptSaveData(encryptedStr) {
-        console.log("[LOG A: Embed] decryptSaveDataが呼び出されました。入力長:", encryptedStr ? encryptedStr.length : 0);
-        try {
-            let dec = decodeURIComponent(escape(atob(encryptedStr)));
-            console.log("[LOG B: Embed] 復号に成功しました。復号後の長さ:", dec.length);
-            return dec;
-        } catch(e) {
-            console.error("[LOG B: ERROR] GoogleSiteEmbedでの復号中に例外が発生しました！");
-            console.error("エラーの種類・名前:", e.name);
-            console.error("エラーメッセージ:", e.message);
-            console.error("スタックトレース:", e.stack);
-            return null;
-        }
-    }
-
-    // [NEW] セーブデータから直接プレイヤーを起動する関数
-    function loadGameFromSave(saveJsonData) {
-        let playerUrl = 'jigsaw_player.html';
-        const isLocal = window.location.protocol === 'file:' || 
-                        window.location.hostname === 'localhost' || 
-                        window.location.hostname === '127.0.0.1';
-        
-        if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
-            if (window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('google.com')) {
-                playerUrl = PUBLISHED_PLAYER_URL;
-            }
-        }
-
-        const playerWindow = window.open(playerUrl, '_blank');
-        if (!playerWindow) {
-            alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
-            return;
-        }
-
-        // 親ウィンドウの共有変数にセーブデータをセット
-        window.selectedPuzzleData = {
-            isSaveLoad: true,
-            saveJson: saveJsonData,
-            playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
-            rankingApiUrl: RANKING_API_URL
-        };
-    }
-
-    // 💾 [NEW] ロード用スロット選択画面 of GoogleSiteEmbed.html の操作関数
-    function openLoadModal() {
-        console.log("[LOG Origin: Embed] 現在のドメイン (Origin):", window.location.origin);
-        console.log("[LOG C: Embed] openLoadModalが呼び出されました。");
-        const container = document.getElementById('loadSlotsContainer');
-        container.innerHTML = "";
-        
-        for (let i = 1; i <= 3; i++) {
-            const enc = localStorage.getItem("jigsaw_save_slot_" + i);
-            console.log(`[LOG D: Embed] スロット ${i} のLocalStorageデータ取得結果:`, enc ? `存在 (長さ: ${enc.length})` : "無し (null)");
-            let slotHtml = "";
-            
-            if (enc) {
-                const dec = decryptSaveData(enc);
-                console.log(`[LOG E: Embed] スロット ${i} の復号結果:`, dec ? `成功 (長さ: ${dec.length})` : "失敗 (null)");
-                if (dec) {
-                    try {
-                        const saveData = JSON.parse(dec);
-                        console.log(`[LOG F: Embed] スロット ${i} のJSONパース成功。画像名: ${saveData.imageName}`);
-                        const thumbUrl = saveData.screenshotBase64 
-                            ? "data:image/jpeg;base64," + saveData.screenshotBase64
-                            : "images/save_thumbnail_default.png";
-                        const displayName = saveData.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
-                        
-                        slotHtml = `
-                            <div class="load-slot-card" onclick="triggerLoadSlot(${i}, '${encodeURIComponent(dec)}')">
-                                <img src="${thumbUrl}" alt="${displayName}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2);">
-                                <div style="flex: 1; min-width: 0; text-align: left;">
-                                    <div style="font-weight: bold; font-size: 14px; color: #FFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">スロット ${i}: ${displayName}</div>
-                                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">ピース数: ${saveData.targetPieces}P | 保存日時: ${saveData.saveTime}</div>
-                                </div>
-                                <div style="font-size: 18px; color: #FFD700; padding-right: 5px;">▶</div>
-                            </div>
-                        `;
-                    } catch(e) {
-                        console.error(`[LOG F: ERROR] スロット ${i} のJSONパース中に例外が発生しました:`, e);
-                    }
-                }
-            }
-            
-            if (!slotHtml) {
-                // 空きスロット
-                slotHtml = `
-                    <div class="load-slot-card-empty">
-                        <div style="width: 80px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #666; border: 1px dashed rgba(255, 255, 255, 0.05);">空き</div>
-                        <div style="flex: 1; text-align: left;">
-                            <div style="font-weight: bold; font-size: 14px; color: #666;">スロット ${i}: 空きスロット</div>
-                            <div style="font-size: 11px; color: #444; margin-top: 4px;">セーブデータがありません</div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            container.innerHTML += slotHtml;
-        }
-        
-        document.getElementById('loadModal').style.display = 'flex';
-    }
-    
-    function triggerLoadSlot(slotIndex, decUriStr) {
-        const dec = decodeURIComponent(decUriStr);
-        loadGameFromSave(dec);
-        closeLoadModal();
-    }
-    
-    function closeLoadModal() {
-        document.getElementById('loadModal').style.display = 'none';
-    }
-
     // ギャラリーHTMLを動的構築するヘルパー
     function buildGallery(imagesList, isFromGAS = false) {
         const galleryContainer = document.getElementById('gallery');
         galleryContainer.innerHTML = ""; // 初期クリア
-        
-        // 💾 [NEW] セーブカードの生成・挿入（存在する場合のみ左上に差し込む）
-        for (let i = 1; i <= 3; i++) {
-            const enc = localStorage.getItem("jigsaw_save_slot_" + i);
-            if (enc) {
-                const dec = decryptSaveData(enc);
-                if (dec) {
-                    try {
-                        const saveData = JSON.parse(dec);
-                        const item = document.createElement('div');
-                        item.className = 'gallery-item';
-                        item.style.borderColor = "#FFD700"; // セーブカードはゴールド枠
-                        item.style.borderWidth = "2px";
-                        item.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.25)";
-                        
-                        // 画像サムネイル（セーブ時のスクリーンショット）
-                        const thumbUrl = saveData.screenshotBase64 
-                            ? "data:image/jpeg;base64," + saveData.screenshotBase64
-                            : "images/save_thumbnail_default.png";
-                            
-                        const displayName = saveData.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
-                        
-                        item.innerHTML = `
-                            <div class="gallery-image-wrap" style="position: relative; width: 100%; height: 160px; overflow: hidden; border-radius: 8px;">
-                                <img src="${thumbUrl}" alt="${displayName}" style="object-fit: cover; width: 100%; height: 100%;">
-                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.85); color: #FFD700; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFD700; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">💾 セーブ ${i}</div>
-                            </div>
-                            <div class="gallery-info" style="color: #FFD700; font-weight: bold; padding: 12px 10px; text-align: center;">
-                                ${displayName}
-                                <div style="font-size: 10px; color: rgba(255,255,255,0.6); font-weight: normal; margin-top: 5px;">${saveData.saveTime}</div>
-                            </div>
-                        `;
-                        
-                        item.onclick = function() {
-                            if (confirm(`スロット ${i} のセーブデータ（${displayName}）から再開しますか？`)) {
-                                loadGameFromSave(dec);
-                            }
-                        };
-                        
-                        galleryContainer.appendChild(item);
-                    } catch(e) {
-                        console.error("セーブデータのデコードエラー:", e);
-                    }
-                }
-            }
-        }
         
         imagesList.forEach((imgInfo, index) => {
             try {
@@ -1043,9 +640,38 @@
         return false;
     }
 
+    // ランキング参加ステータスの表示更新
+    function updateRankingStatus() {
+        const nameInput = document.getElementById('playerNameInput');
+        const statusText = document.getElementById('rankingStatus');
+        if (!nameInput || !statusText) return;
+        const name = nameInput.value.trim();
+        if (name) {
+            statusText.innerText = `🟢 ランキング対象（「${name}」で登録されます）`;
+            statusText.style.color = '#4CAF50';
+            nameInput.style.borderColor = '#4CAF50';
+        } else {
+            statusText.innerText = '⚪ 匿名プレイ（ランキング対象外）';
+            statusText.style.color = '#888';
+            nameInput.style.borderColor = '#555';
+        }
+    }
+
     // ページロード時に自動ロードを実行
     window.addEventListener('DOMContentLoaded', () => {
-        
+        // 名前のロードと自動保存設定
+        const nameInput = document.getElementById('playerNameInput');
+        if (nameInput) {
+            const savedName = localStorage.getItem('jigsaw_player_name');
+            if (savedName) {
+                nameInput.value = savedName;
+            }
+            updateRankingStatus();
+            nameInput.addEventListener('input', () => {
+                localStorage.setItem('jigsaw_player_name', nameInput.value.trim());
+                updateRankingStatus();
+            });
+        }
 
         // モバイル・タブレット環境検出によるデフォルトピース数の最適化
         if (isMobileOrTablet()) {
@@ -1176,7 +802,7 @@
                     const tr = document.createElement('tr');
                     
                     // 自分の名前だった場合は行をハイライトする
-                    const currentName = (localStorage.getItem('jigsaw_player_name') || "").trim();
+                    const currentName = document.getElementById('playerNameInput').value.trim();
                     if (currentName && row.name === currentName) {
                         tr.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
                         tr.style.fontWeight = 'bold';
@@ -1287,7 +913,7 @@
             window.selectedPuzzleData = {
                 imageData: targetBase64,
                 pieceCount: parseInt(pieceCount, 10),
-                playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
+                playerName: document.getElementById('playerNameInput').value.trim(),
                 imageId: selectedImageUrl,
                 rankingApiUrl: RANKING_API_URL
             };
@@ -1301,7 +927,7 @@
             window.selectedPuzzleData = {
                 imageData: finalUrl,
                 pieceCount: parseInt(pieceCount, 10),
-                playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
+                playerName: document.getElementById('playerNameInput').value.trim(),
                 imageId: selectedImageUrl,
                 rankingApiUrl: RANKING_API_URL
             };
@@ -1312,39 +938,6 @@
             btn.disabled = false;
         }
     }
-
-    // 🎭 [NEW] 疑似ヘッダーのプレイヤーネーム同期処理（高精度連動版）
-    window.addEventListener('DOMContentLoaded', () => {
-        const nameInput = document.getElementById('header-player-name');
-        const nameStatus = document.getElementById('header-name-status');
-        
-        function updateStatus(nameVal) {
-            if (!nameStatus) return;
-            const name = (nameVal || "").trim();
-            if (name === "") {
-                nameStatus.innerText = "● 匿名プレイ";
-                nameStatus.className = "header-name-status anonymous";
-            } else {
-                nameStatus.innerText = "● ランキング対象";
-                nameStatus.className = "header-name-status active";
-            }
-        }
-
-        if (nameInput) {
-            // 初期ロード
-            const savedName = localStorage.getItem('jigsaw_player_name') || "";
-            nameInput.value = savedName;
-            updateStatus(savedName);
-
-            // 入力時に即時保存 & ステータス動的更新
-            nameInput.addEventListener('input', function() {
-                const val = this.value;
-                localStorage.setItem('jigsaw_player_name', val.trim());
-                updateStatus(val);
-                console.log("[LOG: Sync] プレイヤー名をLocalStorageに保存しました:", val.trim());
-            });
-        }
-    });
 </script>
 </body>
 </html>

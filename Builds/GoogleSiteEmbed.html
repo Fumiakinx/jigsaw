@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,38 +11,42 @@
             background-color: #1e1e1e;
             color: #ffffff;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
         h2 {
             margin-top: 0;
             color: #4CAF50;
             font-size: 24px;
             letter-spacing: 0.5px;
         }
+
         .container {
             width: 95%;
-            max-width: 1000px;
+            max-width: 100%;
             background-color: #2d2d2d;
             border-radius: 16px;
             padding: 30px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
             box-sizing: border-box;
-            margin: 20px auto;
         }
+
         .gallery-title-area {
             border-bottom: 2px solid #3d3d3d;
             padding-bottom: 12px;
             margin-bottom: 20px;
         }
+
         .gallery-title-area label {
             font-size: 16px;
             font-weight: bold;
             color: #bbb;
         }
+
         .image-gallery {
             display: grid;
             /* 🌟 横幅を目一杯有効活用して、たくさんの画像をレスポンシブに綺麗に並べる */
@@ -49,6 +54,7 @@
             gap: 15px;
             margin-top: 15px;
         }
+
         .gallery-item {
             border: 2px solid transparent;
             border-radius: 10px;
@@ -58,17 +64,20 @@
             background-color: #242424;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
+
         .gallery-item:hover {
             transform: translateY(-4px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
             border-color: #555;
         }
+
         .gallery-item.selected {
             border-color: #4CAF50;
             box-shadow: 0 0 12px rgba(76, 175, 80, 0.4);
         }
+
         .gallery-image-wrap {
             width: 100%;
             aspect-ratio: 1.6;
@@ -78,11 +87,13 @@
             align-items: center;
             overflow: hidden;
         }
+
         .gallery-image-wrap img {
             width: 100%;
             height: 100%;
             object-fit: contain;
         }
+
         .gallery-info {
             padding: 10px;
             text-align: center;
@@ -95,6 +106,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         .info-text {
             font-size: 12px;
             color: #888;
@@ -116,18 +128,26 @@
             backdrop-filter: blur(8px);
             display: none;
             justify-content: center;
-            align-items: flex-start; /* 🌟 上寄せにして下が切れるのを防ぐ */
-            padding: 20px; /* 🌟 画面端との余白を十分に確保してはみ出しを防ぐ */
-            overflow-y: auto; /* 🌟 画面高さが足りない場合はモーダル自体をスクロール可能にする */
+            align-items: flex-start;
+            /* 🌟 上寄せにして下が切れるのを防ぐ */
+            padding: 20px;
+            /* 🌟 画面端との余白を十分に確保してはみ出しを防ぐ */
+            overflow-y: auto;
+            /* 🌟 画面高さが足りない場合はモーダル自体をスクロール可能にする */
             z-index: 2000;
             box-sizing: border-box;
             animation: fadeIn 0.3s ease;
         }
+
         .modal-content {
-            background-color: #ffffff; /* 🌟 背景は完全な白 */
-            color: #1e1e1e; /* 🌟 文字色は黒 */
-            width: 90%; /* 🌟 画面幅の90%までダイナミックに拡大 */
-            max-width: 1000px; /* 🌟 最大横幅を1000pxに調整し、タブレットでもはみ出ないようにバランスを改善 */
+            background-color: #ffffff;
+            /* 🌟 背景は完全な白 */
+            color: #1e1e1e;
+            /* 🌟 文字色は黒 */
+            width: 90%;
+            /* 🌟 画面幅の90%までダイナミックに拡大 */
+            max-width: 1000px;
+            /* 🌟 最大横幅を1000pxに調整し、タブレットでもはみ出ないようにバランスを改善 */
             min-width: 280px;
             border-radius: 24px;
             padding: 35px;
@@ -136,9 +156,11 @@
             flex-direction: column;
             position: relative;
             box-sizing: border-box;
-            margin: 20px auto; /* 🌟 スクロール用上下マージン */
+            margin: 20px auto;
+            /* 🌟 スクロール用上下マージン */
             animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+
         @media (max-width: 1024px) {
             .modal-content {
                 width: 95%;
@@ -146,6 +168,7 @@
                 border-radius: 20px;
             }
         }
+
         .modal-close {
             position: absolute;
             top: 20px;
@@ -158,28 +181,33 @@
             line-height: 1;
             z-index: 10;
         }
+
         .modal-close:hover {
             color: #000;
         }
- 
+
         /* 🌟 モーダル内の2カラムレイアウト */
         .modal-body {
             display: flex;
             gap: 40px;
             margin-top: 10px;
         }
+
         @media (max-width: 1024px) {
             .modal-body {
                 flex-direction: column;
                 gap: 20px;
             }
         }
+
         .modal-left {
-            flex: 1.5; /* 🌟 左カラム（画像）の比率を大幅に引き上げて画像をダイナミックに拡大 */
+            flex: 1.5;
+            /* 🌟 左カラム（画像）の比率を大幅に引き上げて画像をダイナミックに拡大 */
             display: flex;
             flex-direction: column;
             min-width: 0;
         }
+
         .modal-right {
             flex: 1;
             display: flex;
@@ -189,6 +217,7 @@
             padding-left: 40px;
             min-width: 0;
         }
+
         @media (max-width: 1024px) {
             .modal-right {
                 border-left: none;
@@ -198,7 +227,7 @@
                 gap: 20px;
             }
         }
- 
+
         .modal-image-wrap {
             width: 100%;
             aspect-ratio: 1.6;
@@ -209,29 +238,30 @@
             align-items: center;
             overflow: hidden;
             border: 1px solid #e0e0e0;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
+
         @media (max-width: 1024px) {
             .modal-image-wrap {
-                max-height: 35vh; /* 🌟 縦並び時にプレビューが巨大化してボタンがはみ出さないように高さを制限 */
+                max-height: 35vh;
+                /* 🌟 縦並び時にプレビューが巨大化してボタンがはみ出さないように高さを制限 */
             }
         }
-        .modal-image-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
+
         .modal-title {
             font-size: 24px;
             font-weight: 800;
             margin-bottom: 8px;
             color: #111;
         }
+
         .modal-genres {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
         }
+
         .genre-badge {
             background-color: #f0f0f0;
             color: #555;
@@ -240,70 +270,6 @@
             font-size: 11px;
             font-weight: bold;
             border: 1px solid #e2e2e2;
-        }
-
-        /* パズル設定とリーダーボード */
-        .setting-label {
-            font-size: 14px;
-            font-weight: bold;
-            color: #555;
-            margin-bottom: 6px;
-            display: block;
-        }
-        .modal-select {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            background-color: #fdfdfd;
-            color: #333;
-            font-size: 14px;
-            font-weight: bold;
-            outline: none;
-            cursor: pointer;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .modal-select:focus {
-            border-color: #4CAF50;
-        }
-
-        .modal-leaderboard {
-            background-color: #fafafa;
-            border: 1px solid #e6e6e6;
-            border-radius: 10px;
-            padding: 15px;
-        }
-        .leaderboard-title {
-            font-size: 13px;
-            font-weight: bold;
-            color: #444;
-            margin-top: 0;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .modal-leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-        }
-        .modal-leaderboard-table th {
-            background-color: #eaeaea;
-            color: #666;
-            padding: 8px;
-            text-align: left;
-            border-bottom: 2px solid #ddd;
-        }
-        .modal-leaderboard-table td {
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-            color: #333;
-        }
-
-        .modal-action {
-            margin-top: auto;
-            padding-top: 10px;
         }
 
         /* 🌟 モーダル専用プレミアム開始ボタン */
@@ -322,15 +288,18 @@
             text-align: center;
             outline: none;
         }
+
         .modal-btn-start:hover {
             background-color: #45a049;
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
         }
+
         .modal-btn-start:active {
             transform: translateY(0);
             box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
+
         .modal-btn-start:disabled {
             background-color: #888;
             cursor: not-allowed;
@@ -338,1013 +307,635 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes slideUp {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
-        /* 💾 ロード用スロット選択画面の追加スタイル */
-        .resume-button {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-            color: #1e1e24;
-            border: none;
-            padding: 10px 22px;
-            font-size: 14px;
-            font-weight: 800;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35);
-            transition: all 0.3s ease;
-        }
-        .resume-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
-            filter: brightness(1.1);
-        }
-        .resume-button:active {
-            transform: translateY(0);
-        }
-        
-        .load-slot-card {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-        }
-        .load-slot-card:hover {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border-color: #FFD700 !important;
-            transform: translateX(4px);
-        }
-        
-        .load-slot-card-empty {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px dashed rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px;
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        /* プレミアム疑似ヘッダーの超高精度再現スタイル */
-        .premium-header {
-            width: 100%;
-            background-color: #121212;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 20px; /* 左右余白を20pxに縮小し、画面の端ぎりぎりに配置 */
-            box-sizing: border-box;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-        .header-logo {
-            font-size: 15px;
-            font-weight: bold;
-            color: #fff;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            user-select: none;
-        }
-        .header-logo:hover {
-            opacity: 0.85;
-        }
-        .header-name-bar {
-            display: flex;
-            align-items: center;
-            background-color: rgba(30, 30, 30, 0.65); /* 透過度の高いダークグレー */
-            border: 1px solid rgba(255, 255, 255, 0.15); /* 細い白半透明の境界線 */
-            padding: 6px 14px;
-            border-radius: 24px; /* 丸みのあるバー */
-            gap: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-            transition: all 0.2s ease;
-        }
-        .header-name-bar:focus-within {
-            border-color: rgba(255, 255, 255, 0.3);
-            background-color: rgba(35, 35, 35, 0.8);
-        }
-        .header-name-label {
-            font-size: 13px;
-            color: #2e7d32; /* 深いグリーン */
-            font-weight: bold;
-            user-select: none;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .header-name-label .name-icon {
-            color: #ab47bc; /* 人マークを紫色に指定 */
-            font-size: 14px;
-        }
-        .header-name-input {
-            background-color: rgba(0, 0, 0, 0.2) !important; /* 内側の薄黒背景 */
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            border-radius: 10px !important; /* 少し丸みのあるインプット枠 */
-            color: #fff !important;
-            font-size: 13px !important;
-            font-weight: bold !important;
-            outline: none !important;
-            width: 150px !important;
-            text-align: center !important;
-            box-shadow: none !important;
-            padding: 4px 10px !important;
-            margin: 0 !important;
-            font-family: inherit !important;
-        }
-        .header-name-input::placeholder {
-            color: #888;
-            font-weight: normal;
-        }
-        /* オートフィル時(自動補完)の強制白背景や枠線を完全に遮断 */
-        .header-name-input:-webkit-autofill,
-        .header-name-input:-webkit-autofill:hover,
-        .header-name-input:-webkit-autofill:focus {
-            -webkit-text-fill-color: #fff !important;
-            transition: background-color 50000s ease-in-out 0s;
-        }
-        .header-name-status {
-            font-size: 12px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            user-select: none;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: color 0.25s ease;
-        }
-        .header-name-status.anonymous {
-            color: #d8b4fe; /* 匿名時：薄紫 */
-        }
-        .header-name-status.active {
-            color: #2e7d32; /* ランキング対象時：深いグリーン */
-        }
-        .header-menu-container {
-            position: relative;
-            display: inline-block;
-        }
-        .header-menu-btn {
-            background: transparent;
-            border: none;
-            color: #fff;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 0px 8px 12px; /* 右側パディングを0にし、端ぴったりに寄せる */
-            letter-spacing: 0.5px;
-            transition: color 0.2s;
-        }
-        .header-menu-btn:hover {
-            color: #4CAF50;
-        }
-        .header-menu-dropdown {
-            position: absolute;
-            right: 0;
-            top: 100%;
-            background: #121212;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            min-width: 150px;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(8px);
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 1001;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-        }
-        .header-menu-container:hover .header-menu-dropdown {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        .header-menu-item {
-            display: block;
-            color: #ddd;
-            padding: 12px 20px;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: bold;
-            transition: all 0.2s ease;
-            text-align: left;
-        }
-        .header-menu-item:hover {
-            background: rgba(255, 255, 255, 0.04);
-            color: #4CAF50;
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
+
 <body>
 
-<!-- 🎭 プレミアム疑似ヘッダー (100%完全再現版) -->
-<header class="premium-header">
-    <div class="header-logo" onclick="window.location.reload()">いろんなパズル</div>
-    
-    <div class="header-name-bar">
-        <span class="header-name-label"><span class="name-icon">👤</span> プレイヤーネーム</span>
-        <input type="text" id="header-player-name" class="header-name-input" placeholder="名前を入力（自動保存）">
-        <span id="header-name-status" class="header-name-status anonymous">● 匿名プレイ</span>
-    </div>
-    
-    <div class="header-menu-container">
-        <button class="header-menu-btn">いろんなパズル ホーム ∨</button>
-        <div class="header-menu-dropdown">
-            <a href="GoogleSiteEmbed.html" class="header-menu-item" onclick="window.location.reload(); return false;">じぐそう</a>
-            <a href="../sudoku/index.html" class="header-menu-item" onclick="alert('すうどくのページへ遷移します。');">すうどく</a>
+    <div class="container">
+        <h2>🧩 じぐそう - 画像選択</h2>
+
+        <!-- 👤 プレイヤー名入力欄（ランキング対象） -->
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background-color: #242424; padding: 12px 20px; border-radius: 10px; border: 1px solid #3d3d3d; width: 100%; box-sizing: border-box;">
+            <label style="font-weight: bold; color: #4CAF50; font-size: 14px; white-space: nowrap;">👤 プレイヤー名：</label>
+            <input type="text" id="playerNameInput" placeholder="名前を入力（ランキング対象）" maxlength="10" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #555; background-color: #1a1a1a; color: #fff; font-size: 13px; font-weight: bold; width: 180px; outline: none; transition: border-color 0.2s;">
+            <span id="rankingStatus" style="font-size: 12px; font-weight: bold; color: #888; margin-left: 5px; transition: color 0.2s;">⚪ 匿名プレイ（ランキング対象外）</span>
+        </div>
+
+        <div class="gallery-title-area">
+            <label>パズルにしたい画像を選んでください</label>
+
+            <!-- 画像ギャラリー (ロード中は美しくプレースホルダーを表示) -->
+            <div class="image-gallery" id="gallery">
+                <div id="galleryPlaceholder"
+                    style="grid-column: 1 / -1; text-align: center; padding: 40px 0; color: #888;">
+                    <div
+                        style="border: 4px solid rgba(255,255,255,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4CAF50; animation: spin 1s linear infinite; margin: 0 auto 15px;">
+                    </div>
+                    <div style="font-size: 14px; font-weight: bold; letter-spacing: 0.5px;">
+                        Googleドライブからパズル画像を読み込んでいます...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-text">
+            ※ Googleドライブの画像を使用する場合、対象フォルダや画像を「リンクを知っている全員に閲覧可能」に設定してください。
         </div>
     </div>
-</header>
 
-<div class="container" style="margin-top: 25px;">
-    <div class="header-wrap" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-        <h2 style="margin: 0; color: #4CAF50;">🧩 じぐそう - 画像選択</h2>
-        <button id="btnResumeGame" onclick="openLoadModal()" class="resume-button">
-            💾 ロードして再開
-        </button>
-    </div>
-    
-    
+    <!-- 🌟 プレミアム詳細モーダル (背景白・広めの80%幅・左右2カラム) -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
 
-    <div class="gallery-title-area">
-        <label>パズルにしたい画像を選んでください</label>
-        
-        <!-- 画像ギャラリー (ロード中は美しくプレースホルダーを表示) -->
-        <div class="image-gallery" id="gallery">
-            <div id="galleryPlaceholder" style="grid-column: 1 / -1; text-align: center; padding: 40px 0; color: #888;">
-                <div style="border: 4px solid rgba(255,255,255,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4CAF50; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
-                <div style="font-size: 14px; font-weight: bold; letter-spacing: 0.5px;">Googleドライブからパズル画像を読み込んでいます...</div>
+            <div class="modal-body">
+                <!-- 左カラム: プレビュー＆情報 -->
+                <div class="modal-left">
+                    <div class="modal-image-wrap">
+                        <img id="modalImg" src="" alt="プレビュー">
+                    </div>
+                    <div id="modalTitle" class="modal-title">パズル画像名</div>
+                    <div id="modalGenres" class="modal-genres">
+                        <!-- 動的にジャンルバッジが挿入されます -->
+                    </div>
+                    <!-- 🌟 作成者とリンク表示エリアを追加 -->
+                    <div id="modalAuthorArea"
+                        style="margin-top: 15px; font-size: 13px; color: #555; border-top: 1px dashed #e0e0e0; padding-top: 12px; display: none;">
+                        <div style="margin-bottom: 4px;">🎨 <strong>作成者:</strong> <span id="modalAuthor"
+                                style="font-weight: bold; color: #333;"></span></div>
+                        <div id="modalLinkContainer" style="display: none;">🔗 <strong>リンク:</strong> <a id="modalLink"
+                                href="" target="_blank"
+                                style="color: #4CAF50; text-decoration: none; font-weight: bold;"></a></div>
+                    </div>
+                </div>
+
+                <!-- 右カラム: 設定＆リーダーボード＆アクション -->
+                <div class="modal-right">
+                    <!-- 1. ピース数選択 -->
+                    <div>
+                        <span class="setting-label">⚙️ 1. ピース数を選択</span>
+                        <select id="pieceCount" class="modal-select">
+                            <option value="24">24 ピース (かんたん)</option>
+                            <option value="96" selected>96 ピース (ふつう)</option>
+                            <option value="216">216 ピース (むずかしい)</option>
+                            <option value="486">486 ピース (超むずかしい)</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. クリアタイム順位表 -->
+                    <div class="modal-leaderboard">
+                        <p class="leaderboard-title">🏆 ⏱️ クリアタイム順位表</p>
+                        <table class="modal-leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>順位</th>
+                                    <th>プレイヤー</th>
+                                    <th>タイム</th>
+                                    <th>ピース</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">
+                                        パズルをクリアすると、<br>ここにランキングが表示されます（準備中）
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 3. ゲーム開始アクション -->
+                    <div class="modal-action">
+                        <button id="startBtn" class="modal-btn-start" onclick="sendToJigsaw()">パズルを開始する！</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="info-text">
-        ※ Googleドライブの画像を使用する場合、対象フォルダや画像を「リンクを知っている全員に閲覧可能」に設定してください。
-    </div>
-</div>
+    <script>
+        // 💡 デプロイ後に発行されるGASのWebアプリURLをここに貼り付けてください
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec";
 
-<!-- 🌟 プレミアム詳細モーダル (背景白・広めの80%幅・左右2カラム) -->
-<div class="modal-overlay" id="detailModal">
-    <div class="modal-content">
-        <span class="modal-close" onclick="closeModal()">&times;</span>
-        
-        <div class="modal-body">
-            <!-- 左カラム: プレビュー＆情報 -->
-            <div class="modal-left">
-                <div class="modal-image-wrap">
-                    <img id="modalImg" src="" alt="プレビュー">
-                </div>
-                <div id="modalTitle" class="modal-title">パズル画像名</div>
-                <div id="modalGenres" class="modal-genres">
-                    <!-- 動的にジャンルバッジが挿入されます -->
-                </div>
-                <!-- 🌟 作成者とリンク表示エリアを追加 -->
-                <div id="modalAuthorArea" style="margin-top: 15px; font-size: 13px; color: #555; border-top: 1px dashed #e0e0e0; padding-top: 12px; display: none;">
-                    <div style="margin-bottom: 4px;">🎨 <strong>作成者:</strong> <span id="modalAuthor" style="font-weight: bold; color: #333;"></span></div>
-                    <div id="modalLinkContainer" style="display: none;">🔗 <strong>リンク:</strong> <a id="modalLink" href="" target="_blank" style="color: #4CAF50; text-decoration: none; font-weight: bold;"></a></div>
-                </div>
-            </div>
-            
-            <!-- 右カラム: 設定＆リーダーボード＆アクション -->
-            <div class="modal-right">
-                <!-- 1. ピース数選択 -->
-                <div>
-                    <span class="setting-label">⚙️ 1. ピース数を選択</span>
-                    <select id="pieceCount" class="modal-select">
-                        <option value="24">24 ピース (かんたん)</option>
-                        <option value="96" selected>96 ピース (ふつう)</option>
-                        <option value="216">216 ピース (むずかしい)</option>
-                        <option value="486">486 ピース (超むずかしい)</option>
-                    </select>
-                </div>
-                
-                <!-- 2. クリアタイム順位表 -->
-                <div class="modal-leaderboard">
-                    <p class="leaderboard-title">🏆 ⏱️ クリアタイム順位表</p>
-                    <table class="modal-leaderboard-table">
-                        <thead>
-                            <tr>
-                                <th>順位</th>
-                                <th>プレイヤー</th>
-                                <th>タイム</th>
-                                <th>ピース</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">
-                                    パズルをクリアすると、<br>ここにランキングが表示されます（準備中）
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- 3. ゲーム開始アクション -->
-                <div class="modal-action">
-                    <button id="startBtn" class="modal-btn-start" onclick="sendToJigsaw()">パズルを開始する！</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+        // 💡 新しく作成したランキング用スプレッドシートのApps Scriptから発行されたWebアプリURLをここに貼り付けてください
+        const RANKING_API_URL = "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
 
-<!-- 💾 ロード用スロット選択モーダル -->
-<div class="modal-overlay" id="loadModal" style="display: none;">
-    <div class="modal-content" style="max-width: 500px; padding: 30px; background: rgba(30, 30, 38, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; backdrop-filter: blur(15px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #fff;">
-        <span class="modal-close" onclick="closeLoadModal()" style="color: #aaa;">&times;</span>
-        <h3 style="margin-top: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; display: flex; align-items: center; gap: 10px; color: #FFD700;">💾 セーブスロットを選択してください</h3>
-        
-        <div id="loadSlotsContainer" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
-            <!-- JavaScriptでスロット要素が動的に挿入されます -->
-        </div>
-    </div>
-</div>
+        // 💡 本番環境（Googleサイトなどの埋め込み環境）で公開している jigsaw_player.html の絶対URL
+        // ※ Googleサイトに埋め込んでプレイする場合、この変数に公開されている jigsaw_player ページの絶対URL（https://...）を設定してください。
+        // ※ 空欄または "jigsaw_player.html" の場合は、ローカルテスト用として相対パスで起動します。
+        const PUBLISHED_PLAYER_URL = "https://fumiakinx.github.io/jigsaw/Builds/jigsaw_player.html";
 
-<script>
-    // 💡 デプロイ後に発行されるGASのWebアプリURLをここに貼り付けてください
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec"; 
+        // デフォルト画像リスト (GASロード失敗時や未設定時のフォールバック用)
+        const DEFAULT_IMAGES = [
+            { id: '16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K', name: '日本のビール', description: '日本のビール,飲み物,缶|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1IpPrnbfpXlDU5U4_S1pqbn5Yl7EwkAih', name: '日本のビール', description: '日本のビール,飲み物,缶|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '17ehA-dLd30wboSgO7qSQfIz0fkiG4cr-', name: 'トヨタ 2000GT', description: 'トヨタ 2000GT,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1UeqknDR9xAMnuLfP1xqQX7DHWvuNgtIA', name: 'ディーノ 246GT', description: 'ディーノ 246GT,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1UnfSiKB-nZE-ky4IRQp7zL_dNgzlgc9p', name: 'ロータス ヨーロッパ', description: 'ロータス ヨーロッパ,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1t9OjMlc8uyzjx5ThLFr0TV4yNHrOK6me', name: 'ポルシェ 911カレラRS', description: 'ポルシェ 911カレラRS,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1M-k7YBPfz7Tik_FODePIqH7H6csaRNWI', name: '紫電改', description: '紫電改,飛行機,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1jHSGWe4fcrguLWekEvmk8VtNW7yAcL0i', name: '震電', description: '震電,飛行機,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1FoXrZ8e1ox-Nppcq1zMyVcDrXoxR6LT4', name: '零式艦上戦闘機', description: '零式艦上戦闘機,飛行機,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1qX6zU1NnxIjUHx48G0Z0GbLGudKRacTI', name: '昭和のお菓子', description: '昭和のお菓子,昭和,お菓子|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1zkJSYPG2vZ4sq9pOu8ssgYRLZy3pj6T1', name: '日本のビール', description: '日本のビール,飲み物,缶|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '13lKZZnghkVJEkbh-1JwHb7GetKbGWvaz', name: 'ドーナツ', description: 'ドーナツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '145SPy2TKIWzd9AeiSIc_0tBpPZkiMDEy', name: 'ドーナツ', description: 'ドーナツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1nimiWLzN19mxZO4hDbt8dYxbZlFv9Cua', name: 'ドーナツ', description: 'ドーナツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1g3KQBjFDuAgjqvXqdxU7Ba6QjkQuHh3g', name: 'ベリー', description: 'ベリー,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1uEXOZmhN3kFfVQZ8SoG11wmY3lHaMoq8', name: 'ケーキ', description: 'ケーキ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
+            { id: '1bD-rtuhi4MNuFhplO6ZZ_0uGVvsyvobY', name: 'フルーツ', description: 'フルーツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' }
+        ];
 
-    // 💡 新しく作成したランキング用スプレッドシートのApps Scriptから発行されたWebアプリURLをここに貼り付けてください
-    const RANKING_API_URL = "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
+        let selectedImageUrl = '16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K';
+        let selectedImageName = '日本のビール';
+        let selectedImageDescription = '日本のビール,飲み物,缶';
+        let selectedImageAuthor = 'Google AI画像生成 (Imagen 3)';
+        let selectedImageLink = 'https://deepmind.google/technologies/imagen/';
 
-    // 💡 本番環境（Googleサイトなどの埋め込み環境）で公開している jigsaw_player.html の絶対URL
-    // ※ Googleサイトに埋め込んでプレイする場合、この変数に公開されている jigsaw_player ページの絶対URL（https://...）を設定してください。
-    // ※ 空欄または "jigsaw_player.html" の場合は、ローカルテスト用として相対パスで起動します。
-    const PUBLISHED_PLAYER_URL = "https://fumiakinx.github.io/jigsaw/%E3%81%98%E3%81%90%E3%81%9D%E3%81%86/jigsaw_player.html"; 
+        // 1. ページロード時にGASからドライブ内の画像一覧を自動取得してギャラリーを作る
+        async function loadGalleryFromGAS() {
+            const galleryContainer = document.getElementById('gallery');
+            if (!GAS_API_URL) {
+                console.log("GAS_API_URLが未設定です。ローカルのデフォルトアセットを使用します。");
+                buildGallery(DEFAULT_IMAGES);
+                return;
+            }
 
-    // デフォルト画像リスト (GASロード失敗時や未設定時のフォールバック用)
-    const DEFAULT_IMAGES = [
-        { id: '16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K', name: '日本のビール', description: '日本のビール,飲み物,缶|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1IpPrnbfpXlDU5U4_S1pqbn5Yl7EwkAih', name: '日本のビール', description: '日本のビール,飲み物,缶|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '17ehA-dLd30wboSgO7qSQfIz0fkiG4cr-', name: 'トヨタ 2000GT', description: 'トヨタ 2000GT,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1UeqknDR9xAMnuLfP1xqQX7DHWvuNgtIA', name: 'ディーノ 246GT', description: 'ディーノ 246GT,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1UnfSiKB-nZE-ky4IRQp7zL_dNgzlgc9p', name: 'ロータス ヨーロッパ', description: 'ロータス ヨーロッパ,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1t9OjMlc8uyzjx5ThLFr0TV4yNHrOK6me', name: 'ポルシェ 911カレラRS', description: 'ポルシェ 911カレラRS,車,サーキットの狼,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1M-k7YBPfz7Tik_FODePIqH7H6csaRNWI', name: '紫電改', description: '紫電改,飛行機,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1jHSGWe4fcrguLWekEvmk8VtNW7yAcL0i', name: '震電', description: '震電,飛行機,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1FoXrZ8e1ox-Nppcq1zMyVcDrXoxR6LT4', name: '零式艦上戦闘機', description: '零式艦上戦闘機,飛行機,ボックスアート|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1qX6zU1NnxIjUHx48G0Z0GbLGudKRacTI', name: '昭和のお菓子', description: '昭和のお菓子,昭和,お菓子|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1zkJSYPG2vZ4sq9pOu8ssgYRLZy3pj6T1', name: '日本のビール', description: '日本のビール,飲み物,缶|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '13lKZZnghkVJEkbh-1JwHb7GetKbGWvaz', name: 'ドーナツ', description: 'ドーナツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '145SPy2TKIWzd9AeiSIc_0tBpPZkiMDEy', name: 'ドーナツ', description: 'ドーナツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1nimiWLzN19mxZO4hDbt8dYxbZlFv9Cua', name: 'ドーナツ', description: 'ドーナツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1g3KQBjFDuAgjqvXqdxU7Ba6QjkQuHh3g', name: 'ベリー', description: 'ベリー,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1uEXOZmhN3kFfVQZ8SoG11wmY3lHaMoq8', name: 'ケーキ', description: 'ケーキ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' },
-        { id: '1bD-rtuhi4MNuFhplO6ZZ_0uGVvsyvobY', name: 'フルーツ', description: 'フルーツ,食べ物|Google AI画像生成 (Imagen 3)|https://deepmind.google/technologies/imagen/' }
-    ];
+            try {
+                const response = await fetch(`${GAS_API_URL}?action=list`);
+                const data = await response.json();
 
-    let selectedImageUrl = '16lD6cYeC8xc7mgMh-0tIe7J27Nv3N10K';
-    let selectedImageName = '日本のビール';
-    let selectedImageDescription = '日本のビール,飲み物,缶';
-    let selectedImageAuthor = 'Google AI画像生成 (Imagen 3)';
-    let selectedImageLink = 'https://deepmind.google/technologies/imagen/';
-
-    // 1. ページロード時にGASからドライブ内の画像一覧を自動取得してギャラリーを作る
-    async function loadGalleryFromGAS() {
-        const galleryContainer = document.getElementById('gallery');
-        if (!GAS_API_URL) {
-            console.log("GAS_API_URLが未設定です。ローカルのデフォルトアセットを使用します。");
-            buildGallery(DEFAULT_IMAGES);
-            return;
-        }
-
-        try {
-            const response = await fetch(`${GAS_API_URL}?action=list`);
-            const data = await response.json();
-            
-            if (data.success && data.images.length > 0) {
-                buildGallery(data.images, true);
-            } else {
-                console.warn("GASから画像が取得できませんでした。デフォルトアセットを使用します。");
+                if (data.success && data.images.length > 0) {
+                    buildGallery(data.images, true);
+                } else {
+                    console.warn("GASから画像が取得できませんでした。デフォルトアセットを使用します。");
+                    buildGallery(DEFAULT_IMAGES);
+                }
+            } catch (error) {
+                console.error("GASからの画像リスト取得中にエラーが発生しました。デフォルトアセットに切り替えます:", error);
                 buildGallery(DEFAULT_IMAGES);
             }
-        } catch (error) {
-            console.error("GASからの画像リスト取得中にエラーが発生しました。デフォルトアセットに切り替えます:", error);
-            buildGallery(DEFAULT_IMAGES);
-        }
-    }
-
-    // [NEW] セーブデータ復号ヘルパー
-    function decryptSaveData(encryptedStr) {
-        console.log("[LOG A: Embed] decryptSaveDataが呼び出されました。入力長:", encryptedStr ? encryptedStr.length : 0);
-        try {
-            let dec = decodeURIComponent(escape(atob(encryptedStr)));
-            console.log("[LOG B: Embed] 復号に成功しました。復号後の長さ:", dec.length);
-            return dec;
-        } catch(e) {
-            console.error("[LOG B: ERROR] GoogleSiteEmbedでの復号中に例外が発生しました！");
-            console.error("エラーの種類・名前:", e.name);
-            console.error("エラーメッセージ:", e.message);
-            console.error("スタックトレース:", e.stack);
-            return null;
-        }
-    }
-
-    // [NEW] セーブデータから直接プレイヤーを起動する関数
-    function loadGameFromSave(saveJsonData) {
-        let playerUrl = 'jigsaw_player.html';
-        const isLocal = window.location.protocol === 'file:' || 
-                        window.location.hostname === 'localhost' || 
-                        window.location.hostname === '127.0.0.1';
-        
-        if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
-            if (window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('google.com')) {
-                playerUrl = PUBLISHED_PLAYER_URL;
-            }
         }
 
-        const playerWindow = window.open(playerUrl, '_blank');
-        if (!playerWindow) {
-            alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
-            return;
-        }
+        // ギャラリーHTMLを動的構築するヘルパー
+        function buildGallery(imagesList, isFromGAS = false) {
+            const galleryContainer = document.getElementById('gallery');
+            galleryContainer.innerHTML = ""; // 初期クリア
 
-        // 親ウィンドウの共有変数にセーブデータをセット
-        window.selectedPuzzleData = {
-            isSaveLoad: true,
-            saveJson: saveJsonData,
-            playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
-            rankingApiUrl: RANKING_API_URL
-        };
-    }
+            imagesList.forEach((imgInfo, index) => {
+                try {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
 
-    // 💾 [NEW] ロード用スロット選択画面 of GoogleSiteEmbed.html の操作関数
-    function openLoadModal() {
-        console.log("[LOG Origin: Embed] 現在のドメイン (Origin):", window.location.origin);
-        console.log("[LOG C: Embed] openLoadModalが呼び出されました。");
-        const container = document.getElementById('loadSlotsContainer');
-        container.innerHTML = "";
-        
-        for (let i = 1; i <= 3; i++) {
-            const enc = localStorage.getItem("jigsaw_save_slot_" + i);
-            console.log(`[LOG D: Embed] スロット ${i} のLocalStorageデータ取得結果:`, enc ? `存在 (長さ: ${enc.length})` : "無し (null)");
-            let slotHtml = "";
-            
-            if (enc) {
-                const dec = decryptSaveData(enc);
-                console.log(`[LOG E: Embed] スロット ${i} の復号結果:`, dec ? `成功 (長さ: ${dec.length})` : "失敗 (null)");
-                if (dec) {
-                    try {
-                        const saveData = JSON.parse(dec);
-                        console.log(`[LOG F: Embed] スロット ${i} のJSONパース成功。画像名: ${saveData.imageName}`);
-                        const thumbUrl = saveData.screenshotBase64 
-                            ? "data:image/jpeg;base64," + saveData.screenshotBase64
-                            : "images/save_thumbnail_default.png";
-                        const displayName = saveData.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
-                        
-                        slotHtml = `
-                            <div class="load-slot-card" onclick="triggerLoadSlot(${i}, '${encodeURIComponent(dec)}')">
-                                <img src="${thumbUrl}" alt="${displayName}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2);">
-                                <div style="flex: 1; min-width: 0; text-align: left;">
-                                    <div style="font-weight: bold; font-size: 14px; color: #FFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">スロット ${i}: ${displayName}</div>
-                                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">ピース数: ${saveData.targetPieces}P | 保存日時: ${saveData.saveTime}</div>
-                                </div>
-                                <div style="font-size: 18px; color: #FFD700; padding-right: 5px;">▶</div>
-                            </div>
-                        `;
-                    } catch(e) {
-                        console.error(`[LOG F: ERROR] スロット ${i} のJSONパース中に例外が発生しました:`, e);
-                    }
-                }
-            }
-            
-            if (!slotHtml) {
-                // 空きスロット
-                slotHtml = `
-                    <div class="load-slot-card-empty">
-                        <div style="width: 80px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #666; border: 1px dashed rgba(255, 255, 255, 0.05);">空き</div>
-                        <div style="flex: 1; text-align: left;">
-                            <div style="font-weight: bold; font-size: 14px; color: #666;">スロット ${i}: 空きスロット</div>
-                            <div style="font-size: 11px; color: #444; margin-top: 4px;">セーブデータがありません</div>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            container.innerHTML += slotHtml;
-        }
-        
-        document.getElementById('loadModal').style.display = 'flex';
-    }
-    
-    function triggerLoadSlot(slotIndex, decUriStr) {
-        const dec = decodeURIComponent(decUriStr);
-        loadGameFromSave(dec);
-        closeLoadModal();
-    }
-    
-    function closeLoadModal() {
-        document.getElementById('loadModal').style.display = 'none';
-    }
+                    // ドライブ画像の場合は軽量サムネイルを使用し、ローカルの場合はパスをそのまま使用
+                    const thumbUrl = isFromGAS
+                        ? `https://drive.google.com/thumbnail?sz=w300&id=${imgInfo.id}`
+                        : imgInfo.id;
 
-    // ギャラリーHTMLを動的構築するヘルパー
-    function buildGallery(imagesList, isFromGAS = false) {
-        const galleryContainer = document.getElementById('gallery');
-        galleryContainer.innerHTML = ""; // 初期クリア
-        
-        // 💾 [NEW] セーブカードの生成・挿入（存在する場合のみ左上に差し込む）
-        for (let i = 1; i <= 3; i++) {
-            const enc = localStorage.getItem("jigsaw_save_slot_" + i);
-            if (enc) {
-                const dec = decryptSaveData(enc);
-                if (dec) {
-                    try {
-                        const saveData = JSON.parse(dec);
-                        const item = document.createElement('div');
-                        item.className = 'gallery-item';
-                        item.style.borderColor = "#FFD700"; // セーブカードはゴールド枠
-                        item.style.borderWidth = "2px";
-                        item.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.25)";
-                        
-                        // 画像サムネイル（セーブ時のスクリーンショット）
-                        const thumbUrl = saveData.screenshotBase64 
-                            ? "data:image/jpeg;base64," + saveData.screenshotBase64
-                            : "images/save_thumbnail_default.png";
-                            
-                        const displayName = saveData.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
-                        
-                        item.innerHTML = `
-                            <div class="gallery-image-wrap" style="position: relative; width: 100%; height: 160px; overflow: hidden; border-radius: 8px;">
-                                <img src="${thumbUrl}" alt="${displayName}" style="object-fit: cover; width: 100%; height: 100%;">
-                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.85); color: #FFD700; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFD700; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">💾 セーブ ${i}</div>
-                            </div>
-                            <div class="gallery-info" style="color: #FFD700; font-weight: bold; padding: 12px 10px; text-align: center;">
-                                ${displayName}
-                                <div style="font-size: 10px; color: rgba(255,255,255,0.6); font-weight: normal; margin-top: 5px;">${saveData.saveTime}</div>
-                            </div>
-                        `;
-                        
-                        item.onclick = function() {
-                            if (confirm(`スロット ${i} のセーブデータ（${displayName}）から再開しますか？`)) {
-                                loadGameFromSave(dec);
-                            }
-                        };
-                        
-                        galleryContainer.appendChild(item);
-                    } catch(e) {
-                        console.error("セーブデータのデコードエラー:", e);
-                    }
-                }
-            }
-        }
-        
-        imagesList.forEach((imgInfo, index) => {
-            try {
-                const item = document.createElement('div');
-                item.className = 'gallery-item';
-                
-                // ドライブ画像の場合は軽量サムネイルを使用し、ローカルの場合はパスをそのまま使用
-                const thumbUrl = isFromGAS 
-                    ? `https://drive.google.com/thumbnail?sz=w300&id=${imgInfo.id}`
-                    : imgInfo.id;
-                
-                // 名前と説明のパース (極めて安全に処理)
-                let name = imgInfo.name || '';
-                let descriptionRaw = imgInfo.description || '';
-                let description = '';
-                let author = '';
-                let link = '';
-                
-                if (descriptionRaw) {
-                    // パイプ "|" で区切られているかチェック (名前,ジャンル1,ジャンル2|作成者|リンク)
-                    if (descriptionRaw.includes('|')) {
-                        const pipeParts = descriptionRaw.split('|');
-                        description = pipeParts[0].trim();
-                        if (pipeParts.length > 1) author = pipeParts[1].trim();
-                        if (pipeParts.length > 2) link = pipeParts[2].trim();
-                    } else {
-                        description = descriptionRaw;
-                    }
-                }
-                
-                if (description) {
-                    const parts = description.split(',');
-                    if (parts.length > 0 && parts[0].trim()) {
-                        name = parts[0].trim();
-                    }
-                } else {
-                    // ドライブの説明（メタデータ）が空の場合、ファイル名から自動パースして補完
-                    let nameWithoutExt = '';
-                    if (name) {
-                        const lastDotIndex = name.lastIndexOf('.');
-                        nameWithoutExt = lastDotIndex !== -1 ? name.substring(0, lastDotIndex) : name;
-                    }
-                    if (!nameWithoutExt) nameWithoutExt = name || '名称未設定';
+                    // 名前と説明のパース (極めて安全に処理)
+                    let name = imgInfo.name || '';
+                    let descriptionRaw = imgInfo.description || '';
+                    let description = '';
+                    let author = '';
+                    let link = '';
 
-                    const separators = ['_', '-', ','];
-                    let foundSeparator = false;
-                    for (let sep of separators) {
-                        if (nameWithoutExt.includes(sep)) {
-                            const parts = nameWithoutExt.split(sep);
-                            name = parts[0].trim();
-                            // descriptionに「名前,ジャンル1,ジャンル2...」の形式で格納し、メタデータに偽装
-                            description = parts.map(p => p.trim()).join(',');
-                            foundSeparator = true;
-                            break;
+                    if (descriptionRaw) {
+                        // パイプ "|" で区切られているかチェック (名前,ジャンル1,ジャンル2|作成者|リンク)
+                        if (descriptionRaw.includes('|')) {
+                            const pipeParts = descriptionRaw.split('|');
+                            description = pipeParts[0].trim();
+                            if (pipeParts.length > 1) author = pipeParts[1].trim();
+                            if (pipeParts.length > 2) link = pipeParts[2].trim();
+                        } else {
+                            description = descriptionRaw;
                         }
                     }
-                    
-                    if (!foundSeparator) {
-                        // 区切り文字がない場合はファイル名全体を名前にし、descriptionもその名前単体にする
-                        name = nameWithoutExt;
-                        description = nameWithoutExt;
+
+                    if (description) {
+                        const parts = description.split(',');
+                        if (parts.length > 0 && parts[0].trim()) {
+                            name = parts[0].trim();
+                        }
+                    } else {
+                        // ドライブの説明（メタデータ）が空の場合、ファイル名から自動パースして補完
+                        let nameWithoutExt = '';
+                        if (name) {
+                            const lastDotIndex = name.lastIndexOf('.');
+                            nameWithoutExt = lastDotIndex !== -1 ? name.substring(0, lastDotIndex) : name;
+                        }
+                        if (!nameWithoutExt) nameWithoutExt = name || '名称未設定';
+
+                        const separators = ['_', '-', ','];
+                        let foundSeparator = false;
+                        for (let sep of separators) {
+                            if (nameWithoutExt.includes(sep)) {
+                                const parts = nameWithoutExt.split(sep);
+                                name = parts[0].trim();
+                                // descriptionに「名前,ジャンル1,ジャンル2...」の形式で格納し、メタデータに偽装
+                                description = parts.map(p => p.trim()).join(',');
+                                foundSeparator = true;
+                                break;
+                            }
+                        }
+
+                        if (!foundSeparator) {
+                            // 区切り文字がない場合はファイル名全体を名前にし、descriptionもその名前単体にする
+                            name = nameWithoutExt;
+                            description = nameWithoutExt;
+                        }
                     }
-                }
-                
-                // 🌟 デフォルト作成者の設定 (すべての画像がAI生成画像とのことなので、未指定ならデフォルト表示)
-                if (!author) {
-                    author = "Google AI画像生成 (Imagen 3)";
-                    link = "https://deepmind.google/technologies/imagen/";
-                }
-                
-                item.innerHTML = `
+
+                    // 🌟 デフォルト作成者の設定 (すべての画像がAI生成画像とのことなので、未指定ならデフォルト表示)
+                    if (!author) {
+                        author = "Google AI画像生成 (Imagen 3)";
+                        link = "https://deepmind.google/technologies/imagen/";
+                    }
+
+                    item.innerHTML = `
                     <div class="gallery-image-wrap">
                         <img src="${thumbUrl}" alt="${name}">
                     </div>
                     <div class="gallery-info">${name}</div>
                 `;
-                
-                // クリック時にモーダルを開く
-                item.onclick = function() {
-                    selectImage(this, imgInfo.id, name, description, author, link);
-                };
-                
-                galleryContainer.appendChild(item);
-                
-                // 初期値をセット (モーダルはまだ開かない)
-                if (index === 0) {
-                    selectedImageUrl = imgInfo.id;
-                    selectedImageName = name;
-                    selectedImageDescription = description;
-                    selectedImageAuthor = author;
-                    selectedImageLink = link;
+
+                    // クリック時にモーダルを開く
+                    item.onclick = function () {
+                        selectImage(this, imgInfo.id, name, description, author, link);
+                    };
+
+                    galleryContainer.appendChild(item);
+
+                    // 初期値をセット (モーダルはまだ開かない)
+                    if (index === 0) {
+                        selectedImageUrl = imgInfo.id;
+                        selectedImageName = name;
+                        selectedImageDescription = description;
+                        selectedImageAuthor = author;
+                        selectedImageLink = link;
+                    }
+                } catch (innerError) {
+                    console.error("個別画像のパース中にエラーが発生しました。スキップします:", imgInfo, innerError);
                 }
-            } catch (innerError) {
-                console.error("個別画像のパース中にエラーが発生しました。スキップします:", imgInfo, innerError);
-            }
-        });
-    }
-
-    // 超高精度モバイル・タブレット端末判定 (Fire HD カスタム環境・iPad Pro PC偽装モード・物理タッチ端末完全対応)
-    function isMobileOrTablet() {
-        const ua = navigator.userAgent.toLowerCase();
-        
-        // 1. 標準判定 (iOS, Android, Fireシリーズ, Silk, Amazon, Fire)
-        const isMobileUA = /iphone|ipod|android.*mobile|windows.*phone|blackberry|iemobile|opera mini/i.test(ua);
-        const isTabletUA = /ipad|android(?!.*mobile)|kftt|kindle|silk|amazon|fire/i.test(ua);
-        
-        if (isMobileUA || isTabletUA) return true;
-
-        // 2. iPad Pro等のPC偽装対策 (Mac表示だがマルチタッチ対応)
-        const isMacTouch = navigator.maxTouchPoints > 1 && ua.includes('macintosh');
-        if (isMacTouch) return true;
-
-        // 3. 🌟 最強の物理特性フォールバック (Fire HD 10「2021改」等のPC偽装ブラウザ対策)
-        // デバイスが「物理的にタッチ可能」であり、かつ「画面幅または画面高さが1300px以下（高解像度タブレットサイズ）」の場合
-        // ※ Fire HD 10 (1920x1200) の横画面論理ピクセル幅 (1280px) などをカバーするため 1300px に引き上げました
-        const hasTouchPoints = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
-        const isTabletOrPhoneSize = window.innerWidth <= 1300 || window.innerHeight <= 1300;
-        
-        if (hasTouchPoints && isTabletOrPhoneSize) {
-            console.log("📱 物理特性によりタブレット/モバイルとして判定しました（タッチ対応 ＆ 1024px以下）");
-            return true;
+            });
         }
 
-        return false;
-    }
+        // 超高精度モバイル・タブレット端末判定 (Fire HD カスタム環境・iPad Pro PC偽装モード・物理タッチ端末完全対応)
+        function isMobileOrTablet() {
+            const ua = navigator.userAgent.toLowerCase();
 
-    // ページロード時に自動ロードを実行
-    window.addEventListener('DOMContentLoaded', () => {
-        
+            // 1. 標準判定 (iOS, Android, Fireシリーズ, Silk, Amazon, Fire)
+            const isMobileUA = /iphone|ipod|android.*mobile|windows.*phone|blackberry|iemobile|opera mini/i.test(ua);
+            const isTabletUA = /ipad|android(?!.*mobile)|kftt|kindle|silk|amazon|fire/i.test(ua);
 
-        // モバイル・タブレット環境検出によるデフォルトピース数の最適化
-        if (isMobileOrTablet()) {
+            if (isMobileUA || isTabletUA) return true;
+
+            // 2. iPad Pro等のPC偽装対策 (Mac表示だがマルチタッチ対応)
+            const isMacTouch = navigator.maxTouchPoints > 1 && ua.includes('macintosh');
+            if (isMacTouch) return true;
+
+            // 3. 🌟 最強の物理特性フォールバック (Fire HD 10「2021改」等のPC偽装ブラウザ対策)
+            // デバイスが「物理的にタッチ可能」であり、かつ「画面幅または画面高さが1300px以下（高解像度タブレットサイズ）」の場合
+            // ※ Fire HD 10 (1920x1200) の横画面論理ピクセル幅 (1280px) などをカバーするため 1300px に引き上げました
+            const hasTouchPoints = (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
+            const isTabletOrPhoneSize = window.innerWidth <= 1300 || window.innerHeight <= 1300;
+
+            if (hasTouchPoints && isTabletOrPhoneSize) {
+                console.log("📱 物理特性によりタブレット/モバイルとして判定しました（タッチ対応 ＆ 1024px以下）");
+                return true;
+            }
+
+            return false;
+        }
+
+        // ランキング参加ステータスの表示更新
+        function updateRankingStatus() {
+            const nameInput = document.getElementById('playerNameInput');
+            const statusText = document.getElementById('rankingStatus');
+            if (!nameInput || !statusText) return;
+            const name = nameInput.value.trim();
+            if (name) {
+                statusText.innerText = `🟢 ランキング対象（「${name}」で登録されます）`;
+                statusText.style.color = '#4CAF50';
+                nameInput.style.borderColor = '#4CAF50';
+            } else {
+                statusText.innerText = '⚪ 匿名プレイ（ランキング対象外）';
+                statusText.style.color = '#888';
+                nameInput.style.borderColor = '#555';
+            }
+        }
+
+        // ページロード時に自動ロードを実行
+        window.addEventListener('DOMContentLoaded', () => {
+            // 名前のロードと自動保存設定
+            const nameInput = document.getElementById('playerNameInput');
+            if (nameInput) {
+                const savedName = localStorage.getItem('jigsaw_player_name');
+                if (savedName) {
+                    nameInput.value = savedName;
+                }
+                updateRankingStatus();
+                nameInput.addEventListener('input', () => {
+                    localStorage.setItem('jigsaw_player_name', nameInput.value.trim());
+                    updateRankingStatus();
+                });
+            }
+
+            // モバイル・タブレット環境検出によるデフォルトピース数の最適化
+            if (isMobileOrTablet()) {
+                const pieceSelect = document.getElementById('pieceCount');
+                if (pieceSelect) {
+                    pieceSelect.value = "24";
+                    console.log("📱 モバイル/タブレット環境を検知したため、デフォルトピース数を24ピース（かんたん）に最適化しました。");
+                }
+            }
+            loadGalleryFromGAS();
+
+            // モーダル内のピース数切り替え時のランキングリアルタイム更新設定
             const pieceSelect = document.getElementById('pieceCount');
             if (pieceSelect) {
-                pieceSelect.value = "24";
-                console.log("📱 モバイル/タブレット環境を検知したため、デフォルトピース数を24ピース（かんたん）に最適化しました。");
-            }
-        }
-        loadGalleryFromGAS();
-
-        // モーダル内のピース数切り替え時のランキングリアルタイム更新設定
-        const pieceSelect = document.getElementById('pieceCount');
-        if (pieceSelect) {
-            pieceSelect.addEventListener('change', function() {
-                loadLeaderboard(selectedImageUrl, this.value);
-            });
-        }
-    });
-
-    // 画像選択時のコールバック
-    function selectImage(element, url, name, description, author, link) {
-        // ギャラリーの選択枠更新
-        const items = document.querySelectorAll('.gallery-item');
-        items.forEach(item => item.classList.remove('selected'));
-        element.classList.add('selected');
-        
-        selectedImageUrl = url;
-        selectedImageName = name;
-        selectedImageDescription = description;
-        selectedImageAuthor = author || '';
-        selectedImageLink = link || '';
-
-        // モーダルの準備と表示
-        openModal(url, name, description, selectedImageAuthor, selectedImageLink);
-    }
-
-    // 詳細モーダルを開く
-    function openModal(url, name, description, author, link) {
-        const modal = document.getElementById('detailModal');
-        const modalImg = document.getElementById('modalImg');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalGenres = document.getElementById('modalGenres');
-        const modalAuthorArea = document.getElementById('modalAuthorArea');
-        const modalAuthor = document.getElementById('modalAuthor');
-        const modalLinkContainer = document.getElementById('modalLinkContainer');
-        const modalLink = document.getElementById('modalLink');
-
-        // ドライブ画像の場合はプレビュー用に高解像度サムネイルを使用 (sz=w800など)
-        let displayUrl = url;
-        if (GAS_API_URL && url && !url.startsWith('http') && !url.includes('/')) {
-            displayUrl = `https://drive.google.com/thumbnail?sz=w800&id=${url}`;
-        }
-        
-        modalImg.src = displayUrl;
-        modalTitle.innerText = name;
-        
-        // ジャンルの生成 (1番目が名前なので、2番目以降がジャンル)
-        modalGenres.innerHTML = '';
-        let genres = [];
-        if (description) {
-            const parts = description.split(',');
-            if (parts.length > 1) {
-                genres = parts.slice(1).map(g => g.trim());
-            }
-        }
-        
-        if (genres.length > 0) {
-            genres.forEach(genre => {
-                const badge = document.createElement('span');
-                badge.className = 'genre-badge';
-                badge.innerText = genre;
-                modalGenres.appendChild(badge);
-            });
-        } else {
-            const badge = document.createElement('span');
-            badge.className = 'genre-badge';
-            badge.innerText = '一般';
-            modalGenres.appendChild(badge);
-        }
-
-        // 🌟 作成者と宣伝リンクのバインド
-        if (author) {
-            modalAuthor.innerText = author;
-            modalAuthorArea.style.display = 'block';
-            
-            if (link) {
-                modalLink.href = link;
-                // ドメイン部分だけを抽出してすっきり表示
-                let linkText = link;
-                try {
-                    const urlObj = new URL(link);
-                    linkText = urlObj.hostname;
-                } catch (e) {}
-                modalLink.innerText = "公式サイト (" + linkText + ")";
-                modalLinkContainer.style.display = 'block';
-            } else {
-                modalLinkContainer.style.display = 'none';
-            }
-        } else {
-            modalAuthorArea.style.display = 'none';
-        }
-
-        // 🏆 リアルタイムクリアタイム順位表のロード
-        loadLeaderboard(url, document.getElementById('pieceCount').value);
-
-        modal.style.display = 'flex';
-    }
-
-    // ⏱️ GASから現在のパズルのランキング（上位5件）を取得して表示する
-    async function loadLeaderboard(imageId, pieceCount) {
-        const tbody = document.querySelector('.modal-leaderboard-table tbody');
-        if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">⏱️ ランキングを読み込み中...</td></tr>`;
-
-        if (!RANKING_API_URL || RANKING_API_URL.includes("_XXX")) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">ランキング用のGASのURLが未設定です。</td></tr>`;
-            return;
-        }
-
-        try {
-            const response = await fetch(`${RANKING_API_URL}?action=get_leaderboard&id=${imageId}&pieceCount=${pieceCount}`);
-            const resData = await response.json();
-
-            if (resData.success && resData.leaderboard && resData.leaderboard.length > 0) {
-                tbody.innerHTML = "";
-                resData.leaderboard.forEach((row, idx) => {
-                    const tr = document.createElement('tr');
-                    
-                    // 自分の名前だった場合は行をハイライトする
-                    const currentName = (localStorage.getItem('jigsaw_player_name') || "").trim();
-                    if (currentName && row.name === currentName) {
-                        tr.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
-                        tr.style.fontWeight = 'bold';
-                    }
-                    
-                    // タイムを分:秒のフォーマットに変換
-                    const minutes = Math.floor(row.time / 60);
-                    const seconds = Math.floor(row.time % 60);
-                    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-                    tr.innerHTML = `
-                        <td style="font-weight: bold; color: ${idx === 0 ? '#FFD700' : (idx === 1 ? '#C0C0C0' : (idx === 2 ? '#CD7F32' : '#888'))};">${idx + 1}位</td>
-                        <td>${row.name}</td>
-                        <td style="font-weight: bold;">${formattedTime}</td>
-                        <td>${row.pieceCount}</td>
-                    `;
-                    tbody.appendChild(tr);
+                pieceSelect.addEventListener('change', function() {
+                    loadLeaderboard(selectedImageUrl, this.value);
                 });
-            } else {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">この設定でのクリアタイム記録は<br>まだありません。最初のランクインを目指そう！</td></tr>`;
             }
-        } catch (error) {
-            console.error("ランキング取得中にエラーが発生しました:", error);
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #ff6b6b; padding: 25px 0;">⚠️ ランキングの取得に失敗しました。</td></tr>`;
-        }
-    }
+        });
 
-    // 詳細モーダルを閉じる
-    function closeModal() {
-        document.getElementById('detailModal').style.display = 'none';
-    }
+        // 画像選択時のコールバック
+        function selectImage(element, url, name, description, author, link) {
+            // ギャラリーの選択枠更新
+            const items = document.querySelectorAll('.gallery-item');
+            items.forEach(item => item.classList.remove('selected'));
+            element.classList.add('selected');
 
-    // モーダルの外側をクリックして閉じる
-    window.onclick = function(event) {
-        const modal = document.getElementById('detailModal');
-        if (event.target === modal) {
-            closeModal();
-        }
-    }
+            selectedImageUrl = url;
+            selectedImageName = name;
+            selectedImageDescription = description;
+            selectedImageAuthor = author || '';
+            selectedImageLink = link || '';
 
-    // パズル開始ボタン処理 (非同期でGAS経由でBase64をロードする)
-    async function sendToJigsaw() {
-        const pieceCount = document.getElementById('pieceCount').value;
-        let finalUrl = selectedImageUrl;
-        
-        if (!finalUrl) {
-            alert("画像が選択されていません。");
-            return;
+            // モーダルの準備と表示
+            openModal(url, name, description, selectedImageAuthor, selectedImageLink);
         }
 
-        // 1. ボタンをローディング表示にして多重クリックを防止
-        const btn = document.getElementById('startBtn');
-        const originalText = btn.innerText;
-        btn.innerText = "⏳ パズル画像を準備中...";
-        btn.disabled = true;
+        // 詳細モーダルを開く
+        function openModal(url, name, description, author, link) {
+            const modal = document.getElementById('detailModal');
+            const modalImg = document.getElementById('modalImg');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalGenres = document.getElementById('modalGenres');
+            const modalAuthorArea = document.getElementById('modalAuthorArea');
+            const modalAuthor = document.getElementById('modalAuthor');
+            const modalLinkContainer = document.getElementById('modalLinkContainer');
+            const modalLink = document.getElementById('modalLink');
 
-        // 2. ポップアップブロックを完全に回避するため、即座にゲームプレイヤー画面を開く
-        let playerUrl = 'jigsaw_player.html';
-        
-        // 起動環境のホストを判定（ローカルファイルまたはローカルサーバー）
-        const isLocal = window.location.protocol === 'file:' || 
-                        window.location.hostname === 'localhost' || 
-                        window.location.hostname === '127.0.0.1';
-        
-        // Googleサイトの埋め込み環境（googleusercontent.comなど）の場合で、本番用絶対URLが設定されている場合は自動適用
-        if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
-            if (window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('google.com')) {
-                playerUrl = PUBLISHED_PLAYER_URL;
-                console.log("🌐 Google Sites埋め込み環境を検知したため、本番用絶対URLでプレイヤーを起動します:", playerUrl);
+            // ドライブ画像の場合はプレビュー用に高解像度サムネイルを使用 (sz=w800など)
+            let displayUrl = url;
+            if (GAS_API_URL && url && !url.startsWith('http') && !url.includes('/')) {
+                displayUrl = `https://drive.google.com/thumbnail?sz=w800&id=${url}`;
             }
-        }
 
-        const playerWindow = window.open(playerUrl, '_blank');
-        if (!playerWindow) {
-            alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
-            btn.innerText = originalText;
-            btn.disabled = false;
-            return;
-        }
+            modalImg.src = displayUrl;
+            modalTitle.innerText = name;
 
-        // 親ウィンドウ側の共有変数をクリア
-        window.selectedPuzzleData = null;
-
-        try {
-            let targetBase64 = null;
-            
-            // GAS経由での画像取得
-            // GAS_API_URLが設定されていて、画像パスがURLではなく画像ID（英数字の長い文字列）である場合
-            if (GAS_API_URL && finalUrl && !finalUrl.startsWith('http') && !finalUrl.includes('/')) {
-                console.log("GASから安全にBase64画像データを取得します。ID:", finalUrl);
-                const response = await fetch(`${GAS_API_URL}?action=image&id=${finalUrl}`);
-                const resData = await response.json();
-                if (resData.success) {
-                    targetBase64 = resData.imageData;
-                    console.log("GASからBase64画像データの取得に成功しました。");
-                } else {
-                    console.warn("GASからの画像取得に失敗しました:", resData.error);
+            // ジャンルの生成 (1番目が名前なので、2番目以降がジャンル)
+            modalGenres.innerHTML = '';
+            let genres = [];
+            if (description) {
+                const parts = description.split(',');
+                if (parts.length > 1) {
+                    genres = parts.slice(1).map(g => g.trim());
                 }
             }
-            
-            if (!targetBase64) {
-                // デフォルト同居画像などのフォールバック
-                targetBase64 = finalUrl;
-            }
 
-            // 3. データの準備完了！共有変数に確実に格納
-            // 子ウィンドウがこの変数をポーリングで取得して自動的に進行します
-            window.selectedPuzzleData = {
-                imageData: targetBase64,
-                pieceCount: parseInt(pieceCount, 10),
-                playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
-                imageId: selectedImageUrl,
-                rankingApiUrl: RANKING_API_URL
-            };
-
-            // 4. データ設定後、モーダルを閉じる
-            closeModal();
-
-        } catch (e) {
-            console.error("画像データ取得処理中にエラーが発生しました:", e);
-            // エラー時はフォールバックとして元のURLをそのまま渡す
-            window.selectedPuzzleData = {
-                imageData: finalUrl,
-                pieceCount: parseInt(pieceCount, 10),
-                playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
-                imageId: selectedImageUrl,
-                rankingApiUrl: RANKING_API_URL
-            };
-            closeModal();
-        } finally {
-            // 5. ボタンのローディング表示を元に戻す
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }
-    }
-
-    // 🎭 [NEW] 疑似ヘッダーのプレイヤーネーム同期処理（高精度連動版）
-    window.addEventListener('DOMContentLoaded', () => {
-        const nameInput = document.getElementById('header-player-name');
-        const nameStatus = document.getElementById('header-name-status');
-        
-        function updateStatus(nameVal) {
-            if (!nameStatus) return;
-            const name = (nameVal || "").trim();
-            if (name === "") {
-                nameStatus.innerText = "● 匿名プレイ";
-                nameStatus.className = "header-name-status anonymous";
+            if (genres.length > 0) {
+                genres.forEach(genre => {
+                    const badge = document.createElement('span');
+                    badge.className = 'genre-badge';
+                    badge.innerText = genre;
+                    modalGenres.appendChild(badge);
+                });
             } else {
-                nameStatus.innerText = "● ランキング対象";
-                nameStatus.className = "header-name-status active";
+                const badge = document.createElement('span');
+                badge.className = 'genre-badge';
+                badge.innerText = '一般';
+                modalGenres.appendChild(badge);
+            }
+
+            // 🌟 作成者と宣伝リンクのバインド
+            if (author) {
+                modalAuthor.innerText = author;
+                modalAuthorArea.style.display = 'block';
+
+                if (link) {
+                    modalLink.href = link;
+                    // ドメイン部分だけを抽出してすっきり表示
+                    let linkText = link;
+                    try {
+                        const urlObj = new URL(link);
+                        linkText = urlObj.hostname;
+                    } catch (e) { }
+                    modalLink.innerText = "公式サイト (" + linkText + ")";
+                    modalLinkContainer.style.display = 'block';
+                } else {
+                    modalLinkContainer.style.display = 'none';
+                }
+            } else {
+                modalAuthorArea.style.display = 'none';
+            }
+
+            // 🏆 リアルタイムクリアタイム順位表のロード
+            loadLeaderboard(url, document.getElementById('pieceCount').value);
+
+            modal.style.display = 'flex';
+        }
+
+        // ⏱️ GASから現在のパズルのランキング（上位5件）を取得して表示する
+        async function loadLeaderboard(imageId, pieceCount) {
+            const tbody = document.querySelector('.modal-leaderboard-table tbody');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">⏱️ ランキングを読み込み中...</td></tr>`;
+
+            if (!RANKING_API_URL || RANKING_API_URL.includes("_XXX")) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">ランキング用のGASのURLが未設定です。</td></tr>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${RANKING_API_URL}?action=get_leaderboard&id=${imageId}&pieceCount=${pieceCount}`);
+                const resData = await response.json();
+
+                if (resData.success && resData.leaderboard && resData.leaderboard.length > 0) {
+                    tbody.innerHTML = "";
+                    resData.leaderboard.forEach((row, idx) => {
+                        const tr = document.createElement('tr');
+                        
+                        // 自分の名前だった場合は行をハイライトする
+                        const currentName = document.getElementById('playerNameInput').value.trim();
+                        if (currentName && row.name === currentName) {
+                            tr.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
+                            tr.style.fontWeight = 'bold';
+                        }
+                        
+                        // タイムを分:秒のフォーマットに変換
+                        const minutes = Math.floor(row.time / 60);
+                        const seconds = Math.floor(row.time % 60);
+                        const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                        tr.innerHTML = `
+                            <td style="font-weight: bold; color: ${idx === 0 ? '#FFD700' : (idx === 1 ? '#C0C0C0' : (idx === 2 ? '#CD7F32' : '#888'))};">${idx + 1}位</td>
+                            <td>${row.name}</td>
+                            <td style="font-weight: bold;">${formattedTime}</td>
+                            <td>${row.pieceCount}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #888; padding: 25px 0;">この設定でのクリアタイム記録は<br>まだありません。最初のランクインを目指そう！</td></tr>`;
+                }
+            } catch (error) {
+                console.error("ランキング取得中にエラーが発生しました:", error);
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #ff6b6b; padding: 25px 0;">⚠️ ランキングの取得に失敗しました。</td></tr>`;
             }
         }
 
-        if (nameInput) {
-            // 初期ロード
-            const savedName = localStorage.getItem('jigsaw_player_name') || "";
-            nameInput.value = savedName;
-            updateStatus(savedName);
-
-            // 入力時に即時保存 & ステータス動的更新
-            nameInput.addEventListener('input', function() {
-                const val = this.value;
-                localStorage.setItem('jigsaw_player_name', val.trim());
-                updateStatus(val);
-                console.log("[LOG: Sync] プレイヤー名をLocalStorageに保存しました:", val.trim());
-            });
+        // 詳細モーダルを閉じる
+        function closeModal() {
+            document.getElementById('detailModal').style.display = 'none';
         }
-    });
-</script>
+
+        // モーダルの外側をクリックして閉じる
+        window.onclick = function (event) {
+            const modal = document.getElementById('detailModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // パズル開始ボタン処理 (非同期でGAS経由でBase64をロードする)
+        async function sendToJigsaw() {
+            const pieceCount = document.getElementById('pieceCount').value;
+            let finalUrl = selectedImageUrl;
+
+            if (!finalUrl) {
+                alert("画像が選択されていません。");
+                return;
+            }
+
+            // 1. ボタンをローディング表示にして多重クリックを防止
+            const btn = document.getElementById('startBtn');
+            const originalText = btn.innerText;
+            btn.innerText = "⏳ パズル画像を準備中...";
+            btn.disabled = true;
+
+            // 2. ポップアップブロックを完全に回避するため、即座にゲームプレイヤー画面を開く
+            let playerUrl = 'jigsaw_player.html';
+
+            // 起動環境のホストを判定（ローカルファイルまたはローカルサーバー）
+            const isLocal = window.location.protocol === 'file:' ||
+                window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1';
+
+            // Googleサイトの埋め込み環境（googleusercontent.comなど）の場合で、本番用絶対URLが設定されている場合は自動適用
+            if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
+                if (window.location.hostname.includes('googleusercontent.com') || window.location.hostname.includes('google.com')) {
+                    playerUrl = PUBLISHED_PLAYER_URL;
+                    console.log("🌐 Google Sites埋め込み環境を検知したため、本番用絶対URLでプレイヤーを起動します:", playerUrl);
+                }
+            }
+
+            const playerWindow = window.open(playerUrl, '_blank');
+            if (!playerWindow) {
+                alert("ポップアップブロックが有効化されている可能性があります。別ウィンドウの許可をお願いします。");
+                btn.innerText = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            // 親ウィンドウ側の共有変数をクリア
+            window.selectedPuzzleData = null;
+
+            try {
+                let targetBase64 = null;
+
+                // GAS経由での画像取得
+                // GAS_API_URLが設定されていて、画像パスがURLではなく画像ID（英数字の長い文字列）である場合
+                if (GAS_API_URL && finalUrl && !finalUrl.startsWith('http') && !finalUrl.includes('/')) {
+                    console.log("GASから安全にBase64画像データを取得します。ID:", finalUrl);
+                    const response = await fetch(`${GAS_API_URL}?action=image&id=${finalUrl}`);
+                    const resData = await response.json();
+                    if (resData.success) {
+                        targetBase64 = resData.imageData;
+                        console.log("GASからBase64画像データの取得に成功しました。");
+                    } else {
+                        console.warn("GASからの画像取得に失敗しました:", resData.error);
+                    }
+                }
+
+                if (!targetBase64) {
+                    // デフォルト同居画像などのフォールバック
+                    targetBase64 = finalUrl;
+                }
+
+                // 3. データの準備完了！共有変数に確実に格納
+                // 子ウィンドウがこの変数をポーリングで取得して自動的に進行します
+                window.selectedPuzzleData = {
+                    imageData: targetBase64,
+                    pieceCount: parseInt(pieceCount, 10),
+                    playerName: document.getElementById('playerNameInput').value.trim(),
+                    imageId: selectedImageUrl,
+                    rankingApiUrl: RANKING_API_URL
+                };
+
+                // 4. データ設定後、モーダルを閉じる
+                closeModal();
+
+            } catch (e) {
+                console.error("画像データ取得処理中にエラーが発生しました:", e);
+                // エラー時はフォールバックとして元のURLをそのまま渡す
+                window.selectedPuzzleData = {
+                    imageData: finalUrl,
+                    pieceCount: parseInt(pieceCount, 10),
+                    playerName: document.getElementById('playerNameInput').value.trim(),
+                    imageId: selectedImageUrl,
+                    rankingApiUrl: RANKING_API_URL
+                };
+                closeModal();
+            } finally {
+                // 5. ボタンのローディング表示を元に戻す
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
+
 </html>
