@@ -349,12 +349,72 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        /* 💾 ロード用スロット選択画面の追加スタイル */
+        .resume-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #1e1e24;
+            border: none;
+            padding: 10px 22px;
+            font-size: 14px;
+            font-weight: 800;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35);
+            transition: all 0.3s ease;
+        }
+        .resume-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
+            filter: brightness(1.1);
+        }
+        .resume-button:active {
+            transform: translateY(0);
+        }
+        
+        .load-slot-card {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+        .load-slot-card:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: #FFD700 !important;
+            transform: translateX(4px);
+        }
+        
+        .load-slot-card-empty {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🧩 じぐそう - 画像選択</h2>
+    <div class="header-wrap" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <h2 style="margin: 0; color: #4CAF50;">🧩 じぐそう - 画像選択</h2>
+        <button id="btnResumeGame" onclick="openLoadModal()" class="resume-button">
+            💾 ロードして再開
+        </button>
+    </div>
     
     
 
@@ -441,6 +501,18 @@
     </div>
 </div>
 
+<!-- 💾 ロード用スロット選択モーダル -->
+<div class="modal-overlay" id="loadModal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px; padding: 30px; background: rgba(30, 30, 38, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; backdrop-filter: blur(15px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); color: #fff;">
+        <span class="modal-close" onclick="closeLoadModal()" style="color: #aaa;">&times;</span>
+        <h3 style="margin-top: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; display: flex; align-items: center; gap: 10px; color: #FFD700;">💾 セーブスロットを選択してください</h3>
+        
+        <div id="loadSlotsContainer" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+            <!-- JavaScriptでスロット要素が動的に挿入されます -->
+        </div>
+    </div>
+</div>
+
 <script>
     // 💡 デプロイ後に発行されるGASのWebアプリURLをここに貼り付けてください
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec"; 
@@ -508,13 +580,14 @@
     // [NEW] セーブデータ復号ヘルパー
     function decryptSaveData(encryptedStr, key = 73) {
         try {
-            let raw = decodeURIComponent(escape(atob(encryptedStr)));
-            let result = "";
-            for (let i = 0; i < raw.length; i++) {
-                result += String.fromCharCode(raw.charCodeAt(i) ^ key);
+            let xorStr = atob(encryptedStr);
+            let utf8Str = "";
+            for (let i = 0; i < xorStr.length; i++) {
+                utf8Str += String.fromCharCode(xorStr.charCodeAt(i) ^ key);
             }
-            return result;
+            return decodeURIComponent(escape(utf8Str));
         } catch(e) {
+            console.error("[GoogleSiteEmbed] 復号エラー:", e);
             return null;
         }
     }
@@ -545,6 +618,70 @@
             playerName: (localStorage.getItem('jigsaw_player_name') || "").trim(),
             rankingApiUrl: RANKING_API_URL
         };
+    }
+
+    // 💾 [NEW] ロード用スロット選択画面の操作関数
+    function openLoadModal() {
+        const container = document.getElementById('loadSlotsContainer');
+        container.innerHTML = "";
+        
+        for (let i = 1; i <= 3; i++) {
+            const enc = localStorage.getItem("jigsaw_save_slot_" + i);
+            let slotHtml = "";
+            
+            if (enc) {
+                const dec = decryptSaveData(enc);
+                if (dec) {
+                    try {
+                        const saveData = JSON.parse(dec);
+                        const thumbUrl = saveData.screenshotBase64 
+                            ? "data:image/jpeg;base64," + saveData.screenshotBase64
+                            : "images/save_thumbnail_default.png";
+                        const displayName = saveData.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
+                        
+                        slotHtml = `
+                            <div class="load-slot-card" onclick="triggerLoadSlot(${i}, '${encodeURIComponent(dec)}')">
+                                <img src="${thumbUrl}" alt="${displayName}" style="width: 80px; height: 45px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                                <div style="flex: 1; min-width: 0; text-align: left;">
+                                    <div style="font-weight: bold; font-size: 14px; color: #FFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">スロット ${i}: ${displayName}</div>
+                                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">ピース数: ${saveData.targetPieces}P | 保存日時: ${saveData.saveTime}</div>
+                                </div>
+                                <div style="font-size: 18px; color: #FFD700; padding-right: 5px;">▶</div>
+                            </div>
+                        `;
+                    } catch(e) {
+                        console.error("スロット読み込みエラー:", e);
+                    }
+                }
+            }
+            
+            if (!slotHtml) {
+                // 空きスロット
+                slotHtml = `
+                    <div class="load-slot-card-empty">
+                        <div style="width: 80px; height: 45px; background: rgba(255,255,255,0.05); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #666; border: 1px dashed rgba(255, 255, 255, 0.05);">空き</div>
+                        <div style="flex: 1; text-align: left;">
+                            <div style="font-weight: bold; font-size: 14px; color: #666;">スロット ${i}: 空きスロット</div>
+                            <div style="font-size: 11px; color: #444; margin-top: 4px;">セーブデータがありません</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML += slotHtml;
+        }
+        
+        document.getElementById('loadModal').style.display = 'flex';
+    }
+    
+    function triggerLoadSlot(slotIndex, decUriStr) {
+        const dec = decodeURIComponent(decUriStr);
+        loadGameFromSave(dec);
+        closeLoadModal();
+    }
+    
+    function closeLoadModal() {
+        document.getElementById('loadModal').style.display = 'none';
     }
 
     // ギャラリーHTMLを動的構築するヘルパー

@@ -542,23 +542,25 @@
             script.src = loaderUrl;
             // [NEW] セーブデータ難読化（暗号化）ヘルパー
             function encryptSaveData(dataStr, key = 73) {
+                let utf8Str = unescape(encodeURIComponent(dataStr));
                 let result = "";
-                for (let i = 0; i < dataStr.length; i++) {
-                    result += String.fromCharCode(dataStr.charCodeAt(i) ^ key);
+                for (let i = 0; i < utf8Str.length; i++) {
+                    result += String.fromCharCode(utf8Str.charCodeAt(i) ^ key);
                 }
-                return btoa(unescape(encodeURIComponent(result)));
+                return btoa(result);
             }
 
             // [NEW] セーブデータ復号ヘルパー
             function decryptSaveData(encryptedStr, key = 73) {
                 try {
-                    let raw = decodeURIComponent(escape(atob(encryptedStr)));
-                    let result = "";
-                    for (let i = 0; i < raw.length; i++) {
-                        result += String.fromCharCode(raw.charCodeAt(i) ^ key);
+                    let xorStr = atob(encryptedStr);
+                    let utf8Str = "";
+                    for (let i = 0; i < xorStr.length; i++) {
+                        utf8Str += String.fromCharCode(xorStr.charCodeAt(i) ^ key);
                     }
-                    return result;
+                    return decodeURIComponent(escape(utf8Str));
                 } catch(e) {
+                    console.error("[JigsawPlayer] 復号エラー:", e);
                     return null;
                 }
             }

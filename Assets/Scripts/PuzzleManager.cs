@@ -397,9 +397,9 @@ public class PuzzleManager : MonoBehaviour
             Button btnSlot3 = root.Q<Button>("SlotButton3");
             Button btnClose = root.Q<Button>("ClosePopupButton");
 
-            if (btnSlot1 != null) { btnSlot1.clicked -= () => StartSaveProcess(1); btnSlot1.clicked += () => StartSaveProcess(1); }
-            if (btnSlot2 != null) { btnSlot2.clicked -= () => StartSaveProcess(2); btnSlot2.clicked += () => StartSaveProcess(2); }
-            if (btnSlot3 != null) { btnSlot3.clicked -= () => StartSaveProcess(3); btnSlot3.clicked += () => StartSaveProcess(3); }
+            if (btnSlot1 != null) { btnSlot1.clicked -= OnSlot1Clicked; btnSlot1.clicked += OnSlot1Clicked; }
+            if (btnSlot2 != null) { btnSlot2.clicked -= OnSlot2Clicked; btnSlot2.clicked += OnSlot2Clicked; }
+            if (btnSlot3 != null) { btnSlot3.clicked -= OnSlot3Clicked; btnSlot3.clicked += OnSlot3Clicked; }
             if (btnClose != null)
             {
                 btnClose.clicked -= CloseSavePopup;
@@ -407,6 +407,10 @@ public class PuzzleManager : MonoBehaviour
             }
         }
     }
+
+    private void OnSlot1Clicked() { StartSaveProcess(1); }
+    private void OnSlot2Clicked() { StartSaveProcess(2); }
+    private void OnSlot3Clicked() { StartSaveProcess(3); }
 
     private void CloseSavePopup()
     {
