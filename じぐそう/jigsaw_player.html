@@ -551,16 +551,13 @@
         }
 
         // 2. Unityのロード設定
-        // 「じぐそう」フォルダから起動される場合は、Buildsフォルダへの相対パスを指定
-        var buildUrl = "../Builds/Build"; 
-        var loaderUrl = "../Builds/Build/Builds.loader.js";
+        var buildUrl = "../Builds/WebGL/Jigsaw/Build"; 
+        var loaderUrl = "../Builds/WebGL/Jigsaw/Build/Jigsaw.loader.js";
         
-        // 開発環境と本番サーバー環境の両方に対応するためのパス自動検出ロジックを追加
-        // 同一フォルダ内にBuildが存在する場合はそれを使用し、無ければ "../Builds/" を見に行く
         var checkConfig = {
-            dataUrl: "Build/Builds.data",
-            frameworkUrl: "Build/Builds.framework.js",
-            codeUrl: "Build/Builds.wasm"
+            dataUrl: "Build/Jigsaw.data",
+            frameworkUrl: "Build/Jigsaw.framework.js",
+            codeUrl: "Build/Jigsaw.wasm"
         };
         
         var config = {
