@@ -541,24 +541,14 @@
             var script = document.createElement("script");
             script.src = loaderUrl;
             // [NEW] セーブデータ難読化（暗号化）ヘルパー
-            function encryptSaveData(dataStr, key = 73) {
-                let utf8Str = unescape(encodeURIComponent(dataStr));
-                let result = "";
-                for (let i = 0; i < utf8Str.length; i++) {
-                    result += String.fromCharCode(utf8Str.charCodeAt(i) ^ key);
-                }
-                return btoa(result);
+            function encryptSaveData(dataStr) {
+                return btoa(unescape(encodeURIComponent(dataStr)));
             }
 
             // [NEW] セーブデータ復号ヘルパー
-            function decryptSaveData(encryptedStr, key = 73) {
+            function decryptSaveData(encryptedStr) {
                 try {
-                    let xorStr = atob(encryptedStr);
-                    let utf8Str = "";
-                    for (let i = 0; i < xorStr.length; i++) {
-                        utf8Str += String.fromCharCode(xorStr.charCodeAt(i) ^ key);
-                    }
-                    return decodeURIComponent(escape(utf8Str));
+                    return decodeURIComponent(escape(atob(encryptedStr)));
                 } catch(e) {
                     console.error("[JigsawPlayer] 復号エラー:", e);
                     return null;

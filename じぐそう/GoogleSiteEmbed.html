@@ -578,14 +578,9 @@
     }
 
     // [NEW] セーブデータ復号ヘルパー
-    function decryptSaveData(encryptedStr, key = 73) {
+    function decryptSaveData(encryptedStr) {
         try {
-            let xorStr = atob(encryptedStr);
-            let utf8Str = "";
-            for (let i = 0; i < xorStr.length; i++) {
-                utf8Str += String.fromCharCode(xorStr.charCodeAt(i) ^ key);
-            }
-            return decodeURIComponent(escape(utf8Str));
+            return decodeURIComponent(escape(atob(encryptedStr)));
         } catch(e) {
             console.error("[GoogleSiteEmbed] 復号エラー:", e);
             return null;
