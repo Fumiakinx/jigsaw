@@ -431,6 +431,20 @@
         // 1. 親ウィンドウからのデータ受け渡しを待機 (ポーリング処理・クロスドメイン安全対策)
         function checkParentData() {
             return new Promise((resolve) => {
+                // SessionStorageから起動データを優先取得（同一枠内遷移時の対応）[NEW]
+                try {
+                    const sessionData = sessionStorage.getItem('selectedPuzzleData');
+                    if (sessionData) {
+                        selectedData = JSON.parse(sessionData);
+                        sessionStorage.removeItem('selectedPuzzleData'); // 使用後にクリーンアップ
+                        console.log("[JigsawPlayer] SessionStorageからパズル起動データを取得しました。");
+                        resolve(true);
+                        return;
+                    }
+                } catch (sessionError) {
+                    console.warn("[JigsawPlayer] SessionStorageの読み込みに失敗しました:", sessionError);
+                }
+
                 let attempts = 0;
                 const maxAttempts = 300; // 最大約30秒待機
                 
