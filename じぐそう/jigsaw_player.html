@@ -557,37 +557,50 @@
 
             // [NEW] Unityから呼ばれるグローバル関数
             window.saveJigsawData = function(slotIndex, jsonDataStr) {
-                console.log("[JigsawPlayer] セーブデータ保存要求を受信。スロット:", slotIndex);
+                console.log(`[LOG 4: JS] saveJigsawData受信。スロット: ${slotIndex}, 受信文字数: ${jsonDataStr ? jsonDataStr.length : 0}`);
                 try {
                     let enc = encryptSaveData(jsonDataStr);
+                    console.log(`[LOG 5: JS] 暗号化成功。暗号化後の文字数: ${enc.length}`);
                     localStorage.setItem("jigsaw_save_slot_" + slotIndex, enc);
+                    console.log(`[LOG 6: JS] localStorageへの書き込み完了。キー: jigsaw_save_slot_${slotIndex}`);
                 } catch(e) {
-                    console.error("[JigsawPlayer] セーブデータの保存に失敗:", e);
+                    console.error("[LOG 6: ERROR] saveJigsawDataの処理中に例外が発生しました！");
+                    console.error("エラーの種類・名前:", e.name);
+                    console.error("エラーメッセージ:", e.message);
+                    console.error("スタックトレース:", e.stack);
                 }
             };
 
             window.requestSlotDescriptions = function() {
-                if (!unityInstance) return;
+                console.log("[LOG 7: JS] requestSlotDescriptions呼び出しを受信しました。");
+                if (!unityInstance) {
+                    console.error("[LOG 7: ERROR] unityInstanceが存在しません！");
+                    return;
+                }
                 let descs = [];
                 for (let i = 1; i <= 3; i++) {
                     let enc = localStorage.getItem("jigsaw_save_slot_" + i);
+                    console.log(`[LOG 8: JS] スロット ${i} の生の保存データ取得結果:`, enc ? `存在 (長さ: ${enc.length})` : "無し (null)");
                     if (enc) {
-                        let dec = decryptSaveData(enc);
-                        if (dec) {
-                            try {
+                        try {
+                            let dec = decryptSaveData(enc);
+                            console.log(`[LOG 9: JS] スロット ${i} の復号結果:`, dec ? `成功 (長さ: ${dec.length})` : "失敗 (null)");
+                            if (dec) {
                                 let d = JSON.parse(dec);
                                 let displayImgName = d.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
                                 descs.push(displayImgName + " \n(" + d.saveTime + ")");
-                            } catch(e) {
-                                descs.push("破損データ");
+                            } else {
+                                descs.push("空きスロット");
                             }
-                        } else {
-                            descs.push("空きスロット");
+                        } catch(e) {
+                            console.error(`[LOG 9: ERROR] スロット ${i} の復号/パース中に例外が発生しました:`, e);
+                            descs.push("破損データ");
                         }
                     } else {
                         descs.push("空きスロット");
                     }
                 }
+                console.log("[LOG 10: JS] Unityへ送り返す説明テキスト一覧:", descs);
                 unityInstance.SendMessage("PuzzleManager", "UpdateSlotDescriptions", descs[0], descs[1], descs[2]);
             };
 

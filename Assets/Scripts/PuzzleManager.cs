@@ -501,6 +501,9 @@ public class PuzzleManager : MonoBehaviour
 
         string jsonStr = JsonUtility.ToJson(saveData);
 
+        // 【ログ追加】
+        Debug.Log($"[LOG 1: Unity] JSONの構築が完了しました。文字数(長さ): {jsonStr.Length}文字");
+
         // ブラウザへの送信処理
         #if UNITY_WEBGL && !UNITY_EDITOR
         SaveToBrowser(slotIndex, jsonStr);

@@ -579,10 +579,16 @@
 
     // [NEW] セーブデータ復号ヘルパー
     function decryptSaveData(encryptedStr) {
+        console.log("[LOG A: Embed] decryptSaveDataが呼び出されました。入力長:", encryptedStr ? encryptedStr.length : 0);
         try {
-            return decodeURIComponent(escape(atob(encryptedStr)));
+            let dec = decodeURIComponent(escape(atob(encryptedStr)));
+            console.log("[LOG B: Embed] 復号に成功しました。復号後の長さ:", dec.length);
+            return dec;
         } catch(e) {
-            console.error("[GoogleSiteEmbed] 復号エラー:", e);
+            console.error("[LOG B: ERROR] GoogleSiteEmbedでの復号中に例外が発生しました！");
+            console.error("エラーの種類・名前:", e.name);
+            console.error("エラーメッセージ:", e.message);
+            console.error("スタックトレース:", e.stack);
             return null;
         }
     }
@@ -615,20 +621,24 @@
         };
     }
 
-    // 💾 [NEW] ロード用スロット選択画面の操作関数
+    // 💾 [NEW] ロード用スロット選択画面 of GoogleSiteEmbed.html の操作関数
     function openLoadModal() {
+        console.log("[LOG C: Embed] openLoadModalが呼び出されました。");
         const container = document.getElementById('loadSlotsContainer');
         container.innerHTML = "";
         
         for (let i = 1; i <= 3; i++) {
             const enc = localStorage.getItem("jigsaw_save_slot_" + i);
+            console.log(`[LOG D: Embed] スロット ${i} のLocalStorageデータ取得結果:`, enc ? `存在 (長さ: ${enc.length})` : "無し (null)");
             let slotHtml = "";
             
             if (enc) {
                 const dec = decryptSaveData(enc);
+                console.log(`[LOG E: Embed] スロット ${i} の復号結果:`, dec ? `成功 (長さ: ${dec.length})` : "失敗 (null)");
                 if (dec) {
                     try {
                         const saveData = JSON.parse(dec);
+                        console.log(`[LOG F: Embed] スロット ${i} のJSONパース成功。画像名: ${saveData.imageName}`);
                         const thumbUrl = saveData.screenshotBase64 
                             ? "data:image/jpeg;base64," + saveData.screenshotBase64
                             : "images/save_thumbnail_default.png";
@@ -645,7 +655,7 @@
                             </div>
                         `;
                     } catch(e) {
-                        console.error("スロット読み込みエラー:", e);
+                        console.error(`[LOG F: ERROR] スロット ${i} のJSONパース中に例外が発生しました:`, e);
                     }
                 }
             }
