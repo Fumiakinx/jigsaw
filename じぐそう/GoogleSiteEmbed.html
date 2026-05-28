@@ -1331,10 +1331,21 @@
         }
 
         if (nameInput) {
-            // 初期ロード
-            const savedName = localStorage.getItem('jigsaw_player_name') || "";
-            nameInput.value = savedName;
-            updateStatus(savedName);
+            // URLパラメータから名前を取得して優先適用する [NEW]
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlName = urlParams.get('name');
+            
+            let initialName = "";
+            if (urlName !== null) {
+                initialName = urlName.trim();
+                localStorage.setItem('jigsaw_player_name', initialName);
+                console.log("[LOG: URL-Param-Sync] URLパラメータからプレイヤー名を取得しました:", initialName);
+            } else {
+                initialName = localStorage.getItem('jigsaw_player_name') || "";
+            }
+            
+            nameInput.value = initialName;
+            updateStatus(initialName);
 
             // 入力時に即時保存 & ステータス動的更新
             nameInput.addEventListener('input', function() {
