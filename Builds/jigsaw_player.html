@@ -440,13 +440,17 @@
                 const playerName = urlParams.get('playerName');
                 const isSaveLoad = urlParams.get('isSaveLoad');
                 const slotIndex = urlParams.get('slotIndex');
+                const gasApiUrlParam = urlParams.get('gasApiUrl');
+                const rankingApiUrlParam = urlParams.get('rankingApiUrl');
 
-                const GAS_URL = "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
+                // 🌟 画像取得用のGASエンドポイントとセーブ/ランキング用のGASエンドポイントを独立してマッピング
+                const GAS_URL = gasApiUrlParam || "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec";
+                const RANKING_URL = rankingApiUrlParam || "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
 
                 if (isSaveLoad === 'true' && slotIndex && playerName) {
                     statusText.innerText = "GASからセーブデータを安全にロードしています...";
                     try {
-                        const response = await fetch(`${GAS_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${slotIndex}`);
+                        const response = await fetch(`${RANKING_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${slotIndex}`);
                         const resData = await response.json();
                         
                         if (resData.success && resData.saveDataJson) {
@@ -456,7 +460,7 @@
                                     isSaveLoad: true,
                                     saveJson: dec,
                                     playerName: playerName,
-                                    rankingApiUrl: GAS_URL
+                                    rankingApiUrl: RANKING_URL
                                 };
                                 console.log("[JigsawPlayer] URLパラメータからGAS経由でのセーブデータロードに成功しました。");
                                 resolve(true);
@@ -473,7 +477,7 @@
                     // GAS経由での画像取得（GoogleドライブID形式の場合のみ）
                     if (imageId && !imageId.startsWith('http') && !imageId.includes('/')) {
                         try {
-                            console.log("[JigsawPlayer] ドライブIDから安全に画像を自動取得します:", imageId);
+                            console.log("[JigsawPlayer] ドライブIDから安全に画像を自動取得します:", imageId, "GAS URL:", GAS_URL);
                             const response = await fetch(`${GAS_URL}?action=image&id=${imageId}`);
                             const resData = await response.json();
                             if (resData.success) {
@@ -493,7 +497,7 @@
                         pieceCount: parseInt(pieceCount || "96", 10),
                         playerName: playerName || "",
                         imageId: imageId,
-                        rankingApiUrl: GAS_URL
+                        rankingApiUrl: RANKING_URL
                     };
                     resolve(true);
                     return;

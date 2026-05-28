@@ -900,7 +900,7 @@
         try {
             // クエリパラメータを構築して新しいタブで開く
             const playerName = document.getElementById('playerNameInput').value.trim();
-            const launchUrl = `${playerUrl}?imageId=${encodeURIComponent(finalUrl)}&pieceCount=${pieceCount}&playerName=${encodeURIComponent(playerName)}`;
+            const launchUrl = `${playerUrl}?imageId=${encodeURIComponent(finalUrl)}&pieceCount=${pieceCount}&playerName=${encodeURIComponent(playerName)}&gasApiUrl=${encodeURIComponent(GAS_API_URL)}&rankingApiUrl=${encodeURIComponent(RANKING_API_URL)}`;
             
             console.log("🌐 大画面（新タブ）でパズルを起動します:", launchUrl);
             const playerWindow = window.open(launchUrl, '_blank');
@@ -1020,7 +1020,7 @@
             playerUrl = PUBLISHED_PLAYER_URL;
         }
 
-        const loadUrl = `${playerUrl}?isSaveLoad=true&slotIndex=${slotIndex}&playerName=${encodeURIComponent(playerName)}`;
+        const loadUrl = `${playerUrl}?isSaveLoad=true&slotIndex=${slotIndex}&playerName=${encodeURIComponent(playerName)}&rankingApiUrl=${encodeURIComponent(RANKING_API_URL)}`;
         console.log("🌐 大画面（新タブ）でセーブデータをロード起動します:", loadUrl);
         const playerWindow = window.open(loadUrl, '_blank');
         if (!playerWindow) {
@@ -1096,7 +1096,7 @@
                                     playerUrl = PUBLISHED_PLAYER_URL;
                                 }
                                 
-                                const loadUrl = `${playerUrl}?isSaveLoad=true&slotIndex=${i}&playerName=${encodeURIComponent(playerName)}`;
+                                const loadUrl = `${playerUrl}?isSaveLoad=true&slotIndex=${i}&playerName=${encodeURIComponent(playerName)}&rankingApiUrl=${encodeURIComponent(RANKING_API_URL)}`;
                                 console.log("🌐 大画面（新タブ）でゴールドセーブカードからロード起動します:", loadUrl);
                                 const playerWindow = window.open(loadUrl, '_blank');
                                 if (!playerWindow) {
