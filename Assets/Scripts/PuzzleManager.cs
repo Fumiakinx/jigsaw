@@ -445,8 +445,10 @@ public class PuzzleManager : MonoBehaviour
     private IEnumerator CaptureAndSaveCoroutine(int slotIndex)
     {
         // UIを一時的に隠してゲーム画面だけをキャプチャする（より綺麗なサムネイルのため）
-        if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(false);
-        if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false);
+        if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
+            pauseUIDoc.rootVisualElement.style.display = DisplayStyle.None;
+        if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
+            hudUIDoc.rootVisualElement.style.display = DisplayStyle.None;
         yield return new WaitForEndOfFrame(); // 描画終了まで待つ
 
         // スクショ撮影用のテクスチャ作成 (アスペクト比 16:9 相当で小さく切り出す)
@@ -484,8 +486,10 @@ public class PuzzleManager : MonoBehaviour
         Destroy(thumbTex);
 
         // UIを再表示
-        if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(true);
-        if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(true);
+        if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
+            pauseUIDoc.rootVisualElement.style.display = DisplayStyle.Flex;
+        if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
+            hudUIDoc.rootVisualElement.style.display = DisplayStyle.Flex;
 
         // セーブデータ（JSON）の構築
         PuzzleSaveData saveData = new PuzzleSaveData();
