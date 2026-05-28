@@ -356,16 +356,11 @@
 <div class="container">
     <h2>🧩 じぐそう - 画像選択</h2>
     
-    <!-- 👤 プレイヤー名入力欄（ランキング対象）＆ 💾 ロードボタン -->
+    <!-- 👤 プレイヤー名入力欄（ランキング対象） -->
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background-color: #242424; padding: 12px 20px; border-radius: 10px; border: 1px solid #3d3d3d; width: 100%; box-sizing: border-box;">
         <label style="font-weight: bold; color: #4CAF50; font-size: 14px; white-space: nowrap;">👤 プレイヤー名：</label>
         <input type="text" id="playerNameInput" placeholder="名前を入力（ランキング対象）" maxlength="10" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #555; background-color: #1a1a1a; color: #fff; font-size: 13px; font-weight: bold; width: 180px; outline: none; transition: border-color 0.2s;">
         <span id="rankingStatus" style="font-size: 12px; font-weight: bold; color: #888; margin-left: 5px; transition: color 0.2s;">⚪ 匿名プレイ（ランキング対象外）</span>
-        
-        <!-- 💾 GAS直通ロードボタンを追加 -->
-        <button id="btnResumeGame" onclick="openLoadModal()" style="margin-left: auto; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #1e1e24; border: none; padding: 6px 14px; font-size: 12px; font-weight: bold; border-radius: 14px; cursor: pointer; box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3); display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
-            💾 ロードして再開
-        </button>
     </div>
 
     <div class="gallery-title-area">
@@ -1033,6 +1028,41 @@
         document.getElementById('loadModal').style.display = 'none';
     }
 
+    // 💡 [NEW] GAS経由でセーブデータを削除する関数
+    async function deleteSaveSlot(slotIndex, displayName) {
+        const slotName = slotIndex === 0 ? 'オートセーブ' : `スロット ${slotIndex}`;
+        if (!confirm(`${slotName} のセーブデータ（${displayName}）を削除しますか？`)) {
+            return;
+        }
+        
+        const playerName = document.getElementById('playerNameInput').value.trim();
+        if (!playerName || !RANKING_API_URL) return;
+        
+        try {
+            console.log(`[GAS-Delete] セーブデータを削除します。名: ${playerName}, スロット: ${slotIndex}`);
+            // 空データを送信することで、GAS側のセーブスロットを初期化（消去）する
+            const deleteParams = new URLSearchParams();
+            deleteParams.append("action", "save_game");
+            deleteParams.append("playerName", playerName);
+            deleteParams.append("slotIndex", slotIndex.toString());
+            deleteParams.append("saveDataJson", ""); // 空白でクリア
+            deleteParams.append("saveTime", "");
+            deleteParams.append("imageName", "");
+            deleteParams.append("targetPieces", "0");
+            
+            await fetch(RANKING_API_URL, {
+                method: 'POST',
+                body: deleteParams
+            });
+            
+            console.log("🗑 セーブデータ消去完了");
+            loadGalleryFromGAS(); // 即座に画像ギャラリーをリロードして反映
+        } catch(e) {
+            console.error("セーブデータの削除中にエラーが発生しました:", e);
+            alert("削除に失敗しました。");
+        }
+    }
+
     // 💡 GASからセーブスロットの情報を非同期で取得してギャラリーに差し込む関数
     async function injectSaveCardsToGallery(galleryContainer, playerName) {
         if (!playerName || !RANKING_API_URL) return;
@@ -1043,22 +1073,27 @@
             const resData = await response.json();
             
             if (resData.success && resData.slots) {
-                for (let i = 1; i <= 3; i++) {
+                // オートセーブ（0）および通常スロット（1〜3）を走査
+                for (let i = 0; i <= 3; i++) {
                     const slot = resData.slots[i.toString()];
                     if (slot) {
                         const item = document.createElement('div');
                         item.className = 'gallery-item';
-                        item.style.borderColor = "#FFD700"; // セーブカードはゴールド枠
+                        item.style.borderColor = "#FFD700"; // 全セーブカードは高級ゴールド枠
                         item.style.borderWidth = "2px";
                         item.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.25)";
                         
                         const thumbId = `save-thumb-${i}`;
                         const displayName = slot.imageName;
+                        const isAutosave = (i === 0);
+                        const badgeText = isAutosave ? "🔄 オートセーブ" : `💾 セーブ ${i}`;
                         
                         item.innerHTML = `
                             <div class="gallery-image-wrap" style="position: relative; width: 100%; height: 120px; overflow: hidden; border-radius: 8px; background: #1a1a24;">
                                 <img id="${thumbId}" src="images/save_thumbnail_default.png" alt="${displayName}" style="object-fit: cover; width: 100%; height: 100%; opacity: 0.5;">
-                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.85); color: #FFD700; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFD700; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">💾 セーブ ${i}</div>
+                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.85); color: #FFD700; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFD700; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">${badgeText}</div>
+                                <!-- 🔴 右上の赤いゴミ箱削除ボタン -->
+                                <button class="delete-save-btn" style="position: absolute; top: 8px; right: 8px; background: rgba(220, 53, 69, 0.9); color: white; border: none; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 2px 6px rgba(0,0,0,0.3); font-size: 13px; z-index: 10; transition: background 0.2s;" onmouseover="this.style.background='#c82333'" onmouseout="this.style.background='rgba(220, 53, 69, 0.9)'" onclick="event.stopPropagation(); deleteSaveSlot(${i}, '${displayName}');">🗑</button>
                             </div>
                             <div class="gallery-info" style="color: #FFD700; font-weight: bold; padding: 12px 10px; text-align: center;">
                                 ${displayName}
@@ -1066,7 +1101,7 @@
                             </div>
                         `;
                         
-                        // 非同期でサムネイル画像をGASから取得してロードする処理 [NEW] (スクリーンショット復活！)
+                        // 非同期でサムネイル画像をGASから取得してロードする処理 (スクリーンショット復活！)
                         fetch(`${RANKING_API_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${i}`)
                             .then(res => res.json())
                             .then(data => {
@@ -1086,7 +1121,8 @@
                             });
                         
                         item.onclick = function() {
-                            if (confirm(`スロット ${i} のセーブデータ（${displayName}）から再開しますか？`)) {
+                            const slotLabel = isAutosave ? "オートセーブ" : `スロット ${i}`;
+                            if (confirm(`${slotLabel} のセーブデータ（${displayName}）から再開しますか？`)) {
                                 let playerUrl = 'jigsaw_player.html';
                                 const isLocal = window.location.protocol === 'file:' || 
                                                 window.location.hostname === 'localhost' || 
@@ -1097,7 +1133,7 @@
                                 }
                                 
                                 const loadUrl = `${playerUrl}?isSaveLoad=true&slotIndex=${i}&playerName=${encodeURIComponent(playerName)}&rankingApiUrl=${encodeURIComponent(RANKING_API_URL)}`;
-                                console.log("🌐 大画面（新タブ）でゴールドセーブカードからロード起動します:", loadUrl);
+                                console.log(`🌐 大画面（新タブ）でゴールドセーブカード（${slotLabel}）からロード起動します:`, loadUrl);
                                 const playerWindow = window.open(loadUrl, '_blank');
                                 if (!playerWindow) {
                                     alert("ポップアップブロックが有効化されている可能性があります。別タブでの起動を許可してください。");

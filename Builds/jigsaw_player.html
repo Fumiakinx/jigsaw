@@ -319,7 +319,7 @@
         <span class="game-title">🧩 JIGSAW WEB</span>
         
         <button class="btn-control" onclick="togglePause()">
-            <span>⏸</span> 一時停止
+            <span>⏸</span> 一時停止・セーブ
         </button>
         
         <button class="btn-control" id="btn-show-guide" style="user-select: none; -webkit-user-select: none;">
@@ -725,11 +725,11 @@
                     unityInstance = instance;
                     statusText.innerText = "パズルを開始します...";
                     
-                    // Unityインスタンスが完全に動作するまで少しだけ待機して送信
                     setTimeout(() => {
                         if (selectedData && selectedData.isSaveLoad && selectedData.saveJson) {
                             console.log("Unityにセーブデータからのロード再開リクエストを送信します。");
                             unityInstance.SendMessage('PuzzleManager', 'LoadPuzzleFromWeb', selectedData.saveJson);
+                            sendAutosaveStateToUnity();
                             
                             // ローディング画面をフェードアウト
                             loadingOverlay.style.opacity = 0;
@@ -740,6 +740,7 @@
                             console.log("Unityにパズル開始リクエストを送信します。ピース数:", selectedData.pieceCount);
                             const message = selectedData.imageData + "," + selectedData.pieceCount;
                             unityInstance.SendMessage('PuzzleManager', 'StartPuzzleFromWeb', message);
+                            sendAutosaveStateToUnity();
                             
                             loadingOverlay.style.opacity = 0;
                             setTimeout(() => {
@@ -1020,6 +1021,15 @@
             return { h: h, s: s, l: l };
         }
 
+        function sendAutosaveStateToUnity() {
+            const autosaveToggle = document.getElementById("autosave-toggle");
+            if (unityInstance && autosaveToggle) {
+                const stateStr = autosaveToggle.checked ? "true" : "false";
+                unityInstance.SendMessage('PuzzleManager', 'SetAutosaveEnabled', stateStr);
+                console.log("🔄 Sent AutoSave state to Unity:", stateStr);
+            }
+        }
+
         // オートセーブの初期状態をLocalStorageからロードしてイベントリスナーを登録
         window.addEventListener('DOMContentLoaded', () => {
             const autosaveToggle = document.getElementById("autosave-toggle");
@@ -1030,6 +1040,7 @@
                 autosaveToggle.addEventListener("change", function() {
                     localStorage.setItem("jigsaw_autosave", this.checked);
                     console.log("🔄 Auto-save toggled:", this.checked);
+                    sendAutosaveStateToUnity();
                 });
             }
         });

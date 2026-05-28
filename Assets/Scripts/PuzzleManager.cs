@@ -79,6 +79,7 @@ public class PuzzleManager : MonoBehaviour
     private float pauseStartTime;
     private bool isPaused = false;
     private bool isFinished = false;
+    private bool autosaveEnabled = true;
 
     // タッチ＆ダブルタップ回転用の変数
     private float lastClickTime = 0f;
@@ -750,6 +751,7 @@ public class PuzzleManager : MonoBehaviour
             }
 
             Debug.Log($"[LOG] Generation Complete in {Time.realtimeSinceStartup - genStartTime:F3}s");
+            StartCoroutine(AutosaveLoop());
             yield break;
         } finally {
             isGenerating = false;
@@ -1214,6 +1216,13 @@ public class PuzzleManager : MonoBehaviour
         isFinished = true; float elapsed = (Time.time - startTime) - totalPausedTime; TimeSpan ts = TimeSpan.FromSeconds(elapsed);
 
         #if UNITY_WEBGL && !UNITY_EDITOR
+        SaveToBrowser(0, ""); // オートセーブスロットを初期化（消去）する
+        #else
+        PlayerPrefs.DeleteKey("jigsaw_save_slot_0");
+        PlayerPrefs.Save();
+        #endif
+
+        #if UNITY_WEBGL && !UNITY_EDITOR
         OnPuzzleComplete(elapsed);
         #endif
 
@@ -1498,5 +1507,24 @@ public class PuzzleManager : MonoBehaviour
         edge.nW_ratio = UnityEngine.Random.Range(0.26f, 0.31f); 
         
         return edge;
+    }
+
+    public void SetAutosaveEnabled(string stateStr)
+    {
+        autosaveEnabled = (stateStr == "true" || stateStr == "1");
+        Debug.Log($"[PuzzleManager] SetAutosaveEnabled: {autosaveEnabled}");
+    }
+
+    private IEnumerator AutosaveLoop()
+    {
+        while (!isFinished)
+        {
+            yield return new WaitForSeconds(300f); // 5分（300秒）
+            if (autosaveEnabled && !isPaused && !isFinished && !isGenerating && allPieces.Count > 0)
+            {
+                Debug.Log("[PuzzleManager] Auto-saving game progress...");
+                StartCoroutine(CaptureAndSaveCoroutine(0)); // スロット0（オートセーブ専用）に自動保存
+            }
+        }
     }
 }
