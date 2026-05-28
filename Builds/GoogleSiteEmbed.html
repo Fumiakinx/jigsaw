@@ -403,12 +403,150 @@
             padding: 12px;
             opacity: 0.6;
             cursor: not-allowed;
+        
+        /* プレミアム疑似ヘッダーの追加スタイル */
+        .premium-header {
+            width: 100%;
+            background-color: #121212;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 30px;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            font-family: 'Outfit', 'Helvetica Neue', sans-serif;
+        }
+        .header-logo {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .header-logo:hover {
+            opacity: 0.8;
+        }
+        .header-name-bar {
+            display: flex;
+            align-items: center;
+            background: rgba(18, 18, 18, 0.65);
+            border: 1px solid #7B1FA2; /* 紫のアウトライン */
+            padding: 6px 14px;
+            border-radius: 20px;
+            gap: 8px;
+            box-shadow: 0 0 10px rgba(123, 31, 162, 0.15);
+        }
+        .header-name-label {
+            font-size: 12px;
+            color: #b388ff;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+        .header-name-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
+            outline: none;
+            width: 120px;
+            text-align: center;
+        }
+        .header-name-badge {
+            background: rgba(76, 175, 80, 0.12);
+            border: 1px solid #4CAF50;
+            color: #4CAF50;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .header-menu-container {
+            position: relative;
+            display: inline-block;
+        }
+        .header-menu-btn {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            letter-spacing: 0.5px;
+            transition: color 0.2s;
+        }
+        .header-menu-btn:hover {
+            color: #4CAF50;
+        }
+        .header-menu-dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: rgba(26, 26, 36, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-width: 140px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1001;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        .header-menu-container:hover .header-menu-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .header-menu-item {
+            display: block;
+            color: #ddd;
+            padding: 12px 18px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+        .header-menu-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #4CAF50;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
+<!-- 🎭 プレミアム疑似ヘッダー -->
+<header class="premium-header">
+    <div class="header-logo" onclick="window.location.reload()">いろんなパズル</div>
+    
+    <div class="header-name-bar">
+        <span class="header-name-label">👤 プレイヤーネーム</span>
+        <input type="text" id="header-player-name" class="header-name-input" placeholder="ふみあき">
+        <span class="header-name-badge">🟢 ランキング対象</span>
+    </div>
+    
+    <div class="header-menu-container">
+        <button class="header-menu-btn">いろんなパズル ホーム ∨</button>
+        <div class="header-menu-dropdown">
+            <a href="GoogleSiteEmbed.html" class="header-menu-item" onclick="window.location.reload(); return false;">じぐそう</a>
+            <a href="../sudoku/index.html" class="header-menu-item" onclick="alert('すうどくのページへ遷移します。');">すうどく</a>
+        </div>
+    </div>
+</header>
+
+<div class="container" style="margin-top: 25px;">
     <div class="header-wrap" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
         <h2 style="margin: 0; color: #4CAF50;">🧩 じぐそう - 画像選択</h2>
         <button id="btnResumeGame" onclick="openLoadModal()" class="resume-button">
@@ -1133,8 +1271,23 @@
             // 5. ボタンのローディング表示を元に戻す
             btn.innerText = originalText;
             btn.disabled = false;
-        }
     }
+
+    // 🎭 [NEW] 疑似ヘッダーのプレイヤーネーム同期処理
+    window.addEventListener('DOMContentLoaded', () => {
+        const nameInput = document.getElementById('header-player-name');
+        if (nameInput) {
+            // 初期ロード
+            const savedName = localStorage.getItem('jigsaw_player_name') || "";
+            nameInput.value = savedName;
+
+            // 入力時に即時保存
+            nameInput.addEventListener('input', function() {
+                localStorage.setItem('jigsaw_player_name', this.value.trim());
+                console.log("[LOG: Sync] プレイヤー名をLocalStorageに保存しました:", this.value.trim());
+            });
+        }
+    });
 </script>
 </body>
 </html>
