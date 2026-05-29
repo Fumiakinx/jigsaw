@@ -252,11 +252,164 @@
         }
 
         footer {
-            margin-top: 80px;
+            margin-top: 60px;
             font-size: 12px;
             color: var(--text-secondary);
-            opacity: 0.6;
+            opacity: 0.8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            text-align: center;
+            width: 100%;
         }
+
+        /* 🌌 ULTRA PREMIUM 100% AI DEVELOPMENT PROMOTION BANNER */
+        .ai-banner {
+            background: linear-gradient(135deg, rgba(10, 10, 12, 0.85) 0%, rgba(20, 20, 31, 0.95) 100%);
+            border: 1px solid rgba(76, 175, 80, 0.2);
+            border-radius: 20px;
+            padding: 20px 25px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 35px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+        }
+        
+        .ai-banner:hover {
+            transform: translateY(-3px);
+            border-color: rgba(76, 175, 80, 0.5);
+            box-shadow: 0 20px 45px rgba(76, 175, 80, 0.15);
+        }
+
+        .ai-logo-wrap {
+            position: relative;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .ai-logo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid #4CAF50;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+            animation: logoPulse 3s infinite ease-in-out;
+        }
+
+        @keyframes logoPulse {
+            0% { transform: scale(1); box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
+            50% { transform: scale(1.04); box-shadow: 0 0 25px rgba(76, 175, 80, 0.6); }
+            100% { transform: scale(1); box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
+        }
+
+        .ai-badge-label {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            background: #2196F3;
+            color: white;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 1px 5px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            letter-spacing: 0.5px;
+        }
+
+        .ai-banner-content {
+            flex-grow: 1;
+        }
+
+        .ai-banner-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #4CAF50, #2196F3, #FF9800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .ai-banner-desc {
+            font-size: 12.5px;
+            color: #d1d1e0;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .ai-highlight-box {
+            margin-top: 5px;
+            padding: 6px 12px;
+            background: rgba(76, 175, 80, 0.08);
+            border-left: 3px solid #4CAF50;
+            border-radius: 4px;
+            color: #FFD700;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+        }
+
+        /* 🛠️ TECH CREDITS / ENGINE FOOTER BADGES */
+        .footer-tech-badges {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 5px;
+        }
+
+        .tech-badge {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: #b0b0cc;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .tech-badge:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            color: #fff;
+        }
+
+        .tech-badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .dot-antigravity { background: #4CAF50; box-shadow: 0 0 8px #4CAF50; }
+        .dot-unity { background: #2196F3; box-shadow: 0 0 8px #2196F3; }
+        .dot-mcp { background: #FF9800; box-shadow: 0 0 8px #FF9800; }
     </style>
 </head>
 <body>
@@ -265,6 +418,25 @@
         <h1>FUMI PORTAL (LOCAL TEST)</h1>
         <div class="subtitle">プレミアム・ブラウザゲーム＆ツール・プラットフォーム（ローカル開発環境）</div>
     </header>
+
+    <!-- 🚀 ULTRA PREMIUM 100% AI DEVELOPMENT PROMOTION BANNER -->
+    <div class="ai-banner">
+        <div class="ai-logo-wrap">
+            <img src="images/antigravity_logo.png" class="ai-logo-img" alt="Antigravity Logo">
+            <div class="ai-badge-label">MCP AI</div>
+        </div>
+        <div class="ai-banner-content">
+            <div class="ai-banner-title">
+                <span>🌌</span> 100% Autonomously AI Engineered
+            </div>
+            <div class="ai-banner-desc">
+                本ポータルおよび収録全システムは、AIエージェントのコラボレーションのみで自動設計・実装されました。
+                <div class="ai-highlight-box">
+                    🚨 「人間による手動修正は一切なし。100% AIコーディングによる構築です。」
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- 👤 共通プレイヤーネーム設定パネル（同一ドメイン内でシームレスに全ゲームと連携） -->
     <div class="profile-panel">
@@ -306,7 +478,22 @@
     </div>
 
     <footer>
-        &copy; 2026 Fumiakinx. Local Development Test Environment.
+        <div>&copy; 2026 Fumiakinx. Local Development Test Environment.</div>
+        <!-- 🛠️ COMMERCIAL STYLE TECH FOOTER BADGES -->
+        <div class="footer-tech-badges">
+            <div class="tech-badge">
+                <span class="tech-badge-dot dot-antigravity"></span>
+                <span>Engine: Antigravity AI</span>
+            </div>
+            <div class="tech-badge">
+                <span class="tech-badge-dot dot-unity"></span>
+                <span>Powered by Unity WebGL</span>
+            </div>
+            <div class="tech-badge">
+                <span class="tech-badge-dot dot-mcp"></span>
+                <span>Framework: MCP Systems</span>
+            </div>
+        </div>
     </footer>
 
     <script>
