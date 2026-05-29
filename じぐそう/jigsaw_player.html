@@ -236,15 +236,40 @@
         }
 
         /* プレミアムトグルスイッチのスタイル */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 20px;
+            vertical-align: middle;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.15);
+            transition: .3s;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
         .switch input:checked + .slider {
             background-color: #4CAF50;
+            border-color: #4CAF50;
         }
         
         .slider::before {
             position: absolute;
             content: "";
-            height: 14px;
-            width: 14px;
+            height: 12px;
+            width: 12px;
             left: 3px;
             bottom: 3px;
             background-color: white;
@@ -316,14 +341,14 @@
 
     <!-- プレミアムコントロールバー -->
     <div class="control-bar" id="control-bar">
-        <span class="game-title">🧩 JIGSAW WEB <span style="font-size: 9px; color: #a0a0a5; font-weight: normal; margin-left: 6px; border: 1px solid rgba(255,255,255,0.15); padding: 1px 4px; border-radius: 4px; vertical-align: middle;">v1.7-FixCapture</span></span>
+        <span class="game-title">🧩 JIGSAW WEB</span>
         
         <button class="btn-control" onclick="togglePause()">
             <span>⏸</span> 一時停止・セーブ
         </button>
         
         <button class="btn-control" id="btn-show-guide" style="user-select: none; -webkit-user-select: none;">
-            <span>👁</span> 完成図表示
+            <span>👁</span> 完成図
         </button>
 
         <button class="btn-control" onclick="openInstructionsModal()">
@@ -331,10 +356,20 @@
         </button>
 
         <button class="btn-control" onclick="toggleFullScreen()">
-            <span>📺</span> フルスクリーン
+            <span>📺</span> 全画面
         </button>
+
+        <!-- 🔄 オートセーブスイッチ -->
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #a0a0a5;">
+            <span>🔄 オートセーブ</span>
+            <label class="switch">
+                <input type="checkbox" id="autosave-toggle" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+
         <button class="btn-control" onclick="window.close()">
-            <span>❌</span> ゲームを閉じる
+            <span>❌</span> 閉じる
         </button>
     </div>
 
@@ -448,6 +483,7 @@
                 const imageId = urlParams.get('imageId');
                 const pieceCount = urlParams.get('pieceCount');
                 const playerName = urlParams.get('playerName');
+                const imageNameParam = urlParams.get('imageName');
                 const isSaveLoad = urlParams.get('isSaveLoad');
                 const slotIndex = urlParams.get('slotIndex');
                 const gasApiUrlParam = urlParams.get('gasApiUrl');
@@ -562,6 +598,7 @@
                         pieceCount: parseInt(pieceCount || "96", 10),
                         playerName: playerName || "",
                         imageId: imageId,
+                        imageName: imageNameParam || "",
                         rankingApiUrl: RANKING_URL
                     };
                     resolve(true);
@@ -697,6 +734,19 @@
             window.saveJigsawData = async function(slotIndex, jsonDataStr) {
                 console.log(`[LOG 4: JS] saveJigsawData受信。スロット: ${slotIndex}, 受信文字数: ${jsonDataStr ? jsonDataStr.length : 0}`);
                 try {
+                    const playerName = (selectedData && selectedData.playerName) ? selectedData.playerName.trim() : "匿名";
+                    const storageKey = `jigsaw_save_${playerName}_slot_${slotIndex}`;
+                    
+                    // 空文字列が渡された場合はセーブデータ消去（クリア時）として処理
+                    if (!jsonDataStr || jsonDataStr.trim() === "") {
+                        console.log(`[LocalStorage-Delete] セーブデータを消去します。キー: ${storageKey}`);
+                        localStorage.removeItem(storageKey);
+                        if (typeof window.requestSlotDescriptions === 'function') {
+                            await window.requestSlotDescriptions();
+                        }
+                        return;
+                    }
+
                     let d = JSON.parse(jsonDataStr);
                     let originalImageName = d.imageName || "";
                     
@@ -711,12 +761,10 @@
                     let enc = encryptSaveData(modifiedJsonDataStr);
                     console.log(`[LOG 5: JS] 暗号化成功。暗号化後の文字数: ${enc.length}`);
                     
-                    const playerName = (selectedData && selectedData.playerName) ? selectedData.playerName.trim() : "匿名";
-                    
                     // 表記用の画像名整形
                     let displayImgName = originalImageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
                     if (displayImgName.startsWith("data:image/")) {
-                        displayImgName = (selectedData && selectedData.imageId) ? `ドライブ画像: ${selectedData.imageId}` : "カスタム画像";
+                        displayImgName = (selectedData && selectedData.imageName) ? selectedData.imageName : ((selectedData && selectedData.imageId) ? `ドライブ画像: ${selectedData.imageId}` : "カスタム画像");
                     }
                     
                     console.log(`[LocalStorage-Save] セーブデータをブラウザに保存します。名: ${playerName}, スロット: ${slotIndex}, 画像: ${displayImgName}`);
@@ -731,7 +779,6 @@
                         saveDataJson: enc
                     };
                     
-                    const storageKey = `jigsaw_save_${playerName}_slot_${slotIndex}`;
                     localStorage.setItem(storageKey, JSON.stringify(saveMeta));
                     
                     console.log(`[LOG 6: JS] LocalStorageへのセーブデータ書き込み完了！ キー: ${storageKey}`);

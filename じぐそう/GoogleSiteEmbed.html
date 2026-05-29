@@ -364,7 +364,7 @@
 <body>
     <div class="container">
     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3d3d3d; padding-bottom: 15px; margin-bottom: 20px; width: 100%; box-sizing: border-box;">
-        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px; color: #4CAF50;">🧩 じぐそう - 画像選択 <span style="font-size: 11px; color: #888; font-weight: normal; margin-left: 8px; border: 1px solid rgba(76, 175, 80, 0.3); padding: 2px 6px; border-radius: 4px; vertical-align: middle;">v1.7-FixCapture</span></h2>
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px; color: #4CAF50;">🧩 じぐそう - 画像選択</h2>
         <a href="../../index.html" style="color: #4CAF50; text-decoration: none; font-size: 14px; font-weight: bold; padding: 8px 16px; border: 1px solid #4CAF50; border-radius: 8px; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease; background: transparent;" onmouseover="this.style.backgroundColor='rgba(76, 175, 80, 0.1)';" onmouseout="this.style.backgroundColor='transparent';">🏠 ポータルTOPへ戻る</a>
     </div>
     
@@ -636,9 +636,8 @@
         
         // GASからセーブスロット情報を取得して、セーブカードを画像一覧の左上に非同期で挿入する [NEW]
         const currentName = document.getElementById('playerNameInput').value.trim();
-        if (currentName) {
-            injectSaveCardsToGallery(galleryContainer, currentName);
-        }
+        const targetName = currentName || "匿名"; // 空欄（匿名）の場合は「匿名」名義でロード
+        injectSaveCardsToGallery(galleryContainer, targetName);
     }
 
     // 超高精度モバイル・タブレット端末判定 (Fire HD カスタム環境・iPad Pro PC偽装モード・物理タッチ端末完全対応)
@@ -717,14 +716,30 @@
         loadGalleryFromGAS();
 
         // 🌟 フォーカス復帰時または別タブでのセーブ更新時にギャラリーを自動更新するリスナー
+        // 🌟 フォーカス復帰時、タブ切り替え（visibilitychange）、または別タブでのセーブ更新時にギャラリーを自動更新するリスナー
+        function refreshSaveCardsOnly() {
+            const galleryContainer = document.getElementById('gallery');
+            const nameInput = document.getElementById('playerNameInput');
+            if (galleryContainer && nameInput) {
+                const playerName = nameInput.value.trim() || "匿名"; // 空欄（匿名）の場合は「匿名」名義でロード
+                injectSaveCardsToGallery(galleryContainer, playerName);
+            }
+        }
+
         window.addEventListener('focus', () => {
-            console.log("🔄 フォーカス検知：ギャラリーを最新化します");
-            loadGalleryFromGAS();
+            console.log("🔄 フォーカス検知：セーブデータを最新化します");
+            refreshSaveCardsOnly();
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                console.log("🔄 タブアクティブ化検知：セーブデータを最新化します");
+                refreshSaveCardsOnly();
+            }
         });
         window.addEventListener('storage', (e) => {
             if (e.key && e.key.startsWith('jigsaw_save_')) {
-                console.log("🔄 LocalStorage変更検知：ギャラリーを最新化します");
-                loadGalleryFromGAS();
+                console.log("🔄 LocalStorage変更検知：セーブデータを最新化します");
+                refreshSaveCardsOnly();
             }
         });
 
@@ -1047,7 +1062,7 @@
         try {
             // クエリパラメータを構築して新しいタブで開く
             const playerName = document.getElementById('playerNameInput').value.trim();
-            const launchUrl = `${playerUrl}?imageId=${encodeURIComponent(finalUrl)}&pieceCount=${pieceCount}&playerName=${encodeURIComponent(playerName)}&gasApiUrl=${encodeURIComponent(GAS_API_URL)}&rankingApiUrl=${encodeURIComponent(RANKING_API_URL)}`;
+            const launchUrl = `${playerUrl}?imageId=${encodeURIComponent(finalUrl)}&pieceCount=${pieceCount}&playerName=${encodeURIComponent(playerName)}&imageName=${encodeURIComponent(selectedImageName)}&gasApiUrl=${encodeURIComponent(GAS_API_URL)}&rankingApiUrl=${encodeURIComponent(RANKING_API_URL)}`;
             
             console.log("🌐 大画面（新タブ）でパズルを起動します:", launchUrl);
             const playerWindow = window.open(launchUrl, '_blank');
@@ -1097,11 +1112,7 @@
 
     // 💾 [NEW] ロード用スロット選択モーダルの操作関数
     async function openLoadModal() {
-        const playerName = document.getElementById('playerNameInput').value.trim();
-        if (!playerName) {
-            alert("プレイヤー名を入力してください。匿名プレイ状態ではセーブデータのロードはできません。");
-            return;
-        }
+        const playerName = document.getElementById('playerNameInput').value.trim() || "匿名";
         
         const container = document.getElementById('loadSlotsContainer');
         container.innerHTML = `
@@ -1115,21 +1126,31 @@
         
         try {
             container.innerHTML = "";
-            for (let i = 1; i <= 3; i++) {
+            for (let i = 0; i <= 3; i++) {
                 const storageKey = `jigsaw_save_${playerName}_slot_${i}`;
                 const savedDataStr = localStorage.getItem(storageKey);
                 let slot = null;
                 if (savedDataStr) {
                     slot = JSON.parse(savedDataStr);
                 }
+                
+                // オートセーブ（0）でデータがない場合は、リストに空枠を表示しない
+                if (i === 0 && !slot) {
+                    continue;
+                }
+                
                 let slotHtml = "";
                 
                 if (slot) {
                     const displayName = slot.imageName;
+                    const isAutosave = (i === 0);
+                    const slotLabel = isAutosave ? "🔄 オートセーブ" : `💾 スロット ${i}`;
+                    const slotColor = isAutosave ? "#FF9800" : "#FFF";
+                    
                     slotHtml = `
                         <div class="load-slot-card" onclick="triggerLoadSlot(${i})" style="display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.25);">
                             <div style="flex: 1; min-width: 0; text-align: left;">
-                                <div style="font-weight: bold; font-size: 14px; color: #FFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">スロット ${i}: ${displayName}</div>
+                                <div style="font-weight: bold; font-size: 14px; color: ${slotColor}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${slotLabel}: ${displayName}</div>
                                 <div style="font-size: 11px; color: #aaa; margin-top: 4px;">ピース数: ${slot.targetPieces}P | 保存日時: ${slot.saveTime}</div>
                             </div>
                             <div style="font-size: 18px; color: #FFD700; padding-right: 5px;">▶</div>
@@ -1208,15 +1229,19 @@
         try {
             console.log(`[LocalStorage-SaveCard] ギャラリー用のセーブカードをLocalStorageから取得します。名: ${playerName}`);
             
-            // 通常スロット（1〜3）を走査
-            for (let i = 1; i <= 3; i++) {
+            // 既存のセーブカードをギャラリーから綺麗に消去する
+            const existingSaveCards = galleryContainer.querySelectorAll('.save-gallery-item');
+            existingSaveCards.forEach(card => card.remove());
+            
+            // オートセーブ（0）および通常スロット（1〜3）を走査
+            for (let i = 0; i <= 3; i++) {
                 const storageKey = `jigsaw_save_${playerName}_slot_${i}`;
                 const savedDataStr = localStorage.getItem(storageKey);
                 if (savedDataStr) {
                     const slot = JSON.parse(savedDataStr);
                     if (slot) {
                         const item = document.createElement('div');
-                        item.className = 'gallery-item';
+                        item.className = 'gallery-item save-gallery-item';
                         item.style.borderColor = "#FFD700"; // 全セーブカードは高級ゴールド枠
                         item.style.borderWidth = "2px";
                         item.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.25)";
@@ -1245,7 +1270,7 @@
                             if (dec) {
                                 try {
                                     const saveData = JSON.parse(dec);
-                                    const imgEl = document.getElementById(thumbId);
+                                    const imgEl = item.querySelector("#" + thumbId);
                                     if (imgEl && saveData.screenshotBase64) {
                                         imgEl.src = "data:image/jpeg;base64," + saveData.screenshotBase64;
                                         imgEl.style.opacity = "1.0"; // ロード成功したら不透明度を戻す

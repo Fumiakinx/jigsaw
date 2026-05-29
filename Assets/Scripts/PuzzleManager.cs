@@ -80,6 +80,7 @@ public class PuzzleManager : MonoBehaviour
     private bool isPaused = false;
     private bool isFinished = false;
     private bool autosaveEnabled = false;
+    private string lastPauseScreenshotBase64 = ""; // 一時停止（プルダウン）時に事前撮影した極小サムネイル
 
     // タッチ＆ダブルタップ回転用の変数
     private float lastClickTime = 0f;
@@ -541,180 +542,59 @@ public class PuzzleManager : MonoBehaviour
         StartCoroutine(CaptureAndSaveCoroutine(slotIndex));
     }
 
-    private IEnumerator CaptureAndSaveCoroutine(int slotIndex)
+    private string CaptureMinimalScreenshot()
     {
-        // 🌟 WebGLでも確実にCPU読み取り（縮小サンプリング）可能な高互換の手動ReadPixels処理に統一
-        int sw = Screen.width;
-        int sh = Screen.height;
-        int captureW = Mathf.Min(sw, Mathf.RoundToInt(sh * (16f / 9f)));
-        int captureH = Mathf.RoundToInt(captureW * (9f / 16f));
-        int startX = (sw - captureW) / 2;
-        int startY = (sh - captureH) / 2;
-
-        Debug.Log($"[CAPTURE_DEBUG] [v1.7-FixCapture] --- Capture Start (RenderTexture Method) ---");
-        Debug.Log($"[CAPTURE_DEBUG] [v1.7-FixCapture] Screen dimensions: {sw}x{sh}");
-        Debug.Log($"[CAPTURE_DEBUG] [v1.7-FixCapture] Calculated capture area: Rect(startX: {startX}, startY: {startY}, width: {captureW}, height: {captureH})");
-
-        // 🌟 1. UIの非表示化（このコルーチン内の処理はすべて同一フレーム内で同期的に行われるため、ユーザーの画面上には一切チラつきが発生しません）
-        UnityEngine.UIElements.Label watermark = null;
-        if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
+        try
         {
-            var root = pauseUIDoc.rootVisualElement;
-            var pauseMenu = root.Q<VisualElement>("PauseMenu");
-            var savePopup = root.Q<VisualElement>("SavePopup");
-            var title = root.Q<UnityEngine.UIElements.Label>(className: "pause-title-label");
-            var returnBtn = root.Q<Button>("ReturnToSelectionButton");
+            int captureW = 240;
+            int captureH = 135;
 
-            if (pauseMenu != null) pauseMenu.style.display = DisplayStyle.None;
-            if (savePopup != null) savePopup.style.display = DisplayStyle.None;
-            if (title != null) title.style.display = DisplayStyle.None;
-            if (returnBtn != null) returnBtn.style.display = DisplayStyle.None;
+            RenderTexture tempRT = RenderTexture.GetTemporary(captureW, captureH, 24);
+            RenderTexture previousActive = RenderTexture.active;
+            Texture2D screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
 
-            watermark = root.Q<UnityEngine.UIElements.Label>("SaveWatermark");
-            if (watermark != null)
+            if (Camera.main != null)
             {
-                watermark.text = $"SLOT {slotIndex}";
-                watermark.style.display = DisplayStyle.Flex;
-            }
-        }
-        if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
-            hudUIDoc.rootVisualElement.style.display = DisplayStyle.None;
+                var cam = Camera.main;
+                cam.targetTexture = tempRT;
+                RenderTexture.active = tempRT;
 
-        // 🌟 2. RenderTextureを作成し、メインカメラのレンダリング先を一時的に差し替える
-        RenderTexture tempRT = RenderTexture.GetTemporary(captureW, captureH, 24);
-        RenderTexture previousActive = RenderTexture.active;
-        Texture2D screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
+                cam.Render();
 
-        if (Camera.main != null)
-        {
-            var cam = Camera.main;
-            var rp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline;
-            Debug.Log($"[CAPTURE_DEBUG] RenderPipeline: {(rp != null ? rp.GetType().Name : "Built-in")}");
-            Debug.Log($"[CAPTURE_DEBUG] RenderTexture.active before setting: {(RenderTexture.active != null ? RenderTexture.active.name : "null")}");
-
-            // カメラの出力先を一時的にRenderTextureへ変更
-            cam.targetTexture = tempRT;
-            RenderTexture.active = tempRT;
-
-            // オフスクリーンでレンダリング強制実行（UIが非表示になったパズル盤面のみが描画されます）
-            cam.Render();
-            Debug.Log("[CAPTURE_DEBUG] Offscreen Camera.Render() completed.");
-
-            // 🌟 GPU上のRenderTextureがアクティブな状態で同期的にReadPixelsを実行（WebGLバインド順序の矛盾を防止）
-            try
-            {
                 screenTex.ReadPixels(new Rect(0, 0, captureW, captureH), 0, 0);
                 screenTex.Apply();
-                Debug.Log("[CAPTURE_DEBUG] [v1.7-FixCapture] Offscreen ReadPixels completed successfully.");
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"[CAPTURE_DEBUG] [v1.7-FixCapture] Error during RenderTexture ReadPixels: {ex.Message}");
+
+                cam.targetTexture = null;
             }
 
-            // カメラの出力先を元に戻す（画面上の描画を復帰）
-            cam.targetTexture = null;
+            RenderTexture.active = previousActive;
+            RenderTexture.ReleaseTemporary(tempRT);
+
+            byte[] imgBytes = screenTex.EncodeToJPG(75);
+            string base64Str = System.Convert.ToBase64String(imgBytes);
+
+            Destroy(screenTex);
+            return base64Str;
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[Capture] Minimal screenshot failed: {ex.Message}");
+            return "";
+        }
+    }
+
+    private IEnumerator CaptureAndSaveCoroutine(int slotIndex)
+    {
+        // 事前撮影されたBase64文字列を取得（オートセーブ時のみ、ポーズ中でパズルがアクティブな状態であるため、その場で撮影する）
+        string base64Str = "";
+        if (slotIndex == 0)
+        {
+            base64Str = CaptureMinimalScreenshot();
         }
         else
         {
-            Debug.LogError("[CAPTURE_DEBUG] Camera.main is null!");
+            base64Str = lastPauseScreenshotBase64;
         }
-
-        // RenderTextureのクリーンアップとアクティブバッファの復元
-        RenderTexture.active = previousActive;
-        RenderTexture.ReleaseTemporary(tempRT);
-
-        // 🌟 4. UI表示状態を完全に元の状態に復旧する（同一フレームの同期処理のため、プレイヤーの画面上は一切チラつきません）
-        if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
-        {
-            var root = pauseUIDoc.rootVisualElement;
-            var pauseMenu = root.Q<VisualElement>("PauseMenu");
-            var savePopup = root.Q<VisualElement>("SavePopup");
-            var title = root.Q<Label>(className: "pause-title-label");
-            var returnBtn = root.Q<Button>("ReturnToSelectionButton");
-
-            if (pauseMenu != null) pauseMenu.style.display = DisplayStyle.None; // セーブダイアログを最前面に保つ
-            if (savePopup != null) savePopup.style.display = DisplayStyle.Flex;
-            if (title != null) title.style.display = DisplayStyle.Flex;
-            if (returnBtn != null) returnBtn.style.display = DisplayStyle.Flex;
-
-            if (watermark != null)
-                watermark.style.display = DisplayStyle.None;
-        }
-        if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
-            hudUIDoc.rootVisualElement.style.display = DisplayStyle.Flex;
-
-        // 🌟 【詳細ログ】サンプリングしたピクセルのカラー値を検証
-        if (screenTex != null)
-        {
-            Color cCenter = screenTex.GetPixel(captureW / 2, captureH / 2);
-            Color cTopLeft = screenTex.GetPixel(0, captureH - 1);
-            Color cBottomRight = screenTex.GetPixel(captureW - 1, 0);
-            Color cMidLeft = screenTex.GetPixel(captureW / 4, captureH / 2);
-            Color cMidRight = screenTex.GetPixel(3 * captureW / 4, captureH / 2);
-
-            Debug.Log($"[CAPTURE_DEBUG] screenTex size: {screenTex.width}x{screenTex.height}");
-            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - TopLeft: {cTopLeft}");
-            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - Center: {cCenter}");
-            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - BottomRight: {cBottomRight}");
-            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - MidLeft: {cMidLeft}");
-            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - MidRight: {cMidRight}");
-
-            bool allSame = (cTopLeft == cCenter) && (cCenter == cBottomRight) && (cBottomRight == cMidLeft) && (cMidLeft == cMidRight);
-            Debug.Log($"[CAPTURE_DEBUG] Verification - Are all sampled pixels identical color? : {allSame}");
-        }
-
-        // 読み込み容量削減のため、さらに極小サムネイル(240x135)に縮小して軽量化
-        Texture2D thumbTex = new Texture2D(240, 135, TextureFormat.RGB24, false);
-        // 単純ピクセルサンプリングによる高速縮小
-        for (int y = 0; y < thumbTex.height; y++)
-        {
-            for (int x = 0; x < thumbTex.width; x++)
-            {
-                float u = (float)x / thumbTex.width;
-                float v = (float)y / thumbTex.height;
-                Color col = screenTex.GetPixelBilinear(u, v);
-                thumbTex.SetPixel(x, y, col);
-            }
-        }
-        thumbTex.Apply();
-
-        byte[] imgBytes = thumbTex.EncodeToJPG(75); // 画質75%の軽量JPGでエンコード
-        string base64Str = System.Convert.ToBase64String(imgBytes);
-
-        Debug.Log($"[CAPTURE_DEBUG] thumbTex size: {thumbTex.width}x{thumbTex.height}");
-        Debug.Log($"[CAPTURE_DEBUG] JPG encoded size: {imgBytes.Length} bytes");
-        Debug.Log($"[CAPTURE_DEBUG] Base64 string length: {base64Str.Length}");
-        if (base64Str.Length > 40)
-        {
-            Debug.Log($"[CAPTURE_DEBUG] Base64 start (40 chars): {base64Str.Substring(0, 40)}");
-        }
-
-        // クリーンアップ
-        Destroy(screenTex);
-        Destroy(thumbTex);
-
-        // 🌟 キャプチャ撮影完了後に、表示状態を完全に元の通常状態に復旧する（UIバインドは一切破壊されません）
-        if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
-        {
-            var root = pauseUIDoc.rootVisualElement;
-            var pauseMenu = root.Q<VisualElement>("PauseMenu");
-            var savePopup = root.Q<VisualElement>("SavePopup");
-            var title = root.Q<Label>(className: "pause-title-label");
-            var returnBtn = root.Q<Button>("ReturnToSelectionButton");
-
-            if (pauseMenu != null) pauseMenu.style.display = DisplayStyle.None; // セーブ実行直後なのでポップアップを優先表示
-            if (savePopup != null) savePopup.style.display = DisplayStyle.Flex; // ポップアップを最前面に復帰
-            if (title != null) title.style.display = DisplayStyle.Flex;
-            if (returnBtn != null) returnBtn.style.display = DisplayStyle.Flex;
-
-            if (watermark != null)
-            {
-                watermark.style.display = DisplayStyle.None; // 透かしテキストは消去する
-            }
-        }
-        if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
-            hudUIDoc.rootVisualElement.style.display = DisplayStyle.Flex;
 
         // セーブデータ（JSON）の構築
         PuzzleSaveData saveData = new PuzzleSaveData();
@@ -1518,6 +1398,10 @@ public class PuzzleManager : MonoBehaviour
                 }
             }
             if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false); // ポーズ中はHUDを非表示に
+            
+            // 🌟 パズル非アクティブ化の直前のタイミングで、極小サムネイルを事前撮影
+            lastPauseScreenshotBase64 = CaptureMinimalScreenshot();
+
             foreach (var p in allPieces) if (p != null && p.transform.parent != null) p.transform.parent.gameObject.SetActive(false);
         } else {
             totalPausedTime += (Time.time - pauseStartTime);
@@ -1767,7 +1651,7 @@ public class PuzzleManager : MonoBehaviour
     {
         while (!isFinished)
         {
-            yield return new WaitForSeconds(300f); // 5分（300秒）
+            yield return new WaitForSeconds(600f); // 10分（600秒）
             if (autosaveEnabled && !isPaused && !isFinished && !isGenerating && allPieces.Count > 0)
             {
                 Debug.Log("[PuzzleManager] Auto-saving game progress...");
