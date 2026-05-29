@@ -20,16 +20,25 @@
                 <ui:Label text="セーブスロットを選択してください" class="save-popup-title" />
                 <ui:VisualElement class="save-slots-list">
                     <ui:Button name="SlotButton1" class="save-slot-btn">
-                        <ui:Label text="スロット 1" class="slot-title" />
-                        <ui:Label name="SlotDesc1" text="空きスロット" class="slot-desc" />
+                        <ui:VisualElement name="SlotThumb1" class="slot-thumb" />
+                        <ui:VisualElement class="slot-info-container">
+                            <ui:Label text="スロット 1" class="slot-title" />
+                            <ui:Label name="SlotDesc1" text="空きスロット" class="slot-desc" />
+                        </ui:VisualElement>
                     </ui:Button>
                     <ui:Button name="SlotButton2" class="save-slot-btn">
-                        <ui:Label text="スロット 2" class="slot-title" />
-                        <ui:Label name="SlotDesc2" text="空きスロット" class="slot-desc" />
+                        <ui:VisualElement name="SlotThumb2" class="slot-thumb" />
+                        <ui:VisualElement class="slot-info-container">
+                            <ui:Label text="スロット 2" class="slot-title" />
+                            <ui:Label name="SlotDesc2" text="空きスロット" class="slot-desc" />
+                        </ui:VisualElement>
                     </ui:Button>
                     <ui:Button name="SlotButton3" class="save-slot-btn">
-                        <ui:Label text="スロット 3" class="slot-title" />
-                        <ui:Label name="SlotDesc3" text="空きスロット" class="slot-desc" />
+                        <ui:VisualElement name="SlotThumb3" class="slot-thumb" />
+                        <ui:VisualElement class="slot-info-container">
+                            <ui:Label text="スロット 3" class="slot-title" />
+                            <ui:Label name="SlotDesc3" text="空きスロット" class="slot-desc" />
+                        </ui:VisualElement>
                     </ui:Button>
                 </ui:VisualElement>
                 <ui:Button name="ClosePopupButton" text="キャンセル" class="save-popup-close-btn" />

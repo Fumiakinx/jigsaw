@@ -140,10 +140,28 @@
     border-width: 2px;
     border-color: rgba(255, 255, 255, 0.2);
     border-radius: 12px;
-    padding: 15px 25px;
+    padding: 10px 20px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 20px;
+    transition-duration: 0.15s;
+}
+
+.slot-thumb {
+    width: 120px;
+    height: 68px;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.slot-info-container {
+    flex-grow: 1;
     align-items: flex-start;
     justify-content: center;
-    transition-duration: 0.15s;
 }
 
 .save-slot-btn:hover {

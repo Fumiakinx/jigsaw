@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fumi Game Portal (Local Test)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color-start: #0a0a0c;
+            --bg-color-end: #14141f;
+            --accent-color: #4CAF50;
+            --accent-color-hover: #45a049;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.06);
+            --card-border-hover: rgba(76, 175, 80, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #9a9ab0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-color-start) 0%, var(--bg-color-end) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        /* 👤 グローバルプレイヤープロフィール設定パネル */
+        .profile-panel {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px 30px;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .profile-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .profile-desc {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .profile-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .profile-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: bold;
+            outline: none;
+            width: 200px;
+            transition: all 0.3s ease;
+        }
+
+        .profile-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+        }
+
+        .save-indicator {
+            font-size: 12px;
+            color: var(--accent-color);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-weight: bold;
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+        }
+
+        /* 🎮 ゲームカードグリッド */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1100px;
+            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 35px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            backdrop-filter: blur(15px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: var(--card-border-hover);
+            box-shadow: 0 20px 40px rgba(76, 175, 80, 0.1);
+        }
+
+        .card-icon {
+            font-size: 40px;
+            margin-bottom: 5px;
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        .card-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .card:hover .card-btn {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        /* 💡 特色テーマカラー設定 (個別) */
+        .card-sudoku:hover {
+            box-shadow: 0 20px 40px rgba(33, 150, 243, 0.1);
+            border-color: rgba(33, 150, 243, 0.3);
+        }
+        .card-sudoku:hover .card-btn {
+            background: #2196F3;
+            border-color: #2196F3;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .card-guitar:hover {
+            box-shadow: 0 20px 40px rgba(255, 152, 0, 0.1);
+            border-color: rgba(255, 152, 0, 0.3);
+        }
+        .card-guitar:hover .card-btn {
+            background: #FF9800;
+            border-color: #FF9800;
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+        }
+
+        /* アニメーション */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        footer {
+            margin-top: 80px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>FUMI PORTAL (LOCAL TEST)</h1>
+        <div class="subtitle">プレミアム・ブラウザゲーム＆ツール・プラットフォーム（ローカル開発環境）</div>
+    </header>
+
+    <!-- 👤 共通プレイヤーネーム設定パネル（同一ドメイン内でシームレスに全ゲームと連携） -->
+    <div class="profile-panel">
+        <div class="profile-info">
+            <span class="profile-label">👤 プレイヤープロフィール</span>
+            <span class="profile-desc">ここで設定した名前は、すべてのゲームで自動共有されます</span>
+        </div>
+        <div class="profile-input-wrap">
+            <span id="saveIndicator" class="save-indicator">✓ 自動保存完了</span>
+            <input type="text" id="globalPlayerName" class="profile-input" placeholder="名前を入力してください" maxlength="10">
+        </div>
+    </div>
+
+    <!-- 🎮 ゲームコンテンツ一覧 -->
+    <div class="grid">
+        <!-- 1. Jigsaw -->
+        <a href="じぐそう/GoogleSiteEmbed.html" class="card card-jigsaw">
+            <div class="card-icon">🧩</div>
+            <div class="card-title">じぐそう (Jigsaw Puzzle)</div>
+            <div class="card-desc">お気に入りの画像を美しいジグソーパズルに自動分割。立体ベベルシェーダーとリアルなドロップシャドウが織りなす、極上のパズル体験。</div>
+            <div class="card-btn">パズルを遊ぶ ➔</div>
+        </a>
+
+        <!-- 2. Sudoku (ローカルで他のワークスペースのファイルを参照できるように設定も可能ですが、リンクとして表示) -->
+        <div class="card card-sudoku" style="opacity: 0.6; cursor: not-allowed;" title="Sudokuは別のフォルダにあります。">
+            <div class="card-icon">🔢</div>
+            <div class="card-title">数独 (Sudoku Classic)</div>
+            <div class="card-desc">シンプルで洗練されたデザイン。4つの難易度とインテリジェント・ベゼルによる極めて高い操作性を実現した数独ゲーム。（※Jigsaw開発環境外）</div>
+            <div class="card-btn" style="pointer-events: none;">数独を遊ぶ（別プロジェクト）</div>
+        </div>
+
+        <!-- 3. Guitar Tab Editor -->
+        <div class="card card-guitar" style="opacity: 0.6; cursor: not-allowed;" title="Guitar Tab Editorは別のフォルダにあります。">
+            <div class="card-icon">🎸</div>
+            <div class="card-title">Guitar Tab Editor</div>
+            <div class="card-desc">直感的で美しいデザインのギタータブ譜エディター。演奏と作曲、アイディアのスケッチをより快適にする高機能Webツール。（※Jigsaw開発環境外）</div>
+            <div class="card-btn" style="pointer-events: none;">エディタを起動（別プロジェクト）</div>
+        </div>
+    </div>
+
+    <footer>
+        &copy; 2026 Fumiakinx. Local Development Test Environment.
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nameInput = document.getElementById('globalPlayerName');
+            const saveIndicator = document.getElementById('saveIndicator');
+
+            // 1. ローカルストレージ（同一オリジン）から保存名を取得してバインド
+            const savedName = localStorage.getItem('jigsaw_player_name');
+            if (savedName) {
+                nameInput.value = savedName;
+            }
+
+            // 2. 入力変更時に自動保存 ＆ フェードエフェクト
+            let saveTimeout = null;
+            nameInput.addEventListener('input', () => {
+                const nameVal = nameInput.value.trim();
+                localStorage.setItem('jigsaw_player_name', nameVal);
+                
+                // ポータル独自の「保存完了」インジケータ表示
+                if (saveTimeout) clearTimeout(saveTimeout);
+                saveIndicator.classList.add('show');
+                saveTimeout = setTimeout(() => {
+                    saveIndicator.classList.remove('show');
+                }, 1500);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -403,9 +403,13 @@
                 <div style="color: #ff6b6b; font-weight: bold; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
                     <span>⚠️</span> 自動開始に失敗しました
                 </div>
+                <!-- 🌟 エラー時のパズル画像プレビュー -->
+                <div id="error-preview-container" style="display: none; margin-bottom: 15px; text-align: center;">
+                    <img id="error-preview-img" src="" style="max-width: 150px; max-height: 100px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 10px rgba(0,0,0,0.3);" alt="プレビュー">
+                </div>
                 <div style="font-size: 11px; color: #aaa; margin-bottom: 20px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); max-height: 100px; overflow-y: auto;">
                     <strong>原因ログ:</strong><br>
-                    <span id="error-log-text">親画面からの画像データの受信（Base64転送）に失敗したか、制限時間（5秒）を超過しました。</span>
+                    <span id="error-log-text">親画面からの画像データ受信（Base64転送）に失敗したか、制限時間（5秒）を超過しました。</span>
                 </div>
                 <button class="btn-control" onclick="skipToDefaultGame()" style="background: #4CAF50; color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; width: 100%; justify-content: center; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3); transition: all 0.2s ease;">
                     <span>🎮</span> ゲーム内の画像で遊ぶ
@@ -427,6 +431,21 @@
         
         var unityInstance = null;
         var selectedData = null;
+
+        // [NEW] セーブデータ難読化（暗号化）ヘルパー（グローバル化）
+        function encryptSaveData(dataStr) {
+            return btoa(unescape(encodeURIComponent(dataStr)));
+        }
+
+        // [NEW] セーブデータ復号ヘルパー（グローバル化）
+        function decryptSaveData(encryptedStr) {
+            try {
+                return decodeURIComponent(escape(atob(encryptedStr)));
+            } catch(e) {
+                console.error("[JigsawPlayer] 復号エラー:", e);
+                return null;
+            }
+        }
 
         // 1. 親ウィンドウからのデータ受け渡しを待機 (クエリパラメータ優先 ➔ ポーリング処理・クロスドメイン安全対策)
         function checkParentData() {
@@ -551,16 +570,13 @@
         }
 
         // 2. Unityのロード設定
-        // 「じぐそう」フォルダから起動される場合は、Buildsフォルダへの相対パスを指定
-        var buildUrl = "../Builds/Build"; 
-        var loaderUrl = "../Builds/Build/Builds.loader.js";
+        var buildUrl = "../Builds/WebGL/Jigsaw/Build"; 
+        var loaderUrl = "../Builds/WebGL/Jigsaw/Build/Jigsaw.loader.js";
         
-        // 開発環境と本番サーバー環境の両方に対応するためのパス自動検出ロジックを追加
-        // 同一フォルダ内にBuildが存在する場合はそれを使用し、無ければ "../Builds/" を見に行く
         var checkConfig = {
-            dataUrl: "Build/Builds.data",
-            frameworkUrl: "Build/Builds.framework.js",
-            codeUrl: "Build/Builds.wasm"
+            dataUrl: "Build/Jigsaw.data",
+            frameworkUrl: "Build/Jigsaw.framework.js",
+            codeUrl: "Build/Jigsaw.wasm"
         };
         
         var config = {
@@ -627,22 +643,8 @@
 
             var script = document.createElement("script");
             script.src = loaderUrl;
-            // [NEW] セーブデータ難読化（暗号化）ヘルパー
-            function encryptSaveData(dataStr) {
-                return btoa(unescape(encodeURIComponent(dataStr)));
-            }
 
-            // [NEW] セーブデータ復号ヘルパー
-            function decryptSaveData(encryptedStr) {
-                try {
-                    return decodeURIComponent(escape(atob(encryptedStr)));
-                } catch(e) {
-                    console.error("[JigsawPlayer] 復号エラー:", e);
-                    return null;
-                }
-            }
-
-            // [NEW] Unityから呼ばれるグローバル関数 (GAS直通セーブ＆ロード)
+            // [NEW] Unityから呼ばれるグローバル関数 (LocalStorageセーブ)
             window.saveJigsawData = async function(slotIndex, jsonDataStr) {
                 console.log(`[LOG 4: JS] saveJigsawData受信。スロット: ${slotIndex}, 受信文字数: ${jsonDataStr ? jsonDataStr.length : 0}`);
                 try {
@@ -650,31 +652,30 @@
                     console.log(`[LOG 5: JS] 暗号化成功。暗号化後の文字数: ${enc.length}`);
                     
                     const playerName = (selectedData && selectedData.playerName) ? selectedData.playerName.trim() : "匿名";
-                    const GAS_URL = (selectedData && selectedData.rankingApiUrl) 
-                        ? selectedData.rankingApiUrl 
-                        : "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
-                    
                     let d = JSON.parse(jsonDataStr);
                     let displayImgName = d.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
                     
-                    console.log(`[GAS-Save] GASへセーブデータを送信します。名: ${playerName}, スロット: ${slotIndex}, 画像: ${displayImgName}`);
+                    console.log(`[LocalStorage-Save] セーブデータをブラウザに保存します。名: ${playerName}, スロット: ${slotIndex}, 画像: ${displayImgName}`);
                     
-                    const saveParams = new URLSearchParams();
-                    saveParams.append("action", "save_game");
-                    saveParams.append("playerName", playerName);
-                    saveParams.append("slotIndex", slotIndex.toString());
-                    saveParams.append("saveDataJson", enc);
-                    saveParams.append("saveTime", d.saveTime || new Date().toLocaleString());
-                    saveParams.append("imageName", displayImgName);
-                    saveParams.append("targetPieces", d.targetPieces || "0");
+                    // スロットごとのメタデータと暗号化された実データをLocalStorageに保持
+                    const saveMeta = {
+                        playerName: playerName,
+                        slotIndex: slotIndex.toString(),
+                        saveTime: d.saveTime || new Date().toLocaleString(),
+                        imageName: displayImgName,
+                        targetPieces: d.targetPieces || "0",
+                        saveDataJson: enc
+                    };
                     
-                    // GASへ送信
-                    await fetch(GAS_URL, {
-                        method: 'POST',
-                        body: saveParams
-                    });
+                    const storageKey = `jigsaw_save_${playerName}_slot_${slotIndex}`;
+                    localStorage.setItem(storageKey, JSON.stringify(saveMeta));
                     
-                    console.log(`[LOG 6: JS] GASへのセーブデータ書き込み送信完了！`);
+                    console.log(`[LOG 6: JS] LocalStorageへのセーブデータ書き込み完了！ キー: ${storageKey}`);
+                    // セーブ成功後にスロット情報を再取得してUnityに通知する
+                    if (typeof window.requestSlotDescriptions === 'function') {
+                        console.log(`[LOG 6.5: JS] スロット一覧を最新化するため再読み込みを開始します...`);
+                        await window.requestSlotDescriptions();
+                    }
                 } catch(e) {
                     console.error("[LOG 6: ERROR] saveJigsawDataの処理中に例外が発生しました！", e);
                 }
@@ -689,27 +690,35 @@
                 }
                 
                 const playerName = (selectedData && selectedData.playerName) ? selectedData.playerName.trim() : "匿名";
-                const GAS_URL = (selectedData && selectedData.rankingApiUrl) 
-                    ? selectedData.rankingApiUrl 
-                    : "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
-                
                 let descs = ["空きスロット", "空きスロット", "空きスロット"];
                 
                 try {
-                    console.log(`[GAS-Load] GASからスロット状況を取得します。名: ${playerName}`);
-                    const response = await fetch(`${GAS_URL}?action=get_slots&playerName=${encodeURIComponent(playerName)}`);
-                    const resData = await response.json();
-                    
-                    if (resData.success && resData.slots) {
-                        for (let i = 1; i <= 3; i++) {
-                            const slot = resData.slots[i.toString()];
+                    console.log(`[LocalStorage-Load] LocalStorageからスロット状況を取得します。名: ${playerName}`);
+                    for (let i = 1; i <= 3; i++) {
+                        const storageKey = `jigsaw_save_${playerName}_slot_${i}`;
+                        const savedDataStr = localStorage.getItem(storageKey);
+                        if (savedDataStr) {
+                            const slot = JSON.parse(savedDataStr);
                             if (slot) {
-                                descs[i - 1] = `${slot.imageName} \n(${slot.saveTime})`;
+                                let screenBase64 = "";
+                                if (slot.saveDataJson) {
+                                    const dec = decryptSaveData(slot.saveDataJson);
+                                    if (dec) {
+                                        try {
+                                            const saveData = JSON.parse(dec);
+                                            if (saveData.screenshotBase64) {
+                                                screenBase64 = saveData.screenshotBase64;
+                                            }
+                                        } catch (e) {}
+                                    }
+                                }
+                                // サムネイルBase64がある場合、説明の後に ":::" を挟んで結合してUnityへ送信
+                                descs[i - 1] = `${slot.imageName} \n(${slot.saveTime})` + (screenBase64 ? `:::${screenBase64}` : "");
                             }
                         }
                     }
                 } catch(e) {
-                    console.error("[GAS-Load-Error] GASからのスロット状況取得中にエラーが発生しました:", e);
+                    console.error("[LocalStorage-Load-Error] スロット状況取得中にエラーが発生しました:", e);
                 }
                 
                 console.log("[LOG 10: JS] Unityへ送り返す説明テキスト一覧:", descs);
@@ -776,6 +785,22 @@
             if (reason && errorLog) {
                 errorLog.innerText = reason;
             }
+            
+            // 🌟 エラープレビューの表示
+            if (selectedData && selectedData.imageData) {
+                const previewImg = document.getElementById("error-preview-img");
+                const previewContainer = document.getElementById("error-preview-container");
+                if (previewImg && previewContainer) {
+                    let displayUrl = selectedData.imageData;
+                    // Googleドライブの画像IDの場合はサムネイルURLに変換
+                    if (displayUrl && !displayUrl.startsWith('http') && !displayUrl.startsWith('data:') && !displayUrl.includes('/')) {
+                        displayUrl = `https://drive.google.com/thumbnail?sz=w300&id=${displayUrl}`;
+                    }
+                    previewImg.src = displayUrl;
+                    previewContainer.style.display = "block";
+                }
+            }
+            
             if (errorArea) errorArea.style.display = "block";
         }
         

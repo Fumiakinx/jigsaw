@@ -349,12 +349,24 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .ai-promotional-banner:hover {
+            transform: translateY(-2px);
+            border-color: rgba(76, 175, 80, 0.6) !important;
+            box-shadow: 0 12px 40px 0 rgba(76, 175, 80, 0.25) !important;
+        }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h2>🧩 じぐそう - 画像選択</h2>
+    <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3d3d3d; padding-bottom: 15px; margin-bottom: 20px; width: 100%; box-sizing: border-box;">
+        <h2 style="margin: 0; display: flex; align-items: center; gap: 8px; color: #4CAF50;">🧩 じぐそう - 画像選択</h2>
+        <a href="../../index.html" style="color: #4CAF50; text-decoration: none; font-size: 14px; font-weight: bold; padding: 8px 16px; border: 1px solid #4CAF50; border-radius: 8px; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease; background: transparent;" onmouseover="this.style.backgroundColor='rgba(76, 175, 80, 0.1)';" onmouseout="this.style.backgroundColor='transparent';">🏠 ポータルTOPへ戻る</a>
+    </div>
     
     <!-- 👤 プレイヤー名入力欄（ランキング対象） -->
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background-color: #242424; padding: 12px 20px; border-radius: 10px; border: 1px solid #3d3d3d; width: 100%; box-sizing: border-box;">
@@ -467,7 +479,7 @@
     // 💡 本番環境（Googleサイトなどの埋め込み環境）で公開している jigsaw_player.html の絶対URL
     // ※ Googleサイトに埋め込んでプレイする場合、この変数に公開されている jigsaw_player ページの絶対URL（https://...）を設定してください。
     // ※ 空欄または "jigsaw_player.html" の場合は、ローカルテスト用として相対パスで起動します。
-    const PUBLISHED_PLAYER_URL = "https://fumiakinx.github.io/jigsaw/Builds/jigsaw_player.html"; 
+    const PUBLISHED_PLAYER_URL = "https://fumiakinx.github.io/jigsaw/%E3%81%98%E3%81%90%E3%81%9D%E3%81%86/jigsaw_player.html"; 
 
     // デフォルト画像リスト (GASロード失敗時や未設定時のフォールバック用)
     const DEFAULT_IMAGES = [
@@ -703,6 +715,18 @@
             }
         }
         loadGalleryFromGAS();
+
+        // 🌟 フォーカス復帰時または別タブでのセーブ更新時にギャラリーを自動更新するリスナー
+        window.addEventListener('focus', () => {
+            console.log("🔄 フォーカス検知：ギャラリーを最新化します");
+            loadGalleryFromGAS();
+        });
+        window.addEventListener('storage', (e) => {
+            if (e.key && e.key.startsWith('jigsaw_save_')) {
+                console.log("🔄 LocalStorage変更検知：ギャラリーを最新化します");
+                loadGalleryFromGAS();
+            }
+        });
 
         // モーダル内のピース数切り替え時のランキングリアルタイム更新設定
         const pieceSelect = document.getElementById('pieceCount');
@@ -955,51 +979,49 @@
         container.innerHTML = `
             <div style="text-align: center; padding: 20px 0; color: #888;">
                 <div style="border: 3px solid rgba(255,255,255,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #FFD700; animation: spin 1s linear infinite; margin: 0 auto 10px;"></div>
-                <div style="font-size: 13px;">GASからセーブスロットを読み込んでいます...</div>
+                <div style="font-size: 13px;">セーブスロットを読み込んでいます...</div>
             </div>
         `;
         
         document.getElementById('loadModal').style.display = 'flex';
         
         try {
-            const response = await fetch(`${RANKING_API_URL}?action=get_slots&playerName=${encodeURIComponent(playerName)}`);
-            const resData = await response.json();
-            
-            if (resData.success) {
-                container.innerHTML = "";
-                for (let i = 1; i <= 3; i++) {
-                    const slot = resData.slots[i.toString()];
-                    let slotHtml = "";
-                    
-                    if (slot) {
-                        const displayName = slot.imageName;
-                        slotHtml = `
-                            <div class="load-slot-card" onclick="triggerLoadSlot(${i})" style="display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.25);">
-                                <div style="flex: 1; min-width: 0; text-align: left;">
-                                    <div style="font-weight: bold; font-size: 14px; color: #FFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">スロット ${i}: ${displayName}</div>
-                                    <div style="font-size: 11px; color: #aaa; margin-top: 4px;">ピース数: ${slot.targetPieces}P | 保存日時: ${slot.saveTime}</div>
-                                </div>
-                                <div style="font-size: 18px; color: #FFD700; padding-right: 5px;">▶</div>
-                            </div>
-                        `;
-                    } else {
-                        slotHtml = `
-                            <div class="load-slot-card-empty" style="display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; opacity: 0.6; cursor: not-allowed;">
-                                <div style="flex: 1; text-align: left;">
-                                    <div style="font-weight: bold; font-size: 14px; color: #666;">スロット ${i}: 空きスロット</div>
-                                    <div style="font-size: 11px; color: #444; margin-top: 4px;">セーブデータがありません</div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    container.innerHTML += slotHtml;
+            container.innerHTML = "";
+            for (let i = 1; i <= 3; i++) {
+                const storageKey = `jigsaw_save_${playerName}_slot_${i}`;
+                const savedDataStr = localStorage.getItem(storageKey);
+                let slot = null;
+                if (savedDataStr) {
+                    slot = JSON.parse(savedDataStr);
                 }
-            } else {
-                container.innerHTML = `<div style="color: #ff6b6b; font-size: 12px; text-align: center; padding: 20px;">セーブデータの取得に失敗しました。</div>`;
+                let slotHtml = "";
+                
+                if (slot) {
+                    const displayName = slot.imageName;
+                    slotHtml = `
+                        <div class="load-slot-card" onclick="triggerLoadSlot(${i})" style="display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.25);">
+                            <div style="flex: 1; min-width: 0; text-align: left;">
+                                <div style="font-weight: bold; font-size: 14px; color: #FFF; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">スロット ${i}: ${displayName}</div>
+                                <div style="font-size: 11px; color: #aaa; margin-top: 4px;">ピース数: ${slot.targetPieces}P | 保存日時: ${slot.saveTime}</div>
+                            </div>
+                            <div style="font-size: 18px; color: #FFD700; padding-right: 5px;">▶</div>
+                        </div>
+                    `;
+                } else {
+                    slotHtml = `
+                        <div class="load-slot-card-empty" style="display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px; opacity: 0.6; cursor: not-allowed;">
+                            <div style="flex: 1; text-align: left;">
+                                <div style="font-weight: bold; font-size: 14px; color: #666;">スロット ${i}: 空きスロット</div>
+                                <div style="font-size: 11px; color: #444; margin-top: 4px;">セーブデータがありません</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML += slotHtml;
             }
         } catch(e) {
             console.error("ロードスロット読み込みエラー:", e);
-            container.innerHTML = `<div style="color: #ff6b6b; font-size: 12px; text-align: center; padding: 20px;">通信エラーが発生しました。</div>`;
+            container.innerHTML = `<div style="color: #ff6b6b; font-size: 12px; text-align: center; padding: 20px;">読み込み中にエラーが発生しました。</div>`;
         }
     }
     
@@ -1028,7 +1050,7 @@
         document.getElementById('loadModal').style.display = 'none';
     }
 
-    // 💡 [NEW] GAS経由でセーブデータを削除する関数
+    // 💡 [NEW] LocalStorageからセーブデータを削除する関数
     async function deleteSaveSlot(slotIndex, displayName) {
         const slotName = slotIndex === 0 ? 'オートセーブ' : `スロット ${slotIndex}`;
         if (!confirm(`${slotName} のセーブデータ（${displayName}）を削除しますか？`)) {
@@ -1036,24 +1058,12 @@
         }
         
         const playerName = document.getElementById('playerNameInput').value.trim();
-        if (!playerName || !RANKING_API_URL) return;
+        if (!playerName) return;
         
         try {
-            console.log(`[GAS-Delete] セーブデータを削除します。名: ${playerName}, スロット: ${slotIndex}`);
-            // 空データを送信することで、GAS側のセーブスロットを初期化（消去）する
-            const deleteParams = new URLSearchParams();
-            deleteParams.append("action", "save_game");
-            deleteParams.append("playerName", playerName);
-            deleteParams.append("slotIndex", slotIndex.toString());
-            deleteParams.append("saveDataJson", ""); // 空白でクリア
-            deleteParams.append("saveTime", "");
-            deleteParams.append("imageName", "");
-            deleteParams.append("targetPieces", "0");
-            
-            await fetch(RANKING_API_URL, {
-                method: 'POST',
-                body: deleteParams
-            });
+            console.log(`[LocalStorage-Delete] セーブデータを削除します。名: ${playerName}, スロット: ${slotIndex}`);
+            const storageKey = `jigsaw_save_${playerName}_slot_${slotIndex}`;
+            localStorage.removeItem(storageKey);
             
             console.log("🗑 セーブデータ消去完了");
             loadGalleryFromGAS(); // 即座に画像ギャラリーをリロードして反映
@@ -1063,19 +1073,19 @@
         }
     }
 
-    // 💡 GASからセーブスロットの情報を非同期で取得してギャラリーに差し込む関数
+    // 💡 LocalStorageからセーブスロットの情報を非同期で取得してギャラリーに差し込む関数
     async function injectSaveCardsToGallery(galleryContainer, playerName) {
-        if (!playerName || !RANKING_API_URL) return;
+        if (!playerName) return;
         
         try {
-            console.log(`[GAS-SaveCard] ギャラリー用のセーブカードをGASから取得します。名: ${playerName}`);
-            const response = await fetch(`${RANKING_API_URL}?action=get_slots&playerName=${encodeURIComponent(playerName)}`);
-            const resData = await response.json();
+            console.log(`[LocalStorage-SaveCard] ギャラリー用のセーブカードをLocalStorageから取得します。名: ${playerName}`);
             
-            if (resData.success && resData.slots) {
-                // オートセーブ（0）および通常スロット（1〜3）を走査
-                for (let i = 0; i <= 3; i++) {
-                    const slot = resData.slots[i.toString()];
+            // オートセーブ（0）および通常スロット（1〜3）を走査
+            for (let i = 0; i <= 3; i++) {
+                const storageKey = `jigsaw_save_${playerName}_slot_${i}`;
+                const savedDataStr = localStorage.getItem(storageKey);
+                if (savedDataStr) {
+                    const slot = JSON.parse(savedDataStr);
                     if (slot) {
                         const item = document.createElement('div');
                         item.className = 'gallery-item';
@@ -1101,24 +1111,22 @@
                             </div>
                         `;
                         
-                        // 非同期でサムネイル画像をGASから取得してロードする処理 (スクリーンショット復活！)
-                        fetch(`${RANKING_API_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${i}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.success && data.saveDataJson) {
-                                    const dec = decryptSaveData(data.saveDataJson);
-                                    if (dec) {
-                                        try {
-                                            const saveData = JSON.parse(dec);
-                                            const imgEl = document.getElementById(thumbId);
-                                            if (imgEl && saveData.screenshotBase64) {
-                                                imgEl.src = "data:image/jpeg;base64," + saveData.screenshotBase64;
-                                                imgEl.style.opacity = "1.0"; // ロード成功したら不透明度を戻す
-                                            }
-                                        } catch(err) {}
+                        // サムネイル画像をLocalStorage内の暗号化データから直接読み込む！
+                        if (slot.saveDataJson) {
+                            const dec = decryptSaveData(slot.saveDataJson);
+                            if (dec) {
+                                try {
+                                    const saveData = JSON.parse(dec);
+                                    const imgEl = document.getElementById(thumbId);
+                                    if (imgEl && saveData.screenshotBase64) {
+                                        imgEl.src = "data:image/jpeg;base64," + saveData.screenshotBase64;
+                                        imgEl.style.opacity = "1.0"; // ロード成功したら不透明度を戻す
                                     }
+                                } catch(err) {
+                                    console.error("サムネイルパースエラー:", err);
                                 }
-                            });
+                            }
+                        }
                         
                         item.onclick = function() {
                             const slotLabel = isAutosave ? "オートセーブ" : `スロット ${i}`;

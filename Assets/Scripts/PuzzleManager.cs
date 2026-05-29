@@ -375,13 +375,81 @@ public class PuzzleManager : MonoBehaviour
             if (descs.Length > 2) slot3Info = descs[2];
         }
 
-        var desc1 = root.Q<Label>("SlotDesc1");
-        var desc2 = root.Q<Label>("SlotDesc2");
-        var desc3 = root.Q<Label>("SlotDesc3");
+        SetSlotUI(root, 1, slot1Info);
+        SetSlotUI(root, 2, slot2Info);
+        SetSlotUI(root, 3, slot3Info);
 
-        if (desc1 != null) desc1.text = !string.IsNullOrEmpty(slot1Info) ? slot1Info : "空きスロット";
-        if (desc2 != null) desc2.text = !string.IsNullOrEmpty(slot2Info) ? slot2Info : "空きスロット";
-        if (desc3 != null) desc3.text = !string.IsNullOrEmpty(slot3Info) ? slot3Info : "空きスロット";
+        // 🌟 ボタンの有効化を復帰する
+        Button btnSlot1 = root.Q<Button>("SlotButton1");
+        Button btnSlot2 = root.Q<Button>("SlotButton2");
+        Button btnSlot3 = root.Q<Button>("SlotButton3");
+        if (btnSlot1 != null) btnSlot1.SetEnabled(true);
+        if (btnSlot2 != null) btnSlot2.SetEnabled(true);
+        if (btnSlot3 != null) btnSlot3.SetEnabled(true);
+    }
+
+    private void SetSlotUI(VisualElement root, int slotIndex, string slotRawInfo)
+    {
+        var desc = root.Q<Label>($"SlotDesc{slotIndex}");
+        var thumb = root.Q<VisualElement>($"SlotThumb{slotIndex}");
+        
+        if (desc == null) return;
+        
+        if (string.IsNullOrEmpty(slotRawInfo) || slotRawInfo == "空きスロット")
+        {
+            desc.text = "空きスロット";
+            if (thumb != null)
+            {
+                thumb.style.backgroundImage = null;
+                thumb.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.4f));
+            }
+            return;
+        }
+
+        string textDesc = slotRawInfo;
+        string base64 = "";
+
+        if (slotRawInfo.Contains(":::"))
+        {
+            string[] parts = slotRawInfo.Split(new string[] { ":::" }, System.StringSplitOptions.None);
+            if (parts.Length > 0) textDesc = parts[0];
+            if (parts.Length > 1) base64 = parts[1];
+        }
+
+        desc.text = textDesc;
+
+        if (thumb != null)
+        {
+            if (!string.IsNullOrEmpty(base64))
+            {
+                try
+                {
+                    byte[] bytes = System.Convert.FromBase64String(base64);
+                    Texture2D tex = new Texture2D(240, 135, TextureFormat.RGB24, false);
+                    if (tex.LoadImage(bytes))
+                    {
+                        thumb.style.backgroundImage = new StyleBackground(tex);
+                        thumb.style.backgroundColor = StyleKeyword.Null;
+                    }
+                    else
+                    {
+                        thumb.style.backgroundImage = null;
+                        thumb.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.4f));
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"[PuzzleManager] Failed to load slot {slotIndex} thumb: {e.Message}");
+                    thumb.style.backgroundImage = null;
+                    thumb.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.4f));
+                }
+            }
+            else
+            {
+                thumb.style.backgroundImage = null;
+                thumb.style.backgroundColor = new StyleColor(new Color(0f, 0f, 0f, 0.4f));
+            }
+        }
     }
 
     // 一時停止画面の「セーブ」ボタン用コールバック
@@ -439,7 +507,28 @@ public class PuzzleManager : MonoBehaviour
 
     private void StartSaveProcess(int slotIndex)
     {
-        CloseSavePopup();
+        // 🌟 ポップアップは閉じずにセーブ実行
+        // CloseSavePopup();
+        
+        // 🌟 クリックされたスロットに「セーブ中...」を表示する
+        if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
+        {
+            var root = pauseUIDoc.rootVisualElement;
+            var desc = root.Q<Label>($"SlotDesc{slotIndex}");
+            if (desc != null)
+            {
+                desc.text = "セーブ中...";
+            }
+            
+            // 🌟 多重クリック防止のため、ボタンを一時的に無効化する
+            Button btnSlot1 = root.Q<Button>("SlotButton1");
+            Button btnSlot2 = root.Q<Button>("SlotButton2");
+            Button btnSlot3 = root.Q<Button>("SlotButton3");
+            if (btnSlot1 != null) btnSlot1.SetEnabled(false);
+            if (btnSlot2 != null) btnSlot2.SetEnabled(false);
+            if (btnSlot3 != null) btnSlot3.SetEnabled(false);
+        }
+
         StartCoroutine(CaptureAndSaveCoroutine(slotIndex));
     }
 
@@ -530,10 +619,6 @@ public class PuzzleManager : MonoBehaviour
         Debug.Log($"[PuzzleManager] セーブスロット {slotIndex} にデータをローカル保存しました（エディタシミュレーション）。");
         #endif
 
-        // 保存完了のメッセージ表示（ポーズ画面の下部に簡易トースト表示等も可能ですが、スロット説明文を更新して完了）
-        #if UNITY_WEBGL && !UNITY_EDITOR
-        Application.ExternalEval("if(typeof window.requestSlotDescriptions === 'function') { window.requestSlotDescriptions(); }");
-        #endif
     }
 
     // 目玉ボタン（見本表示用）のコールバック群
