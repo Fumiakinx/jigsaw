@@ -610,6 +610,7 @@ public class PuzzleManager : MonoBehaviour
         // 🌟 3. GPU上のRenderTextureからピクセルを安全にロード（システムフレームバッファではないためWebGLエラーは完全に回避されます）
         try
         {
+            RenderTexture.active = tempRT; // 🌟 cam.targetTexture = null によるアクティブRTの自動クリアを完全に防ぐため、ここで強制再設定します
             screenTex.ReadPixels(new Rect(0, 0, captureW, captureH), 0, 0);
             screenTex.Apply();
             Debug.Log("[CAPTURE_DEBUG] Offscreen ReadPixels completed successfully.");
