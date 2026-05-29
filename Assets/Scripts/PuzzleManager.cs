@@ -343,9 +343,10 @@ public class PuzzleManager : MonoBehaviour
                 clusterCache.Add(pName, parentCluster);
             }
             
-            // ピースを親クラスターの子に設定
-            p.transform.SetParent(parentCluster);
+            // ピースを親クラスターの子に設定（ワールド座標維持を無効化し、ローカル空間で紐づける）
+            p.transform.SetParent(parentCluster, false);
             p.transform.localPosition = new Vector3(pSave.px, pSave.py, - (p.id % 10) * 0.0001f);
+            p.transform.localRotation = Quaternion.identity; // 🌟 親クラスターの回転と完璧に同期
             
             p.UpdateShadowPosition();
         }
@@ -549,31 +550,17 @@ public class PuzzleManager : MonoBehaviour
         
         yield return null; // 1フレーム待って、UI非表示のレイアウト更新を確実に描画エンジンに反映する
 
-        Texture2D screenTex = null;
-        try
-        {
-            // 🌟 Unity標準の高性能・クロスプラットフォーム対応の画面キャプチャAPIを使用
-            screenTex = ScreenCapture.CaptureScreenshotAsTexture();
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogWarning($"[PuzzleManager] ScreenCapture failed, falling back to ReadPixels: {e.Message}");
-        }
+        // 🌟 WebGLでも確実にCPU読み取り（縮小サンプリング）可能な高互換の手動ReadPixels処理に統一
+        int sw = Screen.width;
+        int sh = Screen.height;
+        int captureW = Mathf.Min(sw, Mathf.RoundToInt(sh * (16f / 9f)));
+        int captureH = Mathf.RoundToInt(captureW * (9f / 16f));
+        int startX = (sw - captureW) / 2;
+        int startY = (sh - captureH) / 2;
 
-        if (screenTex == null)
-        {
-            // フォールバック: 従来の手動ReadPixels処理
-            int sw = Screen.width;
-            int sh = Screen.height;
-            int captureW = Mathf.Min(sw, Mathf.RoundToInt(sh * (16f / 9f)));
-            int captureH = Mathf.RoundToInt(captureW * (9f / 16f));
-            int startX = (sw - captureW) / 2;
-            int startY = (sh - captureH) / 2;
-
-            screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
-            screenTex.ReadPixels(new Rect(startX, startY, captureW, captureH), 0, 0);
-            screenTex.Apply();
-        }
+        Texture2D screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
+        screenTex.ReadPixels(new Rect(startX, startY, captureW, captureH), 0, 0);
+        screenTex.Apply();
 
         // 読み込み容量削減のため、さらに極小サムネイル(240x135)に縮小して軽量化
         Texture2D thumbTex = new Texture2D(240, 135, TextureFormat.RGB24, false);
