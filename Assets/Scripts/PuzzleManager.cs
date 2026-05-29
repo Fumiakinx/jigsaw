@@ -393,6 +393,13 @@ public class PuzzleManager : MonoBehaviour
         var desc = root.Q<Label>($"SlotDesc{slotIndex}");
         var thumb = root.Q<VisualElement>($"SlotThumb{slotIndex}");
         
+        // 🌟 ボタン要素自身のテキストを明示的にクリアして、UI Toolkitによる文字溢れ（二重描画）を防止する
+        var btn = root.Q<Button>($"SlotButton{slotIndex}");
+        if (btn != null)
+        {
+            btn.text = string.Empty;
+        }
+        
         if (desc == null) return;
         
         if (string.IsNullOrEmpty(slotRawInfo) || slotRawInfo == "空きスロット")
