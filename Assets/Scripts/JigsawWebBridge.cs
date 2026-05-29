@@ -137,7 +137,7 @@ public class JigsawWebBridge : MonoBehaviour
             new Rect(0, 0, texture.width, texture.height), 
             new Vector2(0.5f, 0.5f)
         );
-        sprite.name = "WebLoadedImage";
+        sprite.name = urlOrBase64;
 
         // 画像選択用UIドキュメントが開いている場合は非表示にする
         if (selectionManager != null && selectionManager.uiDoc != null)

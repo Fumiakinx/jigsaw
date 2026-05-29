@@ -467,8 +467,31 @@
                 const RANKING_URL = rankingApiUrlParam || "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
 
                 if (isSaveLoad === 'true' && slotIndex && playerName) {
-                    statusText.innerText = "GASからセーブデータを安全にロードしています...";
+                    statusText.innerText = "ブラウザからセーブデータを安全にロードしています...";
                     try {
+                        // 1. まずローカルのLocalStorageからデータを読み出す（高速＆オフライン安全）
+                        const storageKey = `jigsaw_save_${playerName}_slot_${slotIndex}`;
+                        const localData = localStorage.getItem(storageKey);
+                        if (localData) {
+                            const slot = JSON.parse(localData);
+                            if (slot && slot.saveDataJson) {
+                                const dec = decryptSaveData(slot.saveDataJson);
+                                if (dec) {
+                                    selectedData = {
+                                        isSaveLoad: true,
+                                        saveJson: dec,
+                                        playerName: playerName,
+                                        rankingApiUrl: RANKING_URL
+                                    };
+                                    console.log("[JigsawPlayer] LocalStorageからのロードに成功しました！");
+                                    resolve(true);
+                                    return;
+                                }
+                            }
+                        }
+
+                        // 2. ローカルにデータがない場合のフォールバック（GASサーバーから読み込み）
+                        console.log("[JigsawPlayer] ローカルデータが見つからないため、GASサーバーからのロードを試みます...");
                         const response = await fetch(`${RANKING_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${slotIndex}`);
                         const resData = await response.json();
                         
