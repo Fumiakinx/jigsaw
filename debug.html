@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧩 じぐそう 診断・クリーンアップツール</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d11;
+            color: #e2e2e9;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #16161f;
+            border: 1px solid #232330;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+        }
+        h1 {
+            font-size: 24px;
+            color: #4CAF50;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-weight: 800;
+            border-bottom: 2px solid #232330;
+            padding-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .desc {
+            font-size: 14px;
+            color: #a0a0b5;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        .slot-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+        }
+        .slot-card.has-data {
+            border-color: rgba(255, 215, 0, 0.3);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.05);
+        }
+        .slot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+        .slot-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .badge-empty {
+            background: rgba(255,255,255,0.05);
+            color: #888;
+        }
+        .badge-active {
+            background: rgba(255, 215, 0, 0.15);
+            color: #FFD700;
+            border: 1px solid #FFD700;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .data-table td {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .data-table td.label {
+            color: #888;
+            width: 120px;
+            font-weight: 600;
+        }
+        .data-table td.value {
+            color: #fff;
+            word-break: break-all;
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 10px;
+        }
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .base64-preview {
+            max-height: 80px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+            background: #0d0d11;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
+            color: #888;
+            word-break: break-all;
+            margin-top: 8px;
+        }
+        .alert-box {
+            background: rgba(220, 53, 69, 0.1);
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧩 じぐそう 診断・クリーンアップツール</h1>
+        <div class="desc">
+            ブラウザのローカルストレージ（LocalStorage）に保存されているセーブデータの状態を確認し、古い破損データや不要なキャッシュデータをクリーンアップするためのツールです。
+        </div>
+
+        <div class="alert-box">
+            <strong>⚠️ 注意:</strong><br>
+            古い形式のセーブデータが残っている場合、新しく実装されたサムネイル表示やパス解決と競合し、バグが再現する原因となります。<br>
+            このツールで既存のスロットデータを削除（クリーンアップ）し、真っ新な状態でセーブ・ロードをお試しいただくことを強く推奨いたします。
+        </div>
+
+        <div style="margin-bottom: 30px; display: flex; gap: 10px;">
+            <button class="btn" onclick="location.reload()">🔄 情報を更新する</button>
+            <button class="btn btn-danger" onclick="clearAllSaves()">🗑️ 全セーブデータを初期化する</button>
+            <button class="btn" style="background: #2196F3;" onclick="window.location.href='じぐそう/GoogleSiteEmbed.html'">🎮 ゲーム画像選択へ</button>
+        </div>
+
+        <div id="slots-container">
+            <!-- 動的にスロット情報が書き込まれます -->
+        </div>
+    </div>
+
+    <script>
+        function decryptSaveData(encryptedStr) {
+            try {
+                return decodeURIComponent(escape(atob(encryptedStr)));
+            } catch(e) {
+                return null;
+            }
+        }
+
+        function loadSaves() {
+            const container = document.getElementById('slots-container');
+            container.innerHTML = "";
+            let foundAny = false;
+
+            // ローカルストレージ内の全キーを走査
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('jigsaw_save_')) {
+                    foundAny = true;
+                    const val = localStorage.getItem(key);
+                    let slotData = null;
+                    try {
+                        slotData = JSON.parse(val);
+                    } catch(e) {}
+
+                    const card = document.createElement('div');
+                    card.className = "slot-card has-data";
+
+                    if (slotData) {
+                        let isDecrypted = false;
+                        let innerData = null;
+                        if (slotData.saveDataJson) {
+                            const dec = decryptSaveData(slotData.saveDataJson);
+                            if (dec) {
+                                isDecrypted = true;
+                                try {
+                                    innerData = JSON.parse(dec);
+                                } catch(e) {}
+                            }
+                        }
+
+                        // サムネイル画像の有無
+                        const hasThumb = innerData && innerData.screenshotBase64 ? "あり (Base64)" : "なし";
+
+                        card.innerHTML = `
+                            <div class="slot-header">
+                                <span style="color: #FFD700;">🔑 キー: ${key}</span>
+                                <span class="slot-badge badge-active">セーブデータあり</span>
+                            </div>
+                            <table class="data-table">
+                                <tr>
+                                    <td class="label">プレイヤー名</td>
+                                    <td class="value">${slotData.playerName || '未設定'}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">スロット番号</td>
+                                    <td class="value">${slotData.slotIndex || '未設定'}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">画像ファイル名</td>
+                                    <td class="value" style="color: #4CAF50; font-weight: bold;">${slotData.imageName || '未設定'}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">ピース数</td>
+                                    <td class="value">${slotData.targetPieces || '未設定'} P</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">保存日時</td>
+                                    <td class="value">${slotData.saveTime || '未設定'}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">復号ステータス</td>
+                                    <td class="value" style="color: ${isDecrypted ? '#4CAF50' : '#ff6b6b'}; font-weight: bold;">
+                                        ${isDecrypted ? '🟢 正常復号完了' : '🔴 復号失敗（旧形式または破損）'}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="label">サムネイルスクショ</td>
+                                    <td class="value" style="color: ${innerData && innerData.screenshotBase64 ? '#4CAF50' : '#888'};">
+                                        ${hasThumb}
+                                    </td>
+                                </tr>
+                            </table>
+                            ${innerData && innerData.screenshotBase64 ? `
+                                <div style="margin-top: 15px;">
+                                    <div style="font-size: 12px; font-weight: bold; color: #aaa; margin-bottom: 5px;">🖼️ サムネイルプレビュー:</div>
+                                    <img src="data:image/jpeg;base64,${innerData.screenshotBase64}" style="max-width: 200px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                                </div>
+                            ` : ''}
+                            <div style="margin-top: 15px; text-align: right;">
+                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteSlot('${key}')">このスロットのみ削除</button>
+                            </div>
+                        `;
+                    } else {
+                        card.innerHTML = `
+                            <div class="slot-header">
+                                <span>🔑 キー: ${key}</span>
+                                <span class="slot-badge badge-empty">破損データ</span>
+                            </div>
+                            <div style="color: #ff6b6b; font-size: 13px;">JSON形式ではないデータが検出されました。</div>
+                            <div style="margin-top: 15px; text-align: right;">
+                                <button class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;" onclick="deleteSlot('${key}')">削除</button>
+                            </div>
+                        `;
+                    }
+                    container.appendChild(card);
+                }
+            }
+
+            if (!foundAny) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #888; border: 1px dashed rgba(255,255,255,0.1); border-radius: 12px;">
+                        LocalStorage内には、現在セーブデータがありません。空っぽの状態です。
+                    </div>
+                `;
+            }
+        }
+
+        function deleteSlot(key) {
+            if (confirm(`このセーブデータ (${key}) を削除しますか？`)) {
+                localStorage.removeItem(key);
+                loadSaves();
+            }
+        }
+
+        function clearAllSaves() {
+            if (confirm("注意: すべての「じぐそう」セーブデータが完全に削除されます。よろしいですか？")) {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('jigsaw_save_')) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(k => localStorage.removeItem(k));
+                loadSaves();
+                alert("初期化が完了しました。");
+            }
+        }
+
+        // 初期ロード
+        loadSaves();
+    </script>
+</body>
+</html>
