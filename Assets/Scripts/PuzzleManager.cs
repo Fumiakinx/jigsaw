@@ -172,7 +172,7 @@ public class PuzzleManager : MonoBehaviour
             if (shadowShader == null) shadowShader = Shader.Find("Custom/JigsawShadow");
             if (shadowShader != null) {
                 shadowMaterial = new Material(shadowShader);
-                shadowMaterial.SetColor("_Color", new Color(0.0f, 0.0f, 0.0f, 0.5f)); // 元の黒い影
+                shadowMaterial.SetColor("_Color", new Color(0.0f, 0.0f, 0.0f, 0.65f)); // より濃く立体感のある黒い影
             }
         }
         
