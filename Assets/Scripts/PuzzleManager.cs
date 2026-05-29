@@ -539,19 +539,35 @@ public class PuzzleManager : MonoBehaviour
             pauseUIDoc.rootVisualElement.style.display = DisplayStyle.None;
         if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
             hudUIDoc.rootVisualElement.style.display = DisplayStyle.None;
+        
+        yield return null; // 1フレーム待って、UI非表示のレイアウト更新を確実に描画エンジンに反映する
         yield return new WaitForEndOfFrame(); // 描画終了まで待つ
 
-        // スクショ撮影用のテクスチャ作成 (アスペクト比 16:9 相当で小さく切り出す)
-        int sw = Screen.width;
-        int sh = Screen.height;
-        int captureW = Mathf.Min(sw, Mathf.RoundToInt(sh * (16f / 9f)));
-        int captureH = Mathf.RoundToInt(captureW * (9f / 16f));
-        int startX = (sw - captureW) / 2;
-        int startY = (sh - captureH) / 2;
+        Texture2D screenTex = null;
+        try
+        {
+            // 🌟 Unity標準の高性能・クロスプラットフォーム対応の画面キャプチャAPIを使用
+            screenTex = ScreenCapture.CaptureScreenshotAsTexture();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning($"[PuzzleManager] ScreenCapture failed, falling back to ReadPixels: {e.Message}");
+        }
 
-        Texture2D screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
-        screenTex.ReadPixels(new Rect(startX, startY, captureW, captureH), 0, 0);
-        screenTex.Apply();
+        if (screenTex == null)
+        {
+            // フォールバック: 従来の手動ReadPixels処理
+            int sw = Screen.width;
+            int sh = Screen.height;
+            int captureW = Mathf.Min(sw, Mathf.RoundToInt(sh * (16f / 9f)));
+            int captureH = Mathf.RoundToInt(captureW * (9f / 16f));
+            int startX = (sw - captureW) / 2;
+            int startY = (sh - captureH) / 2;
+
+            screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
+            screenTex.ReadPixels(new Rect(startX, startY, captureW, captureH), 0, 0);
+            screenTex.Apply();
+        }
 
         // 読み込み容量削減のため、さらに極小サムネイル(240x135)に縮小して軽量化
         Texture2D thumbTex = new Texture2D(240, 135, TextureFormat.RGB24, false);
