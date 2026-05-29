@@ -571,10 +571,27 @@ public class PuzzleManager : MonoBehaviour
         
         yield return null; // 1フレーム待って、UI表示切り替えを描画エンジンに確実に適用する
 
+        // 🌟 【詳細ログ 1】描画処理前の状態ログ
+        if (Camera.main != null)
+        {
+            var cam = Camera.main;
+            var rp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline;
+            Debug.Log($"[CAPTURE_DEBUG] --- Capture Start ---");
+            Debug.Log($"[CAPTURE_DEBUG] RenderPipeline: {(rp != null ? rp.GetType().Name : "Built-in (Standard)")}");
+            Debug.Log($"[CAPTURE_DEBUG] Camera.main: {cam.name}, Orthographic: {cam.orthographic}, OrthoSize: {cam.orthographicSize}");
+            Debug.Log($"[CAPTURE_DEBUG] ClearFlags: {cam.clearFlags}, BackgroundColor: {cam.backgroundColor.ToString()}, CullingMask: {cam.cullingMask}");
+            Debug.Log($"[CAPTURE_DEBUG] RenderTexture.active at start: {(RenderTexture.active != null ? RenderTexture.active.name : "null")}");
+        }
+        else
+        {
+            Debug.LogError("[CAPTURE_DEBUG] Camera.main is null!");
+        }
+
         // 🌟 メインカメラの描画処理を強制実行（PrintScreenのように即座に現在状態を描画バッファに書き込む）
         if (Camera.main != null)
         {
             Camera.main.Render();
+            Debug.Log("[CAPTURE_DEBUG] Camera.main.Render() executed.");
         }
 
         // 🌟 WebGLでも確実にCPU読み取り（縮小サンプリング）可能な高互換の手動ReadPixels処理に統一
@@ -585,9 +602,43 @@ public class PuzzleManager : MonoBehaviour
         int startX = (sw - captureW) / 2;
         int startY = (sh - captureH) / 2;
 
+        Debug.Log($"[CAPTURE_DEBUG] Screen dimensions: {sw}x{sh}");
+        Debug.Log($"[CAPTURE_DEBUG] Calculated capture area: Rect(startX: {startX}, startY: {startY}, width: {captureW}, height: {captureH})");
+        Debug.Log($"[CAPTURE_DEBUG] RenderTexture.active before ReadPixels: {(RenderTexture.active != null ? RenderTexture.active.name : "null")}");
+
         Texture2D screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
-        screenTex.ReadPixels(new Rect(startX, startY, captureW, captureH), 0, 0);
-        screenTex.Apply();
+        
+        try
+        {
+            screenTex.ReadPixels(new Rect(startX, startY, captureW, captureH), 0, 0);
+            screenTex.Apply();
+            Debug.Log("[CAPTURE_DEBUG] ReadPixels successfully completed.");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[CAPTURE_DEBUG] Error during ReadPixels: {ex.Message}");
+        }
+
+        // 🌟 【詳細ログ 2】取得したピクセルカラーのサンプリング
+        if (screenTex != null)
+        {
+            Color cCenter = screenTex.GetPixel(captureW / 2, captureH / 2);
+            Color cTopLeft = screenTex.GetPixel(0, captureH - 1);
+            Color cBottomRight = screenTex.GetPixel(captureW - 1, 0);
+            Color cMidLeft = screenTex.GetPixel(captureW / 4, captureH / 2);
+            Color cMidRight = screenTex.GetPixel(3 * captureW / 4, captureH / 2);
+
+            Debug.Log($"[CAPTURE_DEBUG] screenTex size: {screenTex.width}x{screenTex.height}");
+            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - TopLeft: {cTopLeft}");
+            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - Center: {cCenter}");
+            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - BottomRight: {cBottomRight}");
+            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - MidLeft: {cMidLeft}");
+            Debug.Log($"[CAPTURE_DEBUG] Pixel Color - MidRight: {cMidRight}");
+
+            // 全サンプルピクセルが完全に同一の色であるかチェック
+            bool allSame = (cTopLeft == cCenter) && (cCenter == cBottomRight) && (cBottomRight == cMidLeft) && (cMidLeft == cMidRight);
+            Debug.Log($"[CAPTURE_DEBUG] Verification - Are all sampled pixels identical color? : {allSame}");
+        }
 
         // 読み込み容量削減のため、さらに極小サムネイル(240x135)に縮小して軽量化
         Texture2D thumbTex = new Texture2D(240, 135, TextureFormat.RGB24, false);
@@ -606,6 +657,14 @@ public class PuzzleManager : MonoBehaviour
 
         byte[] imgBytes = thumbTex.EncodeToJPG(75); // 画質75%の軽量JPGでエンコード
         string base64Str = System.Convert.ToBase64String(imgBytes);
+
+        Debug.Log($"[CAPTURE_DEBUG] thumbTex size: {thumbTex.width}x{thumbTex.height}");
+        Debug.Log($"[CAPTURE_DEBUG] JPG encoded size: {imgBytes.Length} bytes");
+        Debug.Log($"[CAPTURE_DEBUG] Base64 string length: {base64Str.Length}");
+        if (base64Str.Length > 40)
+        {
+            Debug.Log($"[CAPTURE_DEBUG] Base64 start (40 chars): {base64Str.Substring(0, 40)}");
+        }
 
         // クリーンアップ
         Destroy(screenTex);
