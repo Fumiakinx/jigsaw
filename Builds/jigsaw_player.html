@@ -477,9 +477,25 @@
                             if (slot && slot.saveDataJson) {
                                 const dec = decryptSaveData(slot.saveDataJson);
                                 if (dec) {
+                                    let sData = JSON.parse(dec);
+                                    // 🌟 imageNameがGASの画像IDなどの場合、事前にGASから画像(Base64)を再取得して復元する
+                                    if (sData.imageName && !sData.imageName.startsWith("http") && !sData.imageName.includes("/")) {
+                                        try {
+                                            console.log("[JigsawPlayer] ロードしたセーブデータの画像IDから、GAS経由で画像を再取得します:", sData.imageName);
+                                            const response = await fetch(`${GAS_URL}?action=image&id=${sData.imageName}`);
+                                            const resData = await response.json();
+                                            if (resData.success && resData.imageData) {
+                                                sData.imageName = resData.imageData; // Base64を復元！
+                                                console.log("[JigsawPlayer] GASからの画像データの再デコード・復元に成功しました。");
+                                            }
+                                        } catch (err) {
+                                            console.error("[JigsawPlayer] ロード再開時の画像再取得に失敗しました:", err);
+                                        }
+                                    }
+
                                     selectedData = {
                                         isSaveLoad: true,
-                                        saveJson: dec,
+                                        saveJson: JSON.stringify(sData),
                                         playerName: playerName,
                                         rankingApiUrl: RANKING_URL
                                     };
@@ -498,9 +514,25 @@
                         if (resData.success && resData.saveDataJson) {
                             const dec = decryptSaveData(resData.saveDataJson);
                             if (dec) {
+                                let sData = JSON.parse(dec);
+                                // 🌟 imageNameがGASの画像IDなどの場合、事前にGASから画像(Base64)を再取得して復元する
+                                if (sData.imageName && !sData.imageName.startsWith("http") && !sData.imageName.includes("/")) {
+                                    try {
+                                        console.log("[JigsawPlayer] GASロードのセーブデータ画像IDから、GAS経由で画像を再取得します:", sData.imageName);
+                                        const response = await fetch(`${GAS_URL}?action=image&id=${sData.imageName}`);
+                                        const resData = await response.json();
+                                        if (resData.success && resData.imageData) {
+                                            sData.imageName = resData.imageData; // Base64を復元！
+                                            console.log("[JigsawPlayer] GASロードデータの画像データ復元に成功しました。");
+                                        }
+                                    } catch (err) {
+                                        console.error("[JigsawPlayer] GASロード再開時の画像再取得に失敗しました:", err);
+                                    }
+                                }
+
                                 selectedData = {
                                     isSaveLoad: true,
-                                    saveJson: dec,
+                                    saveJson: JSON.stringify(sData),
                                     playerName: playerName,
                                     rankingApiUrl: RANKING_URL
                                 };
@@ -671,16 +703,30 @@
             var script = document.createElement("script");
             script.src = loaderUrl;
 
-            // [NEW] Unityから呼ばれるグローバル関数 (LocalStorageセーブ)
             window.saveJigsawData = async function(slotIndex, jsonDataStr) {
                 console.log(`[LOG 4: JS] saveJigsawData受信。スロット: ${slotIndex}, 受信文字数: ${jsonDataStr ? jsonDataStr.length : 0}`);
                 try {
-                    let enc = encryptSaveData(jsonDataStr);
+                    let d = JSON.parse(jsonDataStr);
+                    let originalImageName = d.imageName || "";
+                    
+                    // 🌟 imageNameが巨大なBase64形式だった場合、保存用に極小の画像ID/URLに差し替える (LocalStorage容量上限エラーの根本解決)
+                    if (d.imageName && d.imageName.startsWith("data:image/") && d.imageName.includes("base64,")) {
+                        if (selectedData && selectedData.imageId) {
+                            d.imageName = selectedData.imageId;
+                        }
+                    }
+                    
+                    let modifiedJsonDataStr = JSON.stringify(d);
+                    let enc = encryptSaveData(modifiedJsonDataStr);
                     console.log(`[LOG 5: JS] 暗号化成功。暗号化後の文字数: ${enc.length}`);
                     
                     const playerName = (selectedData && selectedData.playerName) ? selectedData.playerName.trim() : "匿名";
-                    let d = JSON.parse(jsonDataStr);
-                    let displayImgName = d.imageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
+                    
+                    // 表記用の画像名整形
+                    let displayImgName = originalImageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
+                    if (displayImgName.startsWith("data:image/")) {
+                        displayImgName = (selectedData && selectedData.imageId) ? `ドライブ画像: ${selectedData.imageId}` : "カスタム画像";
+                    }
                     
                     console.log(`[LocalStorage-Save] セーブデータをブラウザに保存します。名: ${playerName}, スロット: ${slotIndex}, 画像: ${displayImgName}`);
                     
