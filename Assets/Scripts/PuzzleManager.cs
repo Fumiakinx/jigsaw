@@ -542,7 +542,19 @@ public class PuzzleManager : MonoBehaviour
 
     private IEnumerator CaptureAndSaveCoroutine(int slotIndex)
     {
-        // 🌟 一時停止画面の操作メニューやポップアップ等の不要なUI要素だけを非表示にし、ゲーム盤面を露出させる
+        // 🌟 WebGLでも確実にCPU読み取り（縮小サンプリング）可能な高互換の手動ReadPixels処理に統一
+        int sw = Screen.width;
+        int sh = Screen.height;
+        int captureW = Mathf.Min(sw, Mathf.RoundToInt(sh * (16f / 9f)));
+        int captureH = Mathf.RoundToInt(captureW * (9f / 16f));
+        int startX = (sw - captureW) / 2;
+        int startY = (sh - captureH) / 2;
+
+        Debug.Log($"[CAPTURE_DEBUG] --- Capture Start (RenderTexture Method) ---");
+        Debug.Log($"[CAPTURE_DEBUG] Screen dimensions: {sw}x{sh}");
+        Debug.Log($"[CAPTURE_DEBUG] Calculated capture area: Rect(startX: {startX}, startY: {startY}, width: {captureW}, height: {captureH})");
+
+        // 🌟 1. UIの非表示化（このコルーチン内の処理はすべて同一フレーム内で同期的に行われるため、ユーザーの画面上には一切チラつきが発生しません）
         UnityEngine.UIElements.Label watermark = null;
         if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
         {
@@ -557,7 +569,6 @@ public class PuzzleManager : MonoBehaviour
             if (title != null) title.style.display = DisplayStyle.None;
             if (returnBtn != null) returnBtn.style.display = DisplayStyle.None;
 
-            // 🌟 画面中央に大きく「SLOT 1」といったスタイリッシュな透かしテキストを浮かび上がらせる
             watermark = root.Q<UnityEngine.UIElements.Label>("SaveWatermark");
             if (watermark != null)
             {
@@ -565,62 +576,74 @@ public class PuzzleManager : MonoBehaviour
                 watermark.style.display = DisplayStyle.Flex;
             }
         }
-        
         if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
             hudUIDoc.rootVisualElement.style.display = DisplayStyle.None;
-        
-        yield return null; // 1フレーム待って、UI表示切り替えを描画エンジンに確実に適用する
-        yield return new WaitForEndOfFrame(); // 🌟 WebGLのReadPixels制約をクリアするため、フレームレンダリング終了の瞬間まで待機する
 
-        // 🌟 【詳細ログ 1】描画処理前の状態ログ
+        // 🌟 2. RenderTextureを作成し、メインカメラのレンダリング先を一時的に差し替える
+        RenderTexture tempRT = RenderTexture.GetTemporary(captureW, captureH, 24);
+        RenderTexture previousActive = RenderTexture.active;
+        Texture2D screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
+
         if (Camera.main != null)
         {
             var cam = Camera.main;
             var rp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline;
-            Debug.Log($"[CAPTURE_DEBUG] --- Capture Start ---");
-            Debug.Log($"[CAPTURE_DEBUG] RenderPipeline: {(rp != null ? rp.GetType().Name : "Built-in (Standard)")}");
-            Debug.Log($"[CAPTURE_DEBUG] Camera.main: {cam.name}, Orthographic: {cam.orthographic}, OrthoSize: {cam.orthographicSize}");
-            Debug.Log($"[CAPTURE_DEBUG] ClearFlags: {cam.clearFlags}, BackgroundColor: {cam.backgroundColor.ToString()}, CullingMask: {cam.cullingMask}");
-            Debug.Log($"[CAPTURE_DEBUG] RenderTexture.active at start: {(RenderTexture.active != null ? RenderTexture.active.name : "null")}");
+            Debug.Log($"[CAPTURE_DEBUG] RenderPipeline: {(rp != null ? rp.GetType().Name : "Built-in")}");
+            Debug.Log($"[CAPTURE_DEBUG] RenderTexture.active before setting: {(RenderTexture.active != null ? RenderTexture.active.name : "null")}");
+
+            // カメラの出力先を一時的にRenderTextureへ変更
+            cam.targetTexture = tempRT;
+            RenderTexture.active = tempRT;
+
+            // オフスクリーンでレンダリング強制実行（UIが非表示になったパズル盤面のみが描画されます）
+            cam.Render();
+            Debug.Log("[CAPTURE_DEBUG] Offscreen Camera.Render() completed.");
+
+            // カメラの出力先を元に戻す（画面上の描画を復帰）
+            cam.targetTexture = null;
         }
         else
         {
             Debug.LogError("[CAPTURE_DEBUG] Camera.main is null!");
         }
 
-        // 🌟 メインカメラの描画処理を強制実行（PrintScreenのように即座に現在状態を描画バッファに書き込む）
-        if (Camera.main != null)
-        {
-            Camera.main.Render();
-            Debug.Log("[CAPTURE_DEBUG] Camera.main.Render() executed.");
-        }
-
-        // 🌟 WebGLでも確実にCPU読み取り（縮小サンプリング）可能な高互換の手動ReadPixels処理に統一
-        int sw = Screen.width;
-        int sh = Screen.height;
-        int captureW = Mathf.Min(sw, Mathf.RoundToInt(sh * (16f / 9f)));
-        int captureH = Mathf.RoundToInt(captureW * (9f / 16f));
-        int startX = (sw - captureW) / 2;
-        int startY = (sh - captureH) / 2;
-
-        Debug.Log($"[CAPTURE_DEBUG] Screen dimensions: {sw}x{sh}");
-        Debug.Log($"[CAPTURE_DEBUG] Calculated capture area: Rect(startX: {startX}, startY: {startY}, width: {captureW}, height: {captureH})");
-        Debug.Log($"[CAPTURE_DEBUG] RenderTexture.active before ReadPixels: {(RenderTexture.active != null ? RenderTexture.active.name : "null")}");
-
-        Texture2D screenTex = new Texture2D(captureW, captureH, TextureFormat.RGB24, false);
-        
+        // 🌟 3. GPU上のRenderTextureからピクセルを安全にロード（システムフレームバッファではないためWebGLエラーは完全に回避されます）
         try
         {
-            screenTex.ReadPixels(new Rect(startX, startY, captureW, captureH), 0, 0);
+            screenTex.ReadPixels(new Rect(0, 0, captureW, captureH), 0, 0);
             screenTex.Apply();
-            Debug.Log("[CAPTURE_DEBUG] ReadPixels successfully completed.");
+            Debug.Log("[CAPTURE_DEBUG] Offscreen ReadPixels completed successfully.");
         }
         catch (System.Exception ex)
         {
-            Debug.LogError($"[CAPTURE_DEBUG] Error during ReadPixels: {ex.Message}");
+            Debug.LogError($"[CAPTURE_DEBUG] Error during RenderTexture ReadPixels: {ex.Message}");
         }
 
-        // 🌟 【詳細ログ 2】取得したピクセルカラーのサンプリング
+        // RenderTextureのクリーンアップとアクティブバッファの復元
+        RenderTexture.active = previousActive;
+        RenderTexture.ReleaseTemporary(tempRT);
+
+        // 🌟 4. UI表示状態を完全に元の状態に復旧する（同一フレームの同期処理のため、プレイヤーの画面上は一切チラつきません）
+        if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
+        {
+            var root = pauseUIDoc.rootVisualElement;
+            var pauseMenu = root.Q<VisualElement>("PauseMenu");
+            var savePopup = root.Q<VisualElement>("SavePopup");
+            var title = root.Q<Label>(className: "pause-title-label");
+            var returnBtn = root.Q<Button>("ReturnToSelectionButton");
+
+            if (pauseMenu != null) pauseMenu.style.display = DisplayStyle.None; // セーブダイアログを最前面に保つ
+            if (savePopup != null) savePopup.style.display = DisplayStyle.Flex;
+            if (title != null) title.style.display = DisplayStyle.Flex;
+            if (returnBtn != null) returnBtn.style.display = DisplayStyle.Flex;
+
+            if (watermark != null)
+                watermark.style.display = DisplayStyle.None;
+        }
+        if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
+            hudUIDoc.rootVisualElement.style.display = DisplayStyle.Flex;
+
+        // 🌟 【詳細ログ】サンプリングしたピクセルのカラー値を検証
         if (screenTex != null)
         {
             Color cCenter = screenTex.GetPixel(captureW / 2, captureH / 2);
@@ -636,7 +659,6 @@ public class PuzzleManager : MonoBehaviour
             Debug.Log($"[CAPTURE_DEBUG] Pixel Color - MidLeft: {cMidLeft}");
             Debug.Log($"[CAPTURE_DEBUG] Pixel Color - MidRight: {cMidRight}");
 
-            // 全サンプルピクセルが完全に同一の色であるかチェック
             bool allSame = (cTopLeft == cCenter) && (cCenter == cBottomRight) && (cBottomRight == cMidLeft) && (cMidLeft == cMidRight);
             Debug.Log($"[CAPTURE_DEBUG] Verification - Are all sampled pixels identical color? : {allSame}");
         }
@@ -731,6 +753,7 @@ public class PuzzleManager : MonoBehaviour
         Debug.Log($"[PuzzleManager] セーブスロット {slotIndex} にデータをローカル保存しました（エディタシミュレーション）。");
         #endif
 
+        yield break;
     }
 
     // 目玉ボタン（見本表示用）のコールバック群
