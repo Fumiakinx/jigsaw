@@ -643,25 +643,26 @@
             }
 
             // パス解決：現在の階層にBuildフォルダがあるかチェック
+            const cb = "?v=" + new Date().getTime(); // 自動キャッシュバスター
             try {
                 const response = await fetch("Build/Builds.loader.js", { method: 'HEAD' });
                 if (response.ok) {
                     console.log("ローカルのBuildフォルダを使用します。");
                     buildUrl = "Build";
-                    loaderUrl = "Build/Builds.loader.js";
-                    config.dataUrl = "Build/Builds.data";
-                    config.frameworkUrl = "Build/Builds.framework.js";
-                    config.codeUrl = "Build/Builds.wasm";
+                    loaderUrl = "Build/Builds.loader.js" + cb;
+                    config.dataUrl = "Build/Builds.data" + cb;
+                    config.frameworkUrl = "Build/Builds.framework.js" + cb;
+                    config.codeUrl = "Build/Builds.wasm" + cb;
                 } else {
                     throw new Error("Local loader not found");
                 }
             } catch (e) {
                 console.log("親のBuildsフォルダを参照します。");
                 buildUrl = "../Builds/Build";
-                loaderUrl = "../Builds/Build/Builds.loader.js";
-                config.dataUrl = "../Builds/Build/Builds.data";
-                config.frameworkUrl = "../Builds/Build/Builds.framework.js";
-                config.codeUrl = "../Builds/Build/Builds.wasm";
+                loaderUrl = "../Builds/Build/Builds.loader.js" + cb;
+                config.dataUrl = "../Builds/Build/Builds.data" + cb;
+                config.frameworkUrl = "../Builds/Build/Builds.framework.js" + cb;
+                config.codeUrl = "../Builds/Build/Builds.wasm" + cb;
             }
 
             var script = document.createElement("script");
