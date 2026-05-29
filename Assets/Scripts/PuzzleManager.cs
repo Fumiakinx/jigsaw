@@ -144,7 +144,7 @@ public class PuzzleManager : MonoBehaviour
         if (completionUIDoc != null) completionUIDoc.gameObject.SetActive(false);
         if (pauseUIDoc != null) pauseUIDoc.gameObject.SetActive(false);
         if (hudUIDoc != null) hudUIDoc.gameObject.SetActive(false); // 初期状態ではHUDを非表示に
-        Debug.Log("[PuzzleManager] [v1.6-Safe] Start completed.");
+        Debug.Log("[PuzzleManager] [v1.7-FixCapture] Start completed.");
     }
 
     void OnDestroy()
@@ -161,7 +161,7 @@ public class PuzzleManager : MonoBehaviour
             return;
         }
         if (selectedSprite == null) return;
-        Debug.Log($"[PuzzleManager] [v1.6-Safe] StartPuzzle: {selectedSprite.name}, Texture: {selectedSprite.texture.name} ({selectedSprite.texture.width}x{selectedSprite.texture.height})");
+        Debug.Log($"[PuzzleManager] [v1.7-FixCapture] StartPuzzle: {selectedSprite.name}, Texture: {selectedSprite.texture.name} ({selectedSprite.texture.width}x{selectedSprite.texture.height})");
         sourceSprite = selectedSprite;
         targetPieces = pieceCount;
         ClearExistingPuzzle();
@@ -551,9 +551,9 @@ public class PuzzleManager : MonoBehaviour
         int startX = (sw - captureW) / 2;
         int startY = (sh - captureH) / 2;
 
-        Debug.Log($"[CAPTURE_DEBUG] [v1.6-Safe] --- Capture Start (RenderTexture Method) ---");
-        Debug.Log($"[CAPTURE_DEBUG] [v1.6-Safe] Screen dimensions: {sw}x{sh}");
-        Debug.Log($"[CAPTURE_DEBUG] [v1.6-Safe] Calculated capture area: Rect(startX: {startX}, startY: {startY}, width: {captureW}, height: {captureH})");
+        Debug.Log($"[CAPTURE_DEBUG] [v1.7-FixCapture] --- Capture Start (RenderTexture Method) ---");
+        Debug.Log($"[CAPTURE_DEBUG] [v1.7-FixCapture] Screen dimensions: {sw}x{sh}");
+        Debug.Log($"[CAPTURE_DEBUG] [v1.7-FixCapture] Calculated capture area: Rect(startX: {startX}, startY: {startY}, width: {captureW}, height: {captureH})");
 
         // 🌟 1. UIの非表示化（このコルーチン内の処理はすべて同一フレーム内で同期的に行われるため、ユーザーの画面上には一切チラつきが発生しません）
         UnityEngine.UIElements.Label watermark = null;
@@ -600,25 +600,24 @@ public class PuzzleManager : MonoBehaviour
             cam.Render();
             Debug.Log("[CAPTURE_DEBUG] Offscreen Camera.Render() completed.");
 
+            // 🌟 GPU上のRenderTextureがアクティブな状態で同期的にReadPixelsを実行（WebGLバインド順序の矛盾を防止）
+            try
+            {
+                screenTex.ReadPixels(new Rect(0, 0, captureW, captureH), 0, 0);
+                screenTex.Apply();
+                Debug.Log("[CAPTURE_DEBUG] [v1.7-FixCapture] Offscreen ReadPixels completed successfully.");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[CAPTURE_DEBUG] [v1.7-FixCapture] Error during RenderTexture ReadPixels: {ex.Message}");
+            }
+
             // カメラの出力先を元に戻す（画面上の描画を復帰）
             cam.targetTexture = null;
         }
         else
         {
             Debug.LogError("[CAPTURE_DEBUG] Camera.main is null!");
-        }
-
-        // 🌟 3. GPU上のRenderTextureからピクセルを安全にロード（システムフレームバッファではないためWebGLエラーは完全に回避されます）
-        try
-        {
-            RenderTexture.active = tempRT; // 🌟 cam.targetTexture = null によるアクティブRTの自動クリアを完全に防ぐため、ここで強制再設定します
-            screenTex.ReadPixels(new Rect(0, 0, captureW, captureH), 0, 0);
-            screenTex.Apply();
-            Debug.Log("[CAPTURE_DEBUG] [v1.6-Safe] Offscreen ReadPixels completed successfully.");
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError($"[CAPTURE_DEBUG] [v1.6-Safe] Error during RenderTexture ReadPixels: {ex.Message}");
         }
 
         // RenderTextureのクリーンアップとアクティブバッファの復元
