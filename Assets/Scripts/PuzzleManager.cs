@@ -1673,6 +1673,32 @@ public class PuzzleManager : MonoBehaviour
         try
         {
             Texture2D tex = sourceSprite.texture;
+            Color avgColor;
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // 🌟 WebGL環境では描画フレーム外でのReadPixels制限を回避するため、CPU側で高速にサンプリングして平均色を算出
+            int w = tex.width;
+            int h = tex.height;
+            float rSum = 0f, gSum = 0f, bSum = 0f;
+            int samples = 0;
+
+            // 5x5グリッドで25箇所をサンプリング
+            for (int i = 1; i <= 5; i++)
+            {
+                for (int j = 1; j <= 5; j++)
+                {
+                    int px = Mathf.Clamp(w * i / 6, 0, w - 1);
+                    int py = Mathf.Clamp(h * j / 6, 0, h - 1);
+                    Color c = tex.GetPixel(px, py);
+                    rSum += c.r;
+                    gSum += c.g;
+                    bSum += c.b;
+                    samples++;
+                }
+            }
+            avgColor = new Color(rSum / samples, gSum / samples, bSum / samples, 1.0f);
+            Debug.Log($"[PuzzleManager] WebGL CPU-based background average color calculated: {avgColor}");
+#else
             // 1x1のRenderTextureを使ってGPU上で安全かつ高速に平均色を取得
             RenderTexture rt = RenderTexture.GetTemporary(1, 1, 0, RenderTextureFormat.ARGB32);
             Graphics.Blit(tex, rt);
@@ -1687,8 +1713,9 @@ public class PuzzleManager : MonoBehaviour
             RenderTexture.active = activeRT;
             RenderTexture.ReleaseTemporary(rt);
 
-            Color avgColor = result.GetPixel(0, 0);
+            avgColor = result.GetPixel(0, 0);
             Destroy(result);
+#endif
 
             // 輝度（Luminance）の算出
             float L = 0.299f * avgColor.r + 0.587f * avgColor.g + 0.114f * avgColor.b;
