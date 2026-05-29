@@ -548,7 +548,6 @@ public class PuzzleManager : MonoBehaviour
             hudUIDoc.rootVisualElement.style.display = DisplayStyle.None;
         
         yield return null; // 1フレーム待って、UI非表示のレイアウト更新を確実に描画エンジンに反映する
-        yield return new WaitForEndOfFrame(); // 描画終了まで待つ
 
         Texture2D screenTex = null;
         try
