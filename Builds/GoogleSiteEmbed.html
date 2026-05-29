@@ -875,9 +875,137 @@
         }
     }
 
-    // 詳細モーダルを閉じる
+    // 🌟 セーブデータから再開するための専用一時変数
+    let pendingResumeSlotIndex = null;
+    let pendingResumeSlotData = null;
+    let pendingResumeAutosave = false;
+
+    // 🌟 セーブデータ再開用のモーダル表示関数 (通常の白地モーダルを流用)
+    function openModalForResume(slotIndex, displayName, slot, isAutosave) {
+        pendingResumeSlotIndex = slotIndex;
+        pendingResumeSlotData = slot;
+        pendingResumeAutosave = isAutosave;
+        
+        const modal = document.getElementById('detailModal');
+        const modalImg = document.getElementById('modalImg');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalGenres = document.getElementById('modalGenres');
+        const modalAuthorArea = document.getElementById('modalAuthorArea');
+        const modalLinkContainer = document.getElementById('modalLinkContainer');
+        const startBtn = document.getElementById('startBtn');
+        const pieceSelect = document.getElementById('pieceCount');
+        const leaderboard = document.querySelector('.modal-leaderboard');
+
+        // サムネイル画像の復元
+        let thumbBase64 = "";
+        if (slot.saveDataJson) {
+            const dec = decryptSaveData(slot.saveDataJson);
+            if (dec) {
+                try {
+                    const saveData = JSON.parse(dec);
+                    if (saveData.screenshotBase64) {
+                        thumbBase64 = saveData.screenshotBase64;
+                    }
+                } catch(e) {}
+            }
+        }
+
+        if (thumbBase64) {
+            modalImg.src = "data:image/jpeg;base64," + thumbBase64;
+        } else {
+            modalImg.src = "images/save_thumbnail_default.png";
+        }
+
+        const slotLabel = isAutosave ? "オートセーブ" : `スロット ${slotIndex}`;
+        modalTitle.innerText = `${slotLabel} のパズルを再開`;
+
+        // ジャンルバッジをセーブデータ情報に差し替え
+        modalGenres.innerHTML = '';
+        const badge = document.createElement('span');
+        badge.className = 'genre-badge';
+        badge.style.background = '#e8f5e9';
+        badge.style.color = '#2e7d32';
+        badge.style.border = '1px solid #a5d6a7';
+        badge.innerText = `💾 保存された進行中データ`;
+        modalGenres.appendChild(badge);
+
+        const badgeTime = document.createElement('span');
+        badgeTime.className = 'genre-badge';
+        badgeTime.innerText = `⏱️ セーブ日時: ${slot.saveTime}`;
+        modalGenres.appendChild(badgeTime);
+
+        // 不要な作者情報やリンクは非表示
+        modalAuthorArea.style.display = 'none';
+        modalLinkContainer.style.display = 'none';
+
+        // ピース数をセーブデータの値にロックして選択不可にする
+        if (slot.targetPieces) {
+            pieceSelect.value = slot.targetPieces.toString();
+        }
+        pieceSelect.disabled = true;
+
+        // ランキングエリアは非表示にする
+        if (leaderboard) {
+            leaderboard.style.display = 'none';
+        }
+
+        // 開始ボタンのテキストとイベントを差し替え（ポップアップブロックを完璧に回避）
+        startBtn.innerText = "パズル再開！";
+        startBtn.setAttribute('onclick', 'resumeJigsaw()');
+
+        modal.style.display = 'flex';
+    }
+
+    // 🌟 パズル再開ボタンクリック時の同期アクション（信頼されたクリックイベント直下でwindow.openを呼ぶためブロックされません）
+    function resumeJigsaw() {
+        if (pendingResumeSlotIndex === null) return;
+        
+        let playerUrl = 'jigsaw_player.html';
+        const isLocal = window.location.protocol === 'file:' || 
+                        window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1';
+        
+        if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
+            playerUrl = PUBLISHED_PLAYER_URL;
+        }
+        
+        const playerNameInput = document.getElementById('playerNameInput');
+        const playerName = playerNameInput ? playerNameInput.value.trim() : "匿名";
+        
+        const loadUrl = `${playerUrl}?isSaveLoad=true&slotIndex=${pendingResumeResumeSlotIndex = pendingResumeSlotIndex}&playerName=${encodeURIComponent(playerName)}&rankingApiUrl=${encodeURIComponent(RANKING_API_URL)}`;
+        console.log(`🌐 モーダルクリックから大画面（新タブ）をロード起動します(ポップアップブロック回避):`, loadUrl);
+        
+        const playerWindow = window.open(loadUrl, '_blank');
+        if (!playerWindow) {
+            alert("ポップアップブロックが有効化されている可能性があります。別タブでの起動を許可してください。");
+        }
+        
+        closeModal();
+    }
+
+    // 詳細モーダルを閉じる (リセット処理付き)
     function closeModal() {
         document.getElementById('detailModal').style.display = 'none';
+        
+        // モーダルの表示設定を元の新規ゲーム開始用の通常表示に復旧する
+        const startBtn = document.getElementById('startBtn');
+        const pieceSelect = document.getElementById('pieceCount');
+        const leaderboard = document.querySelector('.modal-leaderboard');
+        
+        if (startBtn) {
+            startBtn.innerText = "パズルを開始する！";
+            startBtn.setAttribute('onclick', 'sendToJigsaw()');
+        }
+        if (pieceSelect) {
+            pieceSelect.disabled = false;
+        }
+        if (leaderboard) {
+            leaderboard.style.display = 'block';
+        }
+        
+        pendingResumeSlotIndex = null;
+        pendingResumeSlotData = null;
+        pendingResumeAutosave = false;
     }
 
     // モーダルの外側をクリックして閉じる
@@ -1129,24 +1257,7 @@
                         }
                         
                         item.onclick = function() {
-                            const slotLabel = isAutosave ? "オートセーブ" : `スロット ${i}`;
-                            if (confirm(`${slotLabel} のセーブデータ（${displayName}）から再開しますか？`)) {
-                                let playerUrl = 'jigsaw_player.html';
-                                const isLocal = window.location.protocol === 'file:' || 
-                                                window.location.hostname === 'localhost' || 
-                                                window.location.hostname === '127.0.0.1';
-                                
-                                if (!isLocal && typeof PUBLISHED_PLAYER_URL !== 'undefined' && PUBLISHED_PLAYER_URL && PUBLISHED_PLAYER_URL.startsWith('http')) {
-                                    playerUrl = PUBLISHED_PLAYER_URL;
-                                }
-                                
-                                const loadUrl = `${playerUrl}?isSaveLoad=true&slotIndex=${i}&playerName=${encodeURIComponent(playerName)}&rankingApiUrl=${encodeURIComponent(RANKING_API_URL)}`;
-                                console.log(`🌐 大画面（新タブ）でゴールドセーブカード（${slotLabel}）からロード起動します:`, loadUrl);
-                                const playerWindow = window.open(loadUrl, '_blank');
-                                if (!playerWindow) {
-                                    alert("ポップアップブロックが有効化されている可能性があります。別タブでの起動を許可してください。");
-                                }
-                            }
+                            openModalForResume(i, displayName, slot, isAutosave);
                         };
                         
                         // ギャラリーの先頭（左上）にゴールドカードを挿入

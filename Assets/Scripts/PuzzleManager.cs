@@ -79,7 +79,7 @@ public class PuzzleManager : MonoBehaviour
     private float pauseStartTime;
     private bool isPaused = false;
     private bool isFinished = false;
-    private bool autosaveEnabled = true;
+    private bool autosaveEnabled = false;
 
     // タッチ＆ダブルタップ回転用の変数
     private float lastClickTime = 0f;
@@ -542,13 +542,40 @@ public class PuzzleManager : MonoBehaviour
 
     private IEnumerator CaptureAndSaveCoroutine(int slotIndex)
     {
-        // UIを一時的に隠してゲーム画面だけをキャプチャする（より綺麗なサムネイルのため）
+        // 🌟 一時停止画面の操作メニューやポップアップ等の不要なUI要素だけを非表示にし、ゲーム盤面を露出させる
+        Label watermark = null;
         if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
-            pauseUIDoc.rootVisualElement.style.display = DisplayStyle.None;
+        {
+            var root = pauseUIDoc.rootVisualElement;
+            var pauseMenu = root.Q<VisualElement>("PauseMenu");
+            var savePopup = root.Q<VisualElement>("SavePopup");
+            var title = root.Q<Label>(className: "pause-title-label");
+            var returnBtn = root.Q<Button>("ReturnToSelectionButton");
+
+            if (pauseMenu != null) pauseMenu.style.display = DisplayStyle.None;
+            if (savePopup != null) savePopup.style.display = DisplayStyle.None;
+            if (title != null) title.style.display = DisplayStyle.None;
+            if (returnBtn != null) returnBtn.style.display = DisplayStyle.None;
+
+            // 🌟 画面中央に大きく「SLOT 1」といったスタイリッシュな透かしテキストを浮かび上がらせる
+            watermark = root.Q<Label>("SaveWatermark");
+            if (watermark != null)
+            {
+                watermark.text = $"SLOT {slotIndex}";
+                watermark.style.display = DisplayStyle.Flex;
+            }
+        }
+        
         if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
             hudUIDoc.rootVisualElement.style.display = DisplayStyle.None;
         
-        yield return null; // 1フレーム待って、UI非表示のレイアウト更新を確実に描画エンジンに反映する
+        yield return null; // 1フレーム待って、UI表示切り替えを描画エンジンに確実に適用する
+
+        // 🌟 メインカメラの描画処理を強制実行（PrintScreenのように即座に現在状態を描画バッファに書き込む）
+        if (Camera.main != null)
+        {
+            Camera.main.Render();
+        }
 
         // 🌟 WebGLでも確実にCPU読み取り（縮小サンプリング）可能な高互換の手動ReadPixels処理に統一
         int sw = Screen.width;
@@ -584,9 +611,25 @@ public class PuzzleManager : MonoBehaviour
         Destroy(screenTex);
         Destroy(thumbTex);
 
-        // UIを再表示
+        // 🌟 キャプチャ撮影完了後に、表示状態を完全に元の通常状態に復旧する（UIバインドは一切破壊されません）
         if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
-            pauseUIDoc.rootVisualElement.style.display = DisplayStyle.Flex;
+        {
+            var root = pauseUIDoc.rootVisualElement;
+            var pauseMenu = root.Q<VisualElement>("PauseMenu");
+            var savePopup = root.Q<VisualElement>("SavePopup");
+            var title = root.Q<Label>(className: "pause-title-label");
+            var returnBtn = root.Q<Button>("ReturnToSelectionButton");
+
+            if (pauseMenu != null) pauseMenu.style.display = DisplayStyle.None; // セーブ実行直後なのでポップアップを優先表示
+            if (savePopup != null) savePopup.style.display = DisplayStyle.Flex; // ポップアップを最前面に復帰
+            if (title != null) title.style.display = DisplayStyle.Flex;
+            if (returnBtn != null) returnBtn.style.display = DisplayStyle.Flex;
+
+            if (watermark != null)
+            {
+                watermark.style.display = DisplayStyle.None; // 透かしテキストは消去する
+            }
+        }
         if (hudUIDoc != null && hudUIDoc.rootVisualElement != null)
             hudUIDoc.rootVisualElement.style.display = DisplayStyle.Flex;
 

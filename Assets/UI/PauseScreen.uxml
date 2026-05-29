@@ -44,5 +44,7 @@
                 <ui:Button name="ClosePopupButton" text="キャンセル" class="save-popup-close-btn" />
             </ui:VisualElement>
         </ui:VisualElement>
+        <!-- 🌟 セーブキャプチャ時の画面中央透かしテキストラベル -->
+        <ui:Label name="SaveWatermark" text="SLOT 1" class="save-watermark" />
     </ui:VisualElement>
 </ui:UXML>
