@@ -543,13 +543,13 @@ public class PuzzleManager : MonoBehaviour
     private IEnumerator CaptureAndSaveCoroutine(int slotIndex)
     {
         // 🌟 一時停止画面の操作メニューやポップアップ等の不要なUI要素だけを非表示にし、ゲーム盤面を露出させる
-        Label watermark = null;
+        UnityEngine.UIElements.Label watermark = null;
         if (pauseUIDoc != null && pauseUIDoc.rootVisualElement != null)
         {
             var root = pauseUIDoc.rootVisualElement;
             var pauseMenu = root.Q<VisualElement>("PauseMenu");
             var savePopup = root.Q<VisualElement>("SavePopup");
-            var title = root.Q<Label>(className: "pause-title-label");
+            var title = root.Q<UnityEngine.UIElements.Label>(className: "pause-title-label");
             var returnBtn = root.Q<Button>("ReturnToSelectionButton");
 
             if (pauseMenu != null) pauseMenu.style.display = DisplayStyle.None;
@@ -558,7 +558,7 @@ public class PuzzleManager : MonoBehaviour
             if (returnBtn != null) returnBtn.style.display = DisplayStyle.None;
 
             // 🌟 画面中央に大きく「SLOT 1」といったスタイリッシュな透かしテキストを浮かび上がらせる
-            watermark = root.Q<Label>("SaveWatermark");
+            watermark = root.Q<UnityEngine.UIElements.Label>("SaveWatermark");
             if (watermark != null)
             {
                 watermark.text = $"SLOT {slotIndex}";
