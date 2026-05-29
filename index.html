@@ -502,6 +502,24 @@
     </footer>
 
     <script>
+        // 🌟 数独クリア時にWebGLから呼び出されるグローバルコールバック
+        window.onSudokuComplete = async function (difficulty, elapsedTime, playerName) {
+            console.log("🏆 数独クリア！難易度:", difficulty, "タイム:", elapsedTime, "秒, プレイヤー:", playerName);
+            if (!playerName || playerName.trim() === "") return;
+            
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
+            
+            try {
+                await fetch(`${GAS_URL}?action=add_sudoku_score&difficulty=${encodeURIComponent(difficulty)}&name=${encodeURIComponent(playerName)}&time=${elapsedTime}`, {
+                    method: 'GET',
+                    mode: 'no-cors'
+                });
+                console.log("🏆 数独ランキング送信完了！");
+            } catch (e) {
+                console.error("❌ 数独ランキング送信中にエラーが発生しました:", e);
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
             const nameInput = document.getElementById('globalPlayerName');
             const saveIndicator = document.getElementById('saveIndicator');
