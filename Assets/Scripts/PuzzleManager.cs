@@ -570,6 +570,7 @@ public class PuzzleManager : MonoBehaviour
             hudUIDoc.rootVisualElement.style.display = DisplayStyle.None;
         
         yield return null; // 1フレーム待って、UI表示切り替えを描画エンジンに確実に適用する
+        yield return new WaitForEndOfFrame(); // 🌟 WebGLのReadPixels制約をクリアするため、フレームレンダリング終了の瞬間まで待機する
 
         // 🌟 【詳細ログ 1】描画処理前の状態ログ
         if (Camera.main != null)
