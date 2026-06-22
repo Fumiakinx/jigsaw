@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>プレイヤーネームバー</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -132,20 +132,17 @@
             }
 
             if (nameInput) {
-                // LocalStorageから名前をロード
                 const savedName = localStorage.getItem('jigsaw_player_name');
                 if (savedName) {
                     nameInput.value = savedName;
                 }
                 updateStatus();
 
-                // 変更をリアルタイムで保存
                 nameInput.addEventListener('input', () => {
                     localStorage.setItem('jigsaw_player_name', nameInput.value.trim());
                     updateStatus();
                 });
 
-                // フォーカス時の外枠コンテナの光彩アニメーション
                 nameInput.addEventListener('focus', () => {
                     container.style.borderColor = 'rgba(76, 175, 80, 0.4)';
                     container.style.boxShadow = '0 6px 20px rgba(76, 175, 80, 0.15)';

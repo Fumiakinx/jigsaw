@@ -218,7 +218,7 @@
             transform: translateX(-50%);
             background: rgba(18, 18, 20, 0.85);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-top: none; /* 上端にくっつくため上枠はなし */
+            border-top: none; /* 上端にくくつくため上枠はなし */
             border-bottom-left-radius: 20px;
             border-bottom-right-radius: 20px;
             border-top-left-radius: 0;
@@ -402,7 +402,7 @@
                         <li>👉 <strong style="color: white;">ドラッグ</strong> : ピースを移動</li>
                         <li>👉 <strong style="color: white;">ダブルタップ</strong> : ピースを回転（90度）</li>
                         <li>👉 <strong style="color: white;">ドラッグ中のマルチタップ</strong> : ピースを回転（90度）</li>
-                        <li>👁️ <strong style="color: white;">完成図表示（長押し）</strong> : コントロールバーの 👁 ボタンを長押し</li>
+                        <li>👁️ <strong style="color: white;">完成図表示（長押し）</strong> : コントロールバー of 👁 ボタンを長押し</li>
                     </ul>
                 </div>
             </div>
@@ -458,12 +458,10 @@
         var unityInstance = null;
         var selectedData = null;
 
-        // [NEW] セーブデータ難読化（暗号化）ヘルパー（グローバル化）
         function encryptSaveData(dataStr) {
             return btoa(unescape(encodeURIComponent(dataStr)));
         }
 
-        // [NEW] セーブデータ復号ヘルパー（グローバル化）
         function decryptSaveData(encryptedStr) {
             try {
                 return decodeURIComponent(escape(atob(encryptedStr)));
@@ -473,12 +471,9 @@
             }
         }
 
-        // 1. 親ウィンドウからのデータ受け渡しを待機 (クエリパラメータ優先 ➔ ポーリング処理・クロスドメイン安全対策)
+        // 1. 親ウィンドウからのデータ受け渡しを待機 (クエリパラメータ優先)
         function checkParentData() {
             return new Promise(async (resolve) => {
-                // HSLやテーマ色の設定のために、デクリプトなどの定義も必要に応じてグローバルで使用可能にする
-                
-                // A. URLのクエリパラメータを最優先で解析（クロスドメイン安全対策 [NEW]）
                 const urlParams = new URLSearchParams(window.location.search);
                 const imageId = urlParams.get('imageId');
                 const pieceCount = urlParams.get('pieceCount');
@@ -489,14 +484,12 @@
                 const gasApiUrlParam = urlParams.get('gasApiUrl');
                 const rankingApiUrlParam = urlParams.get('rankingApiUrl');
 
-                // 🌟 画像取得用のGASエンドポイントとセーブ/ランキング用のGASエンドポイントを独立してマッピング
                 const GAS_URL = gasApiUrlParam || "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec";
-                const RANKING_URL = rankingApiUrlParam || "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
+                const RANKING_URL = rankingApiUrlParam || "https://script.google.com/macros/s/AKfycbzIgOMcU1d9kMOfeDjmZmDFcoW8k1LIK0yZbNSCmokaFdb7JyMwa6mHKxxfkVlgaOEt/exec";
 
                 if (isSaveLoad === 'true' && slotIndex && playerName) {
                     statusText.innerText = "ブラウザからセーブデータを安全にロードしています...";
                     try {
-                        // 1. まずローカルのLocalStorageからデータを読み出す（高速＆オフライン安全）
                         const storageKey = `jigsaw_save_${playerName}_slot_${slotIndex}`;
                         const localData = localStorage.getItem(storageKey);
                         if (localData) {
@@ -505,14 +498,13 @@
                                 const dec = decryptSaveData(slot.saveDataJson);
                                 if (dec) {
                                     let sData = JSON.parse(dec);
-                                    // 🌟 imageNameがGASの画像IDなどの場合、事前にGASから画像(Base64)を再取得して復元する
                                     if (sData.imageName && !sData.imageName.startsWith("http") && !sData.imageName.includes("/")) {
                                         try {
                                             console.log("[JigsawPlayer] ロードしたセーブデータの画像IDから、GAS経由で画像を再取得します:", sData.imageName);
                                             const response = await fetch(`${GAS_URL}?action=image&id=${sData.imageName}`);
                                             const resData = await response.json();
                                             if (resData.success && resData.imageData) {
-                                                sData.imageName = resData.imageData; // Base64を復元！
+                                                sData.imageName = resData.imageData; 
                                                 console.log("[JigsawPlayer] GASからの画像データの再デコード・復元に成功しました。");
                                             }
                                         } catch (err) {
@@ -526,14 +518,12 @@
                                         playerName: playerName,
                                         rankingApiUrl: RANKING_URL
                                     };
-                                    console.log("[JigsawPlayer] LocalStorageからのロードに成功しました！");
                                     resolve(true);
                                     return;
                                 }
                             }
                         }
 
-                        // 2. ローカルにデータがない場合のフォールバック（GASサーバーから読み込み）
                         console.log("[JigsawPlayer] ローカルデータが見つからないため、GASサーバーからのロードを試みます...");
                         const response = await fetch(`${RANKING_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${slotIndex}`);
                         const resData = await response.json();
@@ -542,14 +532,13 @@
                             const dec = decryptSaveData(resData.saveDataJson);
                             if (dec) {
                                 let sData = JSON.parse(dec);
-                                // 🌟 imageNameがGASの画像IDなどの場合、事前にGASから画像(Base64)を再取得して復元する
                                 if (sData.imageName && !sData.imageName.startsWith("http") && !sData.imageName.includes("/")) {
                                     try {
                                         console.log("[JigsawPlayer] GASロードのセーブデータ画像IDから、GAS経由で画像を再取得します:", sData.imageName);
                                         const response = await fetch(`${GAS_URL}?action=image&id=${sData.imageName}`);
                                         const resData = await response.json();
                                         if (resData.success && resData.imageData) {
-                                            sData.imageName = resData.imageData; // Base64を復元！
+                                            sData.imageName = resData.imageData; 
                                             console.log("[JigsawPlayer] GASロードデータの画像データ復元に成功しました。");
                                         }
                                     } catch (err) {
@@ -563,7 +552,6 @@
                                     playerName: playerName,
                                     rankingApiUrl: RANKING_URL
                                 };
-                                console.log("[JigsawPlayer] URLパラメータからGAS経由でのセーブデータロードに成功しました。");
                                 resolve(true);
                                 return;
                             }
@@ -575,7 +563,6 @@
                     statusText.innerText = "GASからパズル画像を安全に読み込んでいます...";
                     let targetBase64 = null;
 
-                    // GAS経由での画像取得（GoogleドライブID形式の場合のみ）
                     if (imageId && !imageId.startsWith('http') && !imageId.includes('/')) {
                         try {
                             console.log("[JigsawPlayer] ドライブIDから安全に画像を自動取得します:", imageId, "GAS URL:", GAS_URL);
@@ -590,7 +577,7 @@
                     }
 
                     if (!targetBase64) {
-                        targetBase64 = imageId; // ローカル用などのフォールバック
+                        targetBase64 = imageId; 
                     }
 
                     selectedData = {
@@ -605,13 +592,11 @@
                     return;
                 }
 
-                // B. SessionStorageから起動データを優先取得（同一枠内遷移時の対応などの互換性維持）
                 try {
                     const sessionData = sessionStorage.getItem('selectedPuzzleData');
                     if (sessionData) {
                         selectedData = JSON.parse(sessionData);
-                        sessionStorage.removeItem('selectedPuzzleData'); // 使用後にクリーンアップ
-                        console.log("[JigsawPlayer] SessionStorageからパズル起動データを取得しました。");
+                        sessionStorage.removeItem('selectedPuzzleData'); 
                         resolve(true);
                         return;
                     }
@@ -619,15 +604,13 @@
                     console.warn("[JigsawPlayer] SessionStorageの読み込みに失敗しました:", sessionError);
                 }
 
-                // C. 以前の動作（window.opener）へのフォールバック
                 let attempts = 0;
-                const maxAttempts = 50; // 最大5秒待機
+                const maxAttempts = 50; 
                 
                 const interval = setInterval(() => {
                     attempts++;
                     
                     try {
-                        // 親ウィンドウの共有データがあるか確認
                         if (window.opener && window.opener.selectedPuzzleData) {
                             selectedData = window.opener.selectedPuzzleData;
                             clearInterval(interval);
@@ -635,9 +618,7 @@
                             return;
                         }
                     } catch (securityError) {
-                        // セキュリティブロック時はポーリングを早めに打ち切り、エラー画面にする
                         clearInterval(interval);
-                        console.error("【セキュリティ制限】親画面との通信が遮断されました:", securityError);
                         showConnectionError("【セキュリティ制限】セキュリティ設定のため親ウィンドウと接続できませんでした。");
                         resolve(false);
                         return;
@@ -645,28 +626,20 @@
                     
                     if (attempts >= maxAttempts) {
                         clearInterval(interval);
-                        console.warn("パズル起動パラメータが見つかりませんでした。");
                         resolve(false);
                     }
                 }, 100);
             });
         }
 
-        // 2. Unityのロード設定
-        var buildUrl = "../Builds/WebGL/Jigsaw/Build"; 
-        var loaderUrl = "../Builds/WebGL/Jigsaw/Build/Jigsaw.loader.js";
-        
-        var checkConfig = {
-            dataUrl: "Build/Jigsaw.data",
-            frameworkUrl: "Build/Jigsaw.framework.js",
-            codeUrl: "Build/Jigsaw.wasm"
-        };
+        // 2. Unityのロード設定 (Jigsaw/Builds/Build を指すように調整)
+        var loaderUrl = "Builds/Build/Builds.loader.js";
         
         var config = {
             arguments: [],
-            dataUrl: "Build/Builds.data",
-            frameworkUrl: "Build/Builds.framework.js",
-            codeUrl: "Build/Builds.wasm",
+            dataUrl: "Builds/Build/Builds.data",
+            frameworkUrl: "Builds/Build/Builds.framework.js",
+            codeUrl: "Builds/Build/Builds.wasm",
             streamingAssetsUrl: "StreamingAssets",
             companyName: "DefaultCompany",
             productName: "Jigsaw",
@@ -679,11 +652,6 @@
             }
         };
 
-        // ローカルの開発テスト用、または本番デプロイ用の相対パス自己判定
-        // 同一ディレクトリにBuildフォルダが無いかフェッチで簡易チェックする、あるいは単にエラーキャッチで切り替える
-        // ここでは最も確実な、現在のスクリプトURLやフォルダ構成に基づく判定を行います
-        
-        // 3. 画面に合わせたレスポンシブなサイズ調整
         function resizeCanvas() {
             const width = window.innerWidth;
             const height = window.innerHeight;
@@ -693,53 +661,31 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // 4. ゲーム起動プロセス
         async function initGame() {
             statusText.innerText = "パズル画像データを準備しています...";
             await checkParentData();
             
             statusText.innerText = "ゲームエンジンを起動しています...";
             
-            // 親ウィンドウから共有された画像データを元に背景色とつまみ色を動的に設定
             if (selectedData && selectedData.imageData) {
                 applyDynamicColors(selectedData.imageData);
             }
 
-            // パス解決：現在の階層にBuildフォルダがあるかチェック
-            const cb = "?v=" + new Date().getTime(); // 自動キャッシュバスター
-            try {
-                const response = await fetch("Build/Builds.loader.js", { method: 'HEAD' });
-                if (response.ok) {
-                    console.log("ローカルのBuildフォルダを使用します。");
-                    buildUrl = "Build";
-                    loaderUrl = "Build/Builds.loader.js" + cb;
-                    config.dataUrl = "Build/Builds.data" + cb;
-                    config.frameworkUrl = "Build/Builds.framework.js" + cb;
-                    config.codeUrl = "Build/Builds.wasm" + cb;
-                } else {
-                    throw new Error("Local loader not found");
-                }
-            } catch (e) {
-                console.log("親のBuildsフォルダを参照します。");
-                buildUrl = "../Builds/Build";
-                loaderUrl = "../Builds/Build/Builds.loader.js" + cb;
-                config.dataUrl = "../Builds/Build/Builds.data" + cb;
-                config.frameworkUrl = "../Builds/Build/Builds.framework.js" + cb;
-                config.codeUrl = "../Builds/Build/Builds.wasm" + cb;
-            }
+            const cb = "?v=" + new Date().getTime(); 
+            loaderUrl = loaderUrl + cb;
+            config.dataUrl = config.dataUrl + cb;
+            config.frameworkUrl = config.frameworkUrl + cb;
+            config.codeUrl = config.codeUrl + cb;
 
             var script = document.createElement("script");
             script.src = loaderUrl;
 
             window.saveJigsawData = async function(slotIndex, jsonDataStr) {
-                console.log(`[LOG 4: JS] saveJigsawData受信。スロット: ${slotIndex}, 受信文字数: ${jsonDataStr ? jsonDataStr.length : 0}`);
                 try {
                     const playerName = (selectedData && selectedData.playerName) ? selectedData.playerName.trim() : "匿名";
                     const storageKey = `jigsaw_save_${playerName}_slot_${slotIndex}`;
                     
-                    // 空文字列が渡された場合はセーブデータ消去（クリア時）として処理
                     if (!jsonDataStr || jsonDataStr.trim() === "") {
-                        console.log(`[LocalStorage-Delete] セーブデータを消去します。キー: ${storageKey}`);
                         localStorage.removeItem(storageKey);
                         if (typeof window.requestSlotDescriptions === 'function') {
                             await window.requestSlotDescriptions();
@@ -750,7 +696,6 @@
                     let d = JSON.parse(jsonDataStr);
                     let originalImageName = d.imageName || "";
                     
-                    // 🌟 imageNameが巨大なBase64形式だった場合、保存用に極小の画像ID/URLに差し替える (LocalStorage容量上限エラーの根本解決)
                     if (d.imageName && d.imageName.startsWith("data:image/") && d.imageName.includes("base64,")) {
                         if (selectedData && selectedData.imageId) {
                             d.imageName = selectedData.imageId;
@@ -759,17 +704,12 @@
                     
                     let modifiedJsonDataStr = JSON.stringify(d);
                     let enc = encryptSaveData(modifiedJsonDataStr);
-                    console.log(`[LOG 5: JS] 暗号化成功。暗号化後の文字数: ${enc.length}`);
                     
-                    // 表記用の画像名整形
                     let displayImgName = originalImageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
                     if (displayImgName.startsWith("data:image/")) {
                         displayImgName = (selectedData && selectedData.imageName) ? selectedData.imageName : ((selectedData && selectedData.imageId) ? `ドライブ画像: ${selectedData.imageId}` : "カスタム画像");
                     }
                     
-                    console.log(`[LocalStorage-Save] セーブデータをブラウザに保存します。名: ${playerName}, スロット: ${slotIndex}, 画像: ${displayImgName}`);
-                    
-                    // スロットごとのメタデータと暗号化された実データをLocalStorageに保持
                     const saveMeta = {
                         playerName: playerName,
                         slotIndex: slotIndex.toString(),
@@ -781,30 +721,21 @@
                     
                     localStorage.setItem(storageKey, JSON.stringify(saveMeta));
                     
-                    console.log(`[LOG 6: JS] LocalStorageへのセーブデータ書き込み完了！ キー: ${storageKey}`);
-                    // セーブ成功後にスロット情報を再取得してUnityに通知する
                     if (typeof window.requestSlotDescriptions === 'function') {
-                        console.log(`[LOG 6.5: JS] スロット一覧を最新化するため再読み込みを開始します...`);
                         await window.requestSlotDescriptions();
                     }
                 } catch(e) {
-                    console.error("[LOG 6: ERROR] saveJigsawDataの処理中に例外が発生しました！", e);
+                    console.error("saveJigsawDataのエラー:", e);
                 }
             };
 
             window.requestSlotDescriptions = async function() {
-                console.log("[LOG Origin: Player] 現在のドメイン (Origin):", window.location.origin);
-                console.log("[LOG 7: JS] requestSlotDescriptions呼び出しを受信しました。");
-                if (!unityInstance) {
-                    console.error("[LOG 7: ERROR] unityInstanceが存在しません！");
-                    return;
-                }
+                if (!unityInstance) return;
                 
                 const playerName = (selectedData && selectedData.playerName) ? selectedData.playerName.trim() : "匿名";
                 let descs = ["空きスロット", "空きスロット", "空きスロット"];
                 
                 try {
-                    console.log(`[LocalStorage-Load] LocalStorageからスロット状況を取得します。名: ${playerName}`);
                     for (let i = 1; i <= 3; i++) {
                         const storageKey = `jigsaw_save_${playerName}_slot_${i}`;
                         const savedDataStr = localStorage.getItem(storageKey);
@@ -823,16 +754,14 @@
                                         } catch (e) {}
                                     }
                                 }
-                                // サムネイルBase64がある場合、説明の後に ":::" を挟んで結合してUnityへ送信
                                 descs[i - 1] = `${slot.imageName} \n(${slot.saveTime})` + (screenBase64 ? `:::${screenBase64}` : "");
                             }
                         }
                     }
                 } catch(e) {
-                    console.error("[LocalStorage-Load-Error] スロット状況取得中にエラーが発生しました:", e);
+                    console.error("スロット状況取得エラー:", e);
                 }
                 
-                console.log("[LOG 10: JS] Unityへ送り返す説明テキスト一覧:", descs);
                 const combined = descs.join("|");
                 unityInstance.SendMessage("PuzzleManager", "UpdateSlotDescriptions", combined);
             };
@@ -847,19 +776,14 @@
                     
                     setTimeout(() => {
                         if (selectedData && selectedData.isSaveLoad && selectedData.saveJson) {
-                            console.log("Unityにセーブデータからのロード再開リクエストを送信します。");
                             unityInstance.SendMessage('PuzzleManager', 'LoadPuzzleFromWeb', selectedData.saveJson);
                             sendAutosaveStateToUnity();
                             
-                            // ローディング画面をフェードアウト
                             loadingOverlay.style.opacity = 0;
                             setTimeout(() => {
                                 loadingOverlay.style.visibility = "hidden";
                             }, 500);
                         } else if (selectedData && selectedData.imageData) {
-                            console.log("Unityにパズル開始リクエストを送信します。ピース数:", selectedData.pieceCount);
-                            
-                            // WebP画像の場合はCanvasを使用してPNG（Base64）にデコード・変換する
                             const startPuzzle = (imgData) => {
                                 const message = imgData + "," + selectedData.pieceCount;
                                 unityInstance.SendMessage('PuzzleManager', 'StartPuzzleFromWeb', message);
@@ -872,7 +796,6 @@
                             };
 
                             if (selectedData.imageData.startsWith("data:image/webp;base64,")) {
-                                console.log("[JigsawPlayer] WebP画像が検出されました。WebGL互換性のためPNGへ変換処理を開始します。");
                                 const img = new Image();
                                 img.onload = () => {
                                     const canvas = document.createElement("canvas");
@@ -881,11 +804,9 @@
                                     const ctx = canvas.getContext("2d");
                                     ctx.drawImage(img, 0, 0);
                                     const pngData = canvas.toDataURL("image/png");
-                                    console.log("[JigsawPlayer] WebPからPNGへのデコード・変換が完了しました。");
                                     startPuzzle(pngData);
                                 };
                                 img.onerror = (err) => {
-                                    console.error("[JigsawPlayer] WebP画像のデコードに失敗しました。生のデータをフォールバック送信します:", err);
                                     startPuzzle(selectedData.imageData);
                                 };
                                 img.src = selectedData.imageData;
@@ -893,7 +814,6 @@
                                 startPuzzle(selectedData.imageData);
                             }
                         } else {
-                            console.warn("データがロードされていないため、エラー画面を表示します。");
                             showConnectionError("親画面からの画像データ受信（Base64転送）に失敗したか、待機制限時間（5秒）を超過しました。");
                         }
                     }, 800);
@@ -906,7 +826,6 @@
             document.body.appendChild(script);
         }
 
-        // 🌟 自動連携に失敗した際のエラー表示
         function showConnectionError(reason) {
             const spinner = document.querySelector(".spinner-outer");
             const progress = document.querySelector(".progress-bar-empty");
@@ -923,13 +842,11 @@
                 errorLog.innerText = reason;
             }
             
-            // 🌟 エラープレビューの表示
             if (selectedData && selectedData.imageData) {
                 const previewImg = document.getElementById("error-preview-img");
                 const previewContainer = document.getElementById("error-preview-container");
                 if (previewImg && previewContainer) {
                     let displayUrl = selectedData.imageData;
-                    // Googleドライブの画像IDの場合はサムネイルURLに変換
                     if (displayUrl && !displayUrl.startsWith('http') && !displayUrl.startsWith('data:') && !displayUrl.includes('/')) {
                         displayUrl = `https://drive.google.com/thumbnail?sz=w300&id=${displayUrl}`;
                     }
@@ -941,7 +858,6 @@
             if (errorArea) errorArea.style.display = "block";
         }
         
-        // 🌟 エラー画面をスキップして、通常のUnity初期画像選択画面に進む
         function skipToDefaultGame() {
             loadingOverlay.style.opacity = 0;
             setTimeout(() => {
@@ -949,29 +865,24 @@
             }, 500);
         }
 
-        // 5. ユーティリティ & メニュー制御
         const controlBar = document.getElementById("control-bar");
         const controlHandle = document.getElementById("control-handle");
         const btnShowGuide = document.getElementById("btn-show-guide");
         
         let hideTimeout = null;
         
-        // メニューを開く
         function openControlBar() {
             if (hideTimeout) clearTimeout(hideTimeout);
             controlBar.classList.add("active");
         }
         
-        // メニューを閉じる
         function closeControlBar() {
             controlBar.classList.remove("active");
         }
         
-        // ハンドルにホバーまたはクリックで開く
         controlHandle.addEventListener("mouseenter", openControlBar);
         controlHandle.addEventListener("click", openControlBar);
         
-        // コントロールバーからマウスが離れたら閉じる（ディレイを入れることで誤動作防止）
         controlBar.addEventListener("mouseleave", () => {
             hideTimeout = setTimeout(closeControlBar, 600);
         });
@@ -980,47 +891,48 @@
             if (hideTimeout) clearTimeout(hideTimeout);
         });
 
-        // モバイル向け：メニュー以外の領域をタップした時に閉じる
         document.addEventListener("touchstart", (e) => {
             if (!controlBar.contains(e.target) && !controlHandle.contains(e.target)) {
                 closeControlBar();
             }
         }, { passive: true });
         
-        // 一時停止トグル
         function togglePause() {
             if (unityInstance) {
                 unityInstance.SendMessage('PuzzleManager', 'TogglePause');
             }
         }
         
-        // 完成図表示（ホールド式）イベント処理
         let isGuideShowing = false;
         
         function showGuide() {
             if (unityInstance && !isGuideShowing) {
                 unityInstance.SendMessage('PuzzleManager', 'SetGuideVisibleFromWeb', 'true');
                 isGuideShowing = true;
-                btnShowGuide.style.color = "#4CAF50"; // 緑色に光らせる
+                btnShowGuide.style.color = "#4CAF50"; 
             }
         }
         
+        function toggleFullScreen() {
+            if (unityInstance) {
+                unityInstance.SetFullscreen(1);
+            }
+        }
+
         function hideGuide() {
             if (unityInstance && isGuideShowing) {
                 unityInstance.SendMessage('PuzzleManager', 'SetGuideVisibleFromWeb', 'false');
                 isGuideShowing = false;
-                btnShowGuide.style.color = ""; // 元の色に戻す
+                btnShowGuide.style.color = ""; 
             }
         }
         
-        // PC向けイベント
         btnShowGuide.addEventListener("mousedown", showGuide);
         btnShowGuide.addEventListener("mouseup", hideGuide);
         btnShowGuide.addEventListener("mouseleave", hideGuide);
         
-        // スマホ/タブレット向けタッチイベント
         btnShowGuide.addEventListener("touchstart", (e) => {
-            e.preventDefault(); // タップ時のスクロールや選択動作を防止
+            e.preventDefault(); 
             showGuide();
         }, { passive: false });
         
@@ -1034,15 +946,8 @@
             hideGuide();
         }, { passive: false });
 
-        function toggleFullScreen() {
-            if (unityInstance) {
-                unityInstance.SetFullscreen(1);
-            }
-        }
-
-        // 🌟 操作説明モーダルの開閉
         function openInstructionsModal() {
-            closeControlBar(); // コントロールバーを閉じる
+            closeControlBar(); 
             document.getElementById("instructionsModal").style.display = "flex";
         }
         
@@ -1050,11 +955,9 @@
             document.getElementById("instructionsModal").style.display = "none";
         }
 
-        // 🏆 パズルクリア時にUnity側から呼び出されるコールバック
         window.onPuzzleComplete = async function (elapsedTime) {
             console.log("🏆 パズルクリア！タイム:", elapsedTime, "秒");
             
-            // 親画面から渡された名前がある場合のみランキングに登録する
             if (selectedData && selectedData.playerName && selectedData.playerName.trim() !== "") {
                 const name = selectedData.playerName.trim();
                 const imageId = selectedData.imageId;
@@ -1063,23 +966,17 @@
                     ? selectedData.rankingApiUrl 
                     : "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec";
                 
-                console.log(`🏆 ランキング登録を送信します。名: ${name}, タイム: ${elapsedTime}秒, 画像ID: ${imageId}, ピース数: ${pieceCount}`);
-                
                 try {
                     await fetch(`${GAS_URL}?action=add_score&id=${imageId}&pieceCount=${pieceCount}&name=${encodeURIComponent(name)}&time=${elapsedTime}`, {
                         method: 'GET',
-                        mode: 'no-cors' // CORS問題を完全に回避
+                        mode: 'no-cors' 
                     });
-                    console.log("🏆 ランキング登録リクエストの送信に成功しました！");
                 } catch (e) {
                     console.error("❌ ランキング登録の送信中にエラーが発生しました:", e);
                 }
-            } else {
-                console.log("⚪ プレイヤー名が未設定（匿名プレイ）のため、ランキング登録はスキップされました。");
             }
         };
 
-        // 🎨 画像から平均色を抽出し、目に優しい背景色と最適なコントラストのつまみ色を動的適用する
         function applyDynamicColors(imageSrc) {
             if (!imageSrc) return;
             
@@ -1087,7 +984,6 @@
             img.crossOrigin = "Anonymous";
             img.onload = function() {
                 try {
-                    // キャンバスを作成（10x10程度の小さなサイズでサンプリング）
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     canvas.width = 10;
@@ -1098,7 +994,6 @@
                     let r = 0, g = 0, b = 0, count = 0;
                     
                     for (let i = 0; i < imgData.length; i += 4) {
-                        // 透明ピクセルや極端に暗い/明るいピクセルを除いて安定したサンプリングを行う
                         if (imgData[i+3] > 100) {
                             r += imgData[i];
                             g += imgData[i+1];
@@ -1113,16 +1008,9 @@
                     g = Math.round(g / count);
                     b = Math.round(b / count);
                     
-                    // RGBをHSLに変換
                     const hsl = rgbToHsl(r, g, b);
-                    
-                    // --- 目に優しい背景色の算出 ---
-                    // 目にツンとこないよう、彩度（S）を大幅に落とす（低彩度の落ち着いたニュアンスカラー）
-                    // 12%〜22%程度に抑えてシックにする
                     const bgS = Math.min(22, Math.max(12, hsl.s * 100 * 0.35));
                     
-                    // 明度（L）も眩しすぎないダークグレー〜ミドルグレーの中間に調整
-                    // ピースが落とす黒いドロップシャドウがはっきりと見え、立体感が保たれる絶妙な明度（22%〜30%）に調整
                     const bgL_start = 22;
                     const bgL_end = 30;
                     
@@ -1130,31 +1018,20 @@
                     const bgStartStr = `hsl(${h}, ${Math.round(bgS)}%, ${bgL_start}%)`;
                     const bgEndStr = `hsl(${h}, ${Math.round(bgS)}%, ${bgL_end}%)`;
                     
-                    // --- つまみ（ハンドル）の配色算出 ---
-                    // 背景やピースから目立つ色：色相を180度反転（補色）させてアクセンカラーにする
                     const complementH = (h + 180) % 360;
-                    // つまみのホバー時カラーは目立たせるため高彩度にする
                     const handleAccentS = 85;
-                    // 暗い背景に映えるよう、明度を明るめに (55%〜65% のビビッドな輝き)
                     const handleAccentL = 60;
                     
                     const handleAccentStr = `hsl(${complementH}, ${handleAccentS}%, ${handleAccentL}%)`;
-                    
-                    // つまみの通常時の文字色も補色をベースにした目に優しい中間色にする
                     const handleColorStr = `hsl(${complementH}, ${Math.round(handleAccentS * 0.7)}, 70%)`;
-                    
-                    // つまみの標準背景色は平均色を少しブレンドして背景に馴染ませる
                     const handleBgStr = `rgba(${Math.round(r*0.1 + 18*0.9)}, ${Math.round(g*0.1 + 18*0.9)}, ${Math.round(b*0.1 + 20*0.9)}, 0.85)`;
                     
-                    // CSS変数に反映
                     document.documentElement.style.setProperty('--bg-gradient-start', bgStartStr);
                     document.documentElement.style.setProperty('--bg-gradient-end', bgEndStr);
                     document.documentElement.style.setProperty('--handle-bg', handleBgStr);
                     document.documentElement.style.setProperty('--handle-color', handleColorStr);
                     document.documentElement.style.setProperty('--handle-hover-color', handleAccentStr);
                     document.documentElement.style.setProperty('--handle-border', `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, 0.3)`);
-                    
-                    console.log(`🎨 Dynamic styling applied: Hue=${h}, BG=[${bgStartStr} -> ${bgEndStr}], HandleAccent=${handleAccentStr}`);
                 } catch (e) {
                     console.error("平均色の解析・適用に失敗しました:", e);
                 }
@@ -1162,14 +1039,13 @@
             img.src = imageSrc;
         }
         
-        // RGBをHSLに変換するユーティリティ関数
         function rgbToHsl(r, g, b) {
             r /= 255, g /= 255, b /= 255;
             const max = Math.max(r, g, b), min = Math.min(r, g, b);
             let h, s, l = (max + min) / 2;
             
             if (max === min) {
-                h = s = 0; // アクロマティック（無彩色）
+                h = s = 0; 
             } else {
                 const d = max - min;
                 s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
@@ -1188,26 +1064,22 @@
             if (unityInstance && autosaveToggle) {
                 const stateStr = autosaveToggle.checked ? "true" : "false";
                 unityInstance.SendMessage('PuzzleManager', 'SetAutosaveEnabled', stateStr);
-                console.log("🔄 Sent AutoSave state to Unity:", stateStr);
             }
         }
 
-        // オートセーブの初期状態をLocalStorageからロードしてイベントリスナーを登録
         window.addEventListener('DOMContentLoaded', () => {
             const autosaveToggle = document.getElementById("autosave-toggle");
             if (autosaveToggle) {
                 const savedState = localStorage.getItem("jigsaw_autosave");
-                autosaveToggle.checked = savedState !== "false"; // デフォルトON
+                autosaveToggle.checked = savedState !== "false";
                 
                 autosaveToggle.addEventListener("change", function() {
                     localStorage.setItem("jigsaw_autosave", this.checked);
-                    console.log("🔄 Auto-save toggled:", this.checked);
                     sendAutosaveStateToUnity();
                 });
             }
         });
 
-        // 実行開始
         initGame();
     </script>
 </body>
