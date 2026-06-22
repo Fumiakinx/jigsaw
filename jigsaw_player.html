@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧩 JIGSAW WEB PLAYER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient-start: #121214;
+            --bg-gradient-end: #1a1a24;
+            --handle-bg: rgba(18, 18, 20, 0.85);
+            --handle-color: rgba(255, 255, 255, 0.6);
+            --handle-border: rgba(255, 255, 255, 0.15);
+            --handle-hover-bg: rgba(18, 18, 20, 0.95);
+            --handle-hover-color: #4CAF50;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', 'Outfit', sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: background 0.8s ease;
+        }
+        
+        /* プレミアムローディング画面 */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(18, 18, 20, 0.96);
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loading-container {
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+        }
+        
+        .spinner-outer {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 25px;
+        }
+        
+        .spinner {
+            width: 100%;
+            height: 100%;
+            border: 4px solid rgba(255, 255, 255, 0.03);
+            border-top-color: #4CAF50;
+            border-bottom-color: #2196F3;
+            border-radius: 50%;
+            animation: spin 1.5s infinite cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        
+        .spinner-inner {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 50px;
+            height: 50px;
+            border: 3px solid transparent;
+            border-left-color: #FF9800;
+            border-right-color: #E91E63;
+            border-radius: 50%;
+            animation: spin-reverse 1.2s infinite linear;
+        }
+        
+        .loading-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            background: linear-gradient(45deg, #4CAF50, #2196F3, #FF9800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .loading-status {
+            font-size: 13px;
+            color: #8a8a93;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        /* プレミアム進捗バー */
+        .progress-bar-empty {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-bar-full {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4CAF50 0%, #2196F3 50%, #E91E63 100%);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        
+        /* ゲームコンテナ */
+        #unity-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+        }
+        
+        #unity-canvas {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100vw;
+            max-height: 100vh;
+            aspect-ratio: 16 / 10;
+            object-fit: contain;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            background: transparent;
+        }
+        
+        /* 非表示時の極小引き下げハンドル */
+        .control-handle {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90px;
+            height: 16px;
+            background: var(--handle-bg);
+            border: 1px solid var(--handle-border);
+            border-top: none;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            z-index: 99;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 1;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 255, 255, 0.05);
+        }
+        
+        .control-handle span {
+            font-size: 9px;
+            font-weight: bold;
+            color: var(--handle-color);
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        
+        .control-handle:hover {
+            height: 20px;
+            background: var(--handle-hover-bg);
+            border-color: var(--handle-hover-color);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 8px var(--handle-hover-color);
+        }
+        
+        .control-handle:hover span {
+            color: var(--handle-hover-color);
+            transform: translateY(1px);
+        }
+        
+        /* メニュー（active）出現時にスライドしてメニュー下端にぶら下がるように自動追従 */
+        .control-bar.active ~ .control-handle {
+            top: 41px; /* 上端寄せされたメニュー（高さ約41px）のすぐ下にぴったり配置 */
+            background: var(--handle-hover-bg);
+            border-color: var(--handle-hover-color);
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            height: 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 8px var(--handle-hover-color);
+        }
+        
+        .control-bar.active ~ .control-handle span {
+            transform: rotate(180deg); /* 展開中は上向き矢印 ▲ に回転 */
+            color: var(--handle-hover-color);
+        }
+        /* コントロールバー */
+        .control-bar {
+            position: absolute;
+            top: -70px; /* 完全に隠す */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18, 18, 20, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: none; /* 上端にくっつくため上枠はなし */
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            padding: 10px 40px; /* パディングを広げる */
+            display: flex;
+            align-items: center;
+            gap: 28px; /* gapを広げる */
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            opacity: 0;
+            pointer-events: none;
+            transition: top 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* プレミアムトグルスイッチのスタイル */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 20px;
+            vertical-align: middle;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.15);
+            transition: .3s;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .switch input:checked + .slider {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+        }
+        
+        .slider::before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        
+        .switch input:checked + .slider::before {
+            transform: translateX(14px);
+        }
+        /* JSでactiveクラスが付与されたときに出現 */
+        .control-bar.active {
+            top: 0px; /* 画面最上部にピッタリ寄せる */
+            opacity: 1;
+            pointer-events: auto;
+            background: rgba(18, 18, 20, 0.95);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 15px rgba(76, 175, 80, 0.15);
+        }
+        
+        /* フルスクリーン（全画面表示）時のブラウザセキュリティ描画レイヤー対策 */
+        :fullscreen .control-handle,
+        :fullscreen .control-bar,
+        :-webkit-full-screen .control-handle,
+        :-webkit-full-screen .control-bar {
+            z-index: 2147483647 !important; /* ブラウザ全画面表示時の最大重ね順値 */
+        }
+        
+        .game-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #4CAF50;
+        }
+        
+        .btn-control {
+            background: transparent;
+            border: none;
+            color: #a0a0a5;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: color 0.2s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            outline: none;
+        }
+        
+        .btn-control:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes spin-reverse {
+            to { transform: rotate(-360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 極小引き下げハンドル -->
+    <div class="control-handle" id="control-handle">
+        <span>▼</span>
+    </div>
+
+    <!-- プレミアムコントロールバー -->
+    <div class="control-bar" id="control-bar">
+        <span class="game-title">🧩 JIGSAW WEB</span>
+        
+        <button class="btn-control" onclick="togglePause()">
+            <span>⏸</span> 一時停止・セーブ
+        </button>
+        
+        <button class="btn-control" id="btn-show-guide" style="user-select: none; -webkit-user-select: none;">
+            <span>👁</span> 完成図
+        </button>
+
+        <button class="btn-control" onclick="openInstructionsModal()">
+            <span>ℹ️</span> 操作説明
+        </button>
+
+        <button class="btn-control" onclick="toggleFullScreen()">
+            <span>📺</span> 全画面
+        </button>
+
+        <!-- 🔄 オートセーブスイッチ -->
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #a0a0a5;">
+            <span>🔄 オートセーブ</span>
+            <label class="switch">
+                <input type="checkbox" id="autosave-toggle" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <button class="btn-control" onclick="window.close()">
+            <span>❌</span> 閉じる
+        </button>
+    </div>
+
+    <!-- 🌟 操作説明モーダル -->
+    <div class="modal-overlay" id="instructionsModal" onclick="closeInstructionsModal()" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); display: none; justify-content: center; align-items: center; z-index: 5000;">
+        <div class="modal" onclick="event.stopPropagation()" style="background: rgba(26, 26, 36, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); width: 90%; max-width: 500px; border-radius: 24px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); display: flex; flex-direction: column; position: relative;">
+            <span class="modal-close" onclick="closeInstructionsModal()" style="position: absolute; top: 15px; right: 20px; font-size: 30px; font-weight: bold; color: rgba(255,255,255,0.4); cursor: pointer; line-height: 1;">&times;</span>
+            <div style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 800; color: #4CAF50; margin-bottom: 20px; text-align: center; letter-spacing: 0.5px;">🎮 じぐそう 操作説明</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <!-- PC用 -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 14px;">
+                    <div style="font-size: 15px; color: #4CAF50; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <span>💻</span> PC での操作
+                    </div>
+                    <ul style="list-style: none; padding-left: 5px; font-size: 13px; color: #d0d0d5; line-height: 1.8;">
+                        <li>🖱️ <strong style="color: white;">ドラッグ</strong> : ピースを移動</li>
+                        <li>🖱️ <strong style="color: white;">右クリック</strong> : ピースを回転（90度）</li>
+                        <li>⌨️ <strong style="color: white;">スペースキー</strong> : 完成見本（ガイド）の表示（長押し）</li>
+                        <li>⌨️ <strong style="color: white;">Esc キー</strong> : 一時停止（ポーズ）</li>
+                    </ul>
+                </div>
+                
+                <!-- スマホ用 -->
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 14px;">
+                    <div style="font-size: 15px; color: #FF9800; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <span>📱</span> スマホ / タブレット での操作
+                    </div>
+                    <ul style="list-style: none; padding-left: 5px; font-size: 13px; color: #d0d0d5; line-height: 1.8;">
+                        <li>👉 <strong style="color: white;">ドラッグ</strong> : ピースを移動</li>
+                        <li>👉 <strong style="color: white;">ダブルタップ</strong> : ピースを回転（90度）</li>
+                        <li>👉 <strong style="color: white;">ドラッグ中のマルチタップ</strong> : ピースを回転（90度）</li>
+                        <li>👁️ <strong style="color: white;">完成図表示（長押し）</strong> : コントロールバーの 👁 ボタンを長押し</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <button onclick="closeInstructionsModal()" style="margin-top: 20px; background: #333338; color: white; border: none; padding: 12px; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s ease;">閉じる</button>
+        </div>
+    </div>
+
+    <!-- プレミアムローディング画面 -->
+    <div id="loading-overlay">
+        <div class="loading-container">
+            <div class="spinner-outer">
+                <div class="spinner"></div>
+                <div class="spinner-inner"></div>
+            </div>
+            <div class="loading-title">JIGSAW PUZZLE</div>
+            <div id="status-text" class="loading-status">パズル画像データを準備しています...</div>
+            <div class="progress-bar-empty">
+                <div id="progress-bar" class="progress-bar-full"></div>
+            </div>
+
+            <!-- 🌟 エラー発生時に表示するエリア -->
+            <div id="error-area" style="display: none; margin-top: 20px; animation: fadeIn 0.3s ease;">
+                <div style="color: #ff6b6b; font-weight: bold; font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <span>⚠️</span> 自動開始に失敗しました
+                </div>
+                <!-- 🌟 エラー時のパズル画像プレビュー -->
+                <div id="error-preview-container" style="display: none; margin-bottom: 15px; text-align: center;">
+                    <img id="error-preview-img" src="" style="max-width: 150px; max-height: 100px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 10px rgba(0,0,0,0.3);" alt="プレビュー">
+                </div>
+                <div style="font-size: 11px; color: #aaa; margin-bottom: 20px; line-height: 1.6; text-align: left; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); max-height: 100px; overflow-y: auto;">
+                    <strong>原因ログ:</strong><br>
+                    <span id="error-log-text">親画面からの画像データ受信（Base64転送）に失敗したか、制限時間（5秒）を超過しました。</span>
+                </div>
+                <button class="btn-control" onclick="skipToDefaultGame()" style="background: #4CAF50; color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; width: 100%; justify-content: center; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3); transition: all 0.2s ease;">
+                    <span>🎮</span> ゲーム内の画像で遊ぶ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ゲーム描画領域 -->
+    <div id="unity-container">
+        <canvas id="unity-canvas" tabindex="-1"></canvas>
+    </div>
+
+    <script>
+        var canvas = document.querySelector("#unity-canvas");
+        var progressBar = document.querySelector("#progress-bar");
+        var statusText = document.querySelector("#status-text");
+        var loadingOverlay = document.querySelector("#loading-overlay");
+        
+        var unityInstance = null;
+        var selectedData = null;
+
+        // [NEW] セーブデータ難読化（暗号化）ヘルパー（グローバル化）
+        function encryptSaveData(dataStr) {
+            return btoa(unescape(encodeURIComponent(dataStr)));
+        }
+
+        // [NEW] セーブデータ復号ヘルパー（グローバル化）
+        function decryptSaveData(encryptedStr) {
+            try {
+                return decodeURIComponent(escape(atob(encryptedStr)));
+            } catch(e) {
+                console.error("[JigsawPlayer] 復号エラー:", e);
+                return null;
+            }
+        }
+
+        // 1. 親ウィンドウからのデータ受け渡しを待機 (クエリパラメータ優先 ➔ ポーリング処理・クロスドメイン安全対策)
+        function checkParentData() {
+            return new Promise(async (resolve) => {
+                // HSLやテーマ色の設定のために、デクリプトなどの定義も必要に応じてグローバルで使用可能にする
+                
+                // A. URLのクエリパラメータを最優先で解析（クロスドメイン安全対策 [NEW]）
+                const urlParams = new URLSearchParams(window.location.search);
+                const imageId = urlParams.get('imageId');
+                const pieceCount = urlParams.get('pieceCount');
+                const playerName = urlParams.get('playerName');
+                const imageNameParam = urlParams.get('imageName');
+                const isSaveLoad = urlParams.get('isSaveLoad');
+                const slotIndex = urlParams.get('slotIndex');
+                const gasApiUrlParam = urlParams.get('gasApiUrl');
+                const rankingApiUrlParam = urlParams.get('rankingApiUrl');
+
+                // 🌟 画像取得用のGASエンドポイントとセーブ/ランキング用のGASエンドポイントを独立してマッピング
+                const GAS_URL = gasApiUrlParam || "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec";
+                const RANKING_URL = rankingApiUrlParam || "https://script.google.com/macros/s/AKfycbzdxT5WjCue0naHSs12X2Di_y9_DcW6gLqFb3X6UvwoZVWlZPqfPL7-K7cql2gCQucz/exec";
+
+                if (isSaveLoad === 'true' && slotIndex && playerName) {
+                    statusText.innerText = "ブラウザからセーブデータを安全にロードしています...";
+                    try {
+                        // 1. まずローカルのLocalStorageからデータを読み出す（高速＆オフライン安全）
+                        const storageKey = `jigsaw_save_${playerName}_slot_${slotIndex}`;
+                        const localData = localStorage.getItem(storageKey);
+                        if (localData) {
+                            const slot = JSON.parse(localData);
+                            if (slot && slot.saveDataJson) {
+                                const dec = decryptSaveData(slot.saveDataJson);
+                                if (dec) {
+                                    let sData = JSON.parse(dec);
+                                    // 🌟 imageNameがGASの画像IDなどの場合、事前にGASから画像(Base64)を再取得して復元する
+                                    if (sData.imageName && !sData.imageName.startsWith("http") && !sData.imageName.includes("/")) {
+                                        try {
+                                            console.log("[JigsawPlayer] ロードしたセーブデータの画像IDから、GAS経由で画像を再取得します:", sData.imageName);
+                                            const response = await fetch(`${GAS_URL}?action=image&id=${sData.imageName}`);
+                                            const resData = await response.json();
+                                            if (resData.success && resData.imageData) {
+                                                sData.imageName = resData.imageData; // Base64を復元！
+                                                console.log("[JigsawPlayer] GASからの画像データの再デコード・復元に成功しました。");
+                                            }
+                                        } catch (err) {
+                                            console.error("[JigsawPlayer] ロード再開時の画像再取得に失敗しました:", err);
+                                        }
+                                    }
+
+                                    selectedData = {
+                                        isSaveLoad: true,
+                                        saveJson: JSON.stringify(sData),
+                                        playerName: playerName,
+                                        rankingApiUrl: RANKING_URL
+                                    };
+                                    console.log("[JigsawPlayer] LocalStorageからのロードに成功しました！");
+                                    resolve(true);
+                                    return;
+                                }
+                            }
+                        }
+
+                        // 2. ローカルにデータがない場合のフォールバック（GASサーバーから読み込み）
+                        console.log("[JigsawPlayer] ローカルデータが見つからないため、GASサーバーからのロードを試みます...");
+                        const response = await fetch(`${RANKING_URL}?action=load_game&playerName=${encodeURIComponent(playerName)}&slotIndex=${slotIndex}`);
+                        const resData = await response.json();
+                        
+                        if (resData.success && resData.saveDataJson) {
+                            const dec = decryptSaveData(resData.saveDataJson);
+                            if (dec) {
+                                let sData = JSON.parse(dec);
+                                // 🌟 imageNameがGASの画像IDなどの場合、事前にGASから画像(Base64)を再取得して復元する
+                                if (sData.imageName && !sData.imageName.startsWith("http") && !sData.imageName.includes("/")) {
+                                    try {
+                                        console.log("[JigsawPlayer] GASロードのセーブデータ画像IDから、GAS経由で画像を再取得します:", sData.imageName);
+                                        const response = await fetch(`${GAS_URL}?action=image&id=${sData.imageName}`);
+                                        const resData = await response.json();
+                                        if (resData.success && resData.imageData) {
+                                            sData.imageName = resData.imageData; // Base64を復元！
+                                            console.log("[JigsawPlayer] GASロードデータの画像データ復元に成功しました。");
+                                        }
+                                    } catch (err) {
+                                        console.error("[JigsawPlayer] GASロード再開時の画像再取得に失敗しました:", err);
+                                    }
+                                }
+
+                                selectedData = {
+                                    isSaveLoad: true,
+                                    saveJson: JSON.stringify(sData),
+                                    playerName: playerName,
+                                    rankingApiUrl: RANKING_URL
+                                };
+                                console.log("[JigsawPlayer] URLパラメータからGAS経由でのセーブデータロードに成功しました。");
+                                resolve(true);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.error("[JigsawPlayer] 自律セーブロード中にエラーが発生しました:", e);
+                    }
+                } else if (imageId) {
+                    statusText.innerText = "GASからパズル画像を安全に読み込んでいます...";
+                    let targetBase64 = null;
+
+                    // GAS経由での画像取得（GoogleドライブID形式の場合のみ）
+                    if (imageId && !imageId.startsWith('http') && !imageId.includes('/')) {
+                        try {
+                            console.log("[JigsawPlayer] ドライブIDから安全に画像を自動取得します:", imageId, "GAS URL:", GAS_URL);
+                            const response = await fetch(`${GAS_URL}?action=image&id=${imageId}`);
+                            const resData = await response.json();
+                            if (resData.success) {
+                                targetBase64 = resData.imageData;
+                            }
+                        } catch (e) {
+                            console.error("[JigsawPlayer] 自律画像ロード中にエラーが発生しました:", e);
+                        }
+                    }
+
+                    if (!targetBase64) {
+                        targetBase64 = imageId; // ローカル用などのフォールバック
+                    }
+
+                    selectedData = {
+                        imageData: targetBase64,
+                        pieceCount: parseInt(pieceCount || "96", 10),
+                        playerName: playerName || "",
+                        imageId: imageId,
+                        imageName: imageNameParam || "",
+                        rankingApiUrl: RANKING_URL
+                    };
+                    resolve(true);
+                    return;
+                }
+
+                // B. SessionStorageから起動データを優先取得（同一枠内遷移時の対応などの互換性維持）
+                try {
+                    const sessionData = sessionStorage.getItem('selectedPuzzleData');
+                    if (sessionData) {
+                        selectedData = JSON.parse(sessionData);
+                        sessionStorage.removeItem('selectedPuzzleData'); // 使用後にクリーンアップ
+                        console.log("[JigsawPlayer] SessionStorageからパズル起動データを取得しました。");
+                        resolve(true);
+                        return;
+                    }
+                } catch (sessionError) {
+                    console.warn("[JigsawPlayer] SessionStorageの読み込みに失敗しました:", sessionError);
+                }
+
+                // C. 以前の動作（window.opener）へのフォールバック
+                let attempts = 0;
+                const maxAttempts = 50; // 最大5秒待機
+                
+                const interval = setInterval(() => {
+                    attempts++;
+                    
+                    try {
+                        // 親ウィンドウの共有データがあるか確認
+                        if (window.opener && window.opener.selectedPuzzleData) {
+                            selectedData = window.opener.selectedPuzzleData;
+                            clearInterval(interval);
+                            resolve(true);
+                            return;
+                        }
+                    } catch (securityError) {
+                        // セキュリティブロック時はポーリングを早めに打ち切り、エラー画面にする
+                        clearInterval(interval);
+                        console.error("【セキュリティ制限】親画面との通信が遮断されました:", securityError);
+                        showConnectionError("【セキュリティ制限】セキュリティ設定のため親ウィンドウと接続できませんでした。");
+                        resolve(false);
+                        return;
+                    }
+                    
+                    if (attempts >= maxAttempts) {
+                        clearInterval(interval);
+                        console.warn("パズル起動パラメータが見つかりませんでした。");
+                        resolve(false);
+                    }
+                }, 100);
+            });
+        }
+
+        // 2. Unityのロード設定
+        var buildUrl = "../Builds/WebGL/Jigsaw/Build"; 
+        var loaderUrl = "../Builds/WebGL/Jigsaw/Build/Jigsaw.loader.js";
+        
+        var checkConfig = {
+            dataUrl: "Build/Jigsaw.data",
+            frameworkUrl: "Build/Jigsaw.framework.js",
+            codeUrl: "Build/Jigsaw.wasm"
+        };
+        
+        var config = {
+            arguments: [],
+            dataUrl: "Build/Builds.data",
+            frameworkUrl: "Build/Builds.framework.js",
+            codeUrl: "Build/Builds.wasm",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "DefaultCompany",
+            productName: "Jigsaw",
+            productVersion: "1.4",
+            webglContextAttributes: {
+                preserveDrawingBuffer: true
+            },
+            showBanner: function(msg, type) {
+                console.log("Unity Banner:", msg, type);
+            }
+        };
+
+        // ローカルの開発テスト用、または本番デプロイ用の相対パス自己判定
+        // 同一ディレクトリにBuildフォルダが無いかフェッチで簡易チェックする、あるいは単にエラーキャッチで切り替える
+        // ここでは最も確実な、現在のスクリプトURLやフォルダ構成に基づく判定を行います
+        
+        // 3. 画面に合わせたレスポンシブなサイズ調整
+        function resizeCanvas() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            canvas.style.width = width + "px";
+            canvas.style.height = height + "px";
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 4. ゲーム起動プロセス
+        async function initGame() {
+            statusText.innerText = "パズル画像データを準備しています...";
+            await checkParentData();
+            
+            statusText.innerText = "ゲームエンジンを起動しています...";
+            
+            // 親ウィンドウから共有された画像データを元に背景色とつまみ色を動的に設定
+            if (selectedData && selectedData.imageData) {
+                applyDynamicColors(selectedData.imageData);
+            }
+
+            // パス解決：現在の階層にBuildフォルダがあるかチェック
+            const cb = "?v=" + new Date().getTime(); // 自動キャッシュバスター
+            try {
+                const response = await fetch("Build/Builds.loader.js", { method: 'HEAD' });
+                if (response.ok) {
+                    console.log("ローカルのBuildフォルダを使用します。");
+                    buildUrl = "Build";
+                    loaderUrl = "Build/Builds.loader.js" + cb;
+                    config.dataUrl = "Build/Builds.data" + cb;
+                    config.frameworkUrl = "Build/Builds.framework.js" + cb;
+                    config.codeUrl = "Build/Builds.wasm" + cb;
+                } else {
+                    throw new Error("Local loader not found");
+                }
+            } catch (e) {
+                console.log("親のBuildsフォルダを参照します。");
+                buildUrl = "../Builds/Build";
+                loaderUrl = "../Builds/Build/Builds.loader.js" + cb;
+                config.dataUrl = "../Builds/Build/Builds.data" + cb;
+                config.frameworkUrl = "../Builds/Build/Builds.framework.js" + cb;
+                config.codeUrl = "../Builds/Build/Builds.wasm" + cb;
+            }
+
+            var script = document.createElement("script");
+            script.src = loaderUrl;
+
+            window.saveJigsawData = async function(slotIndex, jsonDataStr) {
+                console.log(`[LOG 4: JS] saveJigsawData受信。スロット: ${slotIndex}, 受信文字数: ${jsonDataStr ? jsonDataStr.length : 0}`);
+                try {
+                    const playerName = (selectedData && selectedData.playerName) ? selectedData.playerName.trim() : "匿名";
+                    const storageKey = `jigsaw_save_${playerName}_slot_${slotIndex}`;
+                    
+                    // 空文字列が渡された場合はセーブデータ消去（クリア時）として処理
+                    if (!jsonDataStr || jsonDataStr.trim() === "") {
+                        console.log(`[LocalStorage-Delete] セーブデータを消去します。キー: ${storageKey}`);
+                        localStorage.removeItem(storageKey);
+                        if (typeof window.requestSlotDescriptions === 'function') {
+                            await window.requestSlotDescriptions();
+                        }
+                        return;
+                    }
+
+                    let d = JSON.parse(jsonDataStr);
+                    let originalImageName = d.imageName || "";
+                    
+                    // 🌟 imageNameが巨大なBase64形式だった場合、保存用に極小の画像ID/URLに差し替える (LocalStorage容量上限エラーの根本解決)
+                    if (d.imageName && d.imageName.startsWith("data:image/") && d.imageName.includes("base64,")) {
+                        if (selectedData && selectedData.imageId) {
+                            d.imageName = selectedData.imageId;
+                        }
+                    }
+                    
+                    let modifiedJsonDataStr = JSON.stringify(d);
+                    let enc = encryptSaveData(modifiedJsonDataStr);
+                    console.log(`[LOG 5: JS] 暗号化成功。暗号化後の文字数: ${enc.length}`);
+                    
+                    // 表記用の画像名整形
+                    let displayImgName = originalImageName.replace("coffee_break_", "コーヒーブレイク ").replace("_1920x1080", "");
+                    if (displayImgName.startsWith("data:image/")) {
+                        displayImgName = (selectedData && selectedData.imageName) ? selectedData.imageName : ((selectedData && selectedData.imageId) ? `ドライブ画像: ${selectedData.imageId}` : "カスタム画像");
+                    }
+                    
+                    console.log(`[LocalStorage-Save] セーブデータをブラウザに保存します。名: ${playerName}, スロット: ${slotIndex}, 画像: ${displayImgName}`);
+                    
+                    // スロットごとのメタデータと暗号化された実データをLocalStorageに保持
+                    const saveMeta = {
+                        playerName: playerName,
+                        slotIndex: slotIndex.toString(),
+                        saveTime: d.saveTime || new Date().toLocaleString(),
+                        imageName: displayImgName,
+                        targetPieces: d.targetPieces || "0",
+                        saveDataJson: enc
+                    };
+                    
+                    localStorage.setItem(storageKey, JSON.stringify(saveMeta));
+                    
+                    console.log(`[LOG 6: JS] LocalStorageへのセーブデータ書き込み完了！ キー: ${storageKey}`);
+                    // セーブ成功後にスロット情報を再取得してUnityに通知する
+                    if (typeof window.requestSlotDescriptions === 'function') {
+                        console.log(`[LOG 6.5: JS] スロット一覧を最新化するため再読み込みを開始します...`);
+                        await window.requestSlotDescriptions();
+                    }
+                } catch(e) {
+                    console.error("[LOG 6: ERROR] saveJigsawDataの処理中に例外が発生しました！", e);
+                }
+            };
+
+            window.requestSlotDescriptions = async function() {
+                console.log("[LOG Origin: Player] 現在のドメイン (Origin):", window.location.origin);
+                console.log("[LOG 7: JS] requestSlotDescriptions呼び出しを受信しました。");
+                if (!unityInstance) {
+                    console.error("[LOG 7: ERROR] unityInstanceが存在しません！");
+                    return;
+                }
+                
+                const playerName = (selectedData && selectedData.playerName) ? selectedData.playerName.trim() : "匿名";
+                let descs = ["空きスロット", "空きスロット", "空きスロット"];
+                
+                try {
+                    console.log(`[LocalStorage-Load] LocalStorageからスロット状況を取得します。名: ${playerName}`);
+                    for (let i = 1; i <= 3; i++) {
+                        const storageKey = `jigsaw_save_${playerName}_slot_${i}`;
+                        const savedDataStr = localStorage.getItem(storageKey);
+                        if (savedDataStr) {
+                            const slot = JSON.parse(savedDataStr);
+                            if (slot) {
+                                let screenBase64 = "";
+                                if (slot.saveDataJson) {
+                                    const dec = decryptSaveData(slot.saveDataJson);
+                                    if (dec) {
+                                        try {
+                                            const saveData = JSON.parse(dec);
+                                            if (saveData.screenshotBase64) {
+                                                screenBase64 = saveData.screenshotBase64;
+                                            }
+                                        } catch (e) {}
+                                    }
+                                }
+                                // サムネイルBase64がある場合、説明の後に ":::" を挟んで結合してUnityへ送信
+                                descs[i - 1] = `${slot.imageName} \n(${slot.saveTime})` + (screenBase64 ? `:::${screenBase64}` : "");
+                            }
+                        }
+                    }
+                } catch(e) {
+                    console.error("[LocalStorage-Load-Error] スロット状況取得中にエラーが発生しました:", e);
+                }
+                
+                console.log("[LOG 10: JS] Unityへ送り返す説明テキスト一覧:", descs);
+                const combined = descs.join("|");
+                unityInstance.SendMessage("PuzzleManager", "UpdateSlotDescriptions", combined);
+            };
+
+            script.onload = () => {
+                createUnityInstance(canvas, config, (progress) => {
+                    progressBar.style.width = (100 * progress) + "%";
+                    statusText.innerText = "ゲームデータを読み込み中... (" + Math.round(progress * 100) + "%)";
+                }).then((instance) => {
+                    unityInstance = instance;
+                    statusText.innerText = "パズルを開始します...";
+                    
+                    setTimeout(() => {
+                        if (selectedData && selectedData.isSaveLoad && selectedData.saveJson) {
+                            console.log("Unityにセーブデータからのロード再開リクエストを送信します。");
+                            unityInstance.SendMessage('PuzzleManager', 'LoadPuzzleFromWeb', selectedData.saveJson);
+                            sendAutosaveStateToUnity();
+                            
+                            // ローディング画面をフェードアウト
+                            loadingOverlay.style.opacity = 0;
+                            setTimeout(() => {
+                                loadingOverlay.style.visibility = "hidden";
+                            }, 500);
+                        } else if (selectedData && selectedData.imageData) {
+                            console.log("Unityにパズル開始リクエストを送信します。ピース数:", selectedData.pieceCount);
+                            
+                            // WebP画像の場合はCanvasを使用してPNG（Base64）にデコード・変換する
+                            const startPuzzle = (imgData) => {
+                                const message = imgData + "," + selectedData.pieceCount;
+                                unityInstance.SendMessage('PuzzleManager', 'StartPuzzleFromWeb', message);
+                                sendAutosaveStateToUnity();
+                                
+                                loadingOverlay.style.opacity = 0;
+                                setTimeout(() => {
+                                    loadingOverlay.style.visibility = "hidden";
+                                }, 500);
+                            };
+
+                            if (selectedData.imageData.startsWith("data:image/webp;base64,")) {
+                                console.log("[JigsawPlayer] WebP画像が検出されました。WebGL互換性のためPNGへ変換処理を開始します。");
+                                const img = new Image();
+                                img.onload = () => {
+                                    const canvas = document.createElement("canvas");
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    const ctx = canvas.getContext("2d");
+                                    ctx.drawImage(img, 0, 0);
+                                    const pngData = canvas.toDataURL("image/png");
+                                    console.log("[JigsawPlayer] WebPからPNGへのデコード・変換が完了しました。");
+                                    startPuzzle(pngData);
+                                };
+                                img.onerror = (err) => {
+                                    console.error("[JigsawPlayer] WebP画像のデコードに失敗しました。生のデータをフォールバック送信します:", err);
+                                    startPuzzle(selectedData.imageData);
+                                };
+                                img.src = selectedData.imageData;
+                            } else {
+                                startPuzzle(selectedData.imageData);
+                            }
+                        } else {
+                            console.warn("データがロードされていないため、エラー画面を表示します。");
+                            showConnectionError("親画面からの画像データ受信（Base64転送）に失敗したか、待機制限時間（5秒）を超過しました。");
+                        }
+                    }, 800);
+
+                }).catch((message) => {
+                    statusText.innerText = "起動エラーが発生しました。";
+                    showConnectionError("Unityエンジンのロードエラー: " + message);
+                });
+            };
+            document.body.appendChild(script);
+        }
+
+        // 🌟 自動連携に失敗した際のエラー表示
+        function showConnectionError(reason) {
+            const spinner = document.querySelector(".spinner-outer");
+            const progress = document.querySelector(".progress-bar-empty");
+            if (spinner) spinner.style.display = "none";
+            if (progress) progress.style.display = "none";
+            
+            statusText.innerText = "自動読み込みエラー";
+            statusText.style.color = "#ff6b6b";
+            
+            const errorArea = document.getElementById("error-area");
+            const errorLog = document.getElementById("error-log-text");
+            
+            if (reason && errorLog) {
+                errorLog.innerText = reason;
+            }
+            
+            // 🌟 エラープレビューの表示
+            if (selectedData && selectedData.imageData) {
+                const previewImg = document.getElementById("error-preview-img");
+                const previewContainer = document.getElementById("error-preview-container");
+                if (previewImg && previewContainer) {
+                    let displayUrl = selectedData.imageData;
+                    // Googleドライブの画像IDの場合はサムネイルURLに変換
+                    if (displayUrl && !displayUrl.startsWith('http') && !displayUrl.startsWith('data:') && !displayUrl.includes('/')) {
+                        displayUrl = `https://drive.google.com/thumbnail?sz=w300&id=${displayUrl}`;
+                    }
+                    previewImg.src = displayUrl;
+                    previewContainer.style.display = "block";
+                }
+            }
+            
+            if (errorArea) errorArea.style.display = "block";
+        }
+        
+        // 🌟 エラー画面をスキップして、通常のUnity初期画像選択画面に進む
+        function skipToDefaultGame() {
+            loadingOverlay.style.opacity = 0;
+            setTimeout(() => {
+                loadingOverlay.style.visibility = "hidden";
+            }, 500);
+        }
+
+        // 5. ユーティリティ & メニュー制御
+        const controlBar = document.getElementById("control-bar");
+        const controlHandle = document.getElementById("control-handle");
+        const btnShowGuide = document.getElementById("btn-show-guide");
+        
+        let hideTimeout = null;
+        
+        // メニューを開く
+        function openControlBar() {
+            if (hideTimeout) clearTimeout(hideTimeout);
+            controlBar.classList.add("active");
+        }
+        
+        // メニューを閉じる
+        function closeControlBar() {
+            controlBar.classList.remove("active");
+        }
+        
+        // ハンドルにホバーまたはクリックで開く
+        controlHandle.addEventListener("mouseenter", openControlBar);
+        controlHandle.addEventListener("click", openControlBar);
+        
+        // コントロールバーからマウスが離れたら閉じる（ディレイを入れることで誤動作防止）
+        controlBar.addEventListener("mouseleave", () => {
+            hideTimeout = setTimeout(closeControlBar, 600);
+        });
+        
+        controlBar.addEventListener("mouseenter", () => {
+            if (hideTimeout) clearTimeout(hideTimeout);
+        });
+
+        // モバイル向け：メニュー以外の領域をタップした時に閉じる
+        document.addEventListener("touchstart", (e) => {
+            if (!controlBar.contains(e.target) && !controlHandle.contains(e.target)) {
+                closeControlBar();
+            }
+        }, { passive: true });
+        
+        // 一時停止トグル
+        function togglePause() {
+            if (unityInstance) {
+                unityInstance.SendMessage('PuzzleManager', 'TogglePause');
+            }
+        }
+        
+        // 完成図表示（ホールド式）イベント処理
+        let isGuideShowing = false;
+        
+        function showGuide() {
+            if (unityInstance && !isGuideShowing) {
+                unityInstance.SendMessage('PuzzleManager', 'SetGuideVisibleFromWeb', 'true');
+                isGuideShowing = true;
+                btnShowGuide.style.color = "#4CAF50"; // 緑色に光らせる
+            }
+        }
+        
+        function hideGuide() {
+            if (unityInstance && isGuideShowing) {
+                unityInstance.SendMessage('PuzzleManager', 'SetGuideVisibleFromWeb', 'false');
+                isGuideShowing = false;
+                btnShowGuide.style.color = ""; // 元の色に戻す
+            }
+        }
+        
+        // PC向けイベント
+        btnShowGuide.addEventListener("mousedown", showGuide);
+        btnShowGuide.addEventListener("mouseup", hideGuide);
+        btnShowGuide.addEventListener("mouseleave", hideGuide);
+        
+        // スマホ/タブレット向けタッチイベント
+        btnShowGuide.addEventListener("touchstart", (e) => {
+            e.preventDefault(); // タップ時のスクロールや選択動作を防止
+            showGuide();
+        }, { passive: false });
+        
+        btnShowGuide.addEventListener("touchend", (e) => {
+            e.preventDefault();
+            hideGuide();
+        }, { passive: false });
+        
+        btnShowGuide.addEventListener("touchcancel", (e) => {
+            e.preventDefault();
+            hideGuide();
+        }, { passive: false });
+
+        function toggleFullScreen() {
+            if (unityInstance) {
+                unityInstance.SetFullscreen(1);
+            }
+        }
+
+        // 🌟 操作説明モーダルの開閉
+        function openInstructionsModal() {
+            closeControlBar(); // コントロールバーを閉じる
+            document.getElementById("instructionsModal").style.display = "flex";
+        }
+        
+        function closeInstructionsModal() {
+            document.getElementById("instructionsModal").style.display = "none";
+        }
+
+        // 🏆 パズルクリア時にUnity側から呼び出されるコールバック
+        window.onPuzzleComplete = async function (elapsedTime) {
+            console.log("🏆 パズルクリア！タイム:", elapsedTime, "秒");
+            
+            // 親画面から渡された名前がある場合のみランキングに登録する
+            if (selectedData && selectedData.playerName && selectedData.playerName.trim() !== "") {
+                const name = selectedData.playerName.trim();
+                const imageId = selectedData.imageId;
+                const pieceCount = selectedData.pieceCount;
+                const GAS_URL = (selectedData && selectedData.rankingApiUrl) 
+                    ? selectedData.rankingApiUrl 
+                    : "https://script.google.com/macros/s/AKfycbzfLQy9O6Lq4mYxTnPZKlEVc4DpMsAgqqeFJrmZw2qnH_u3ul09q5gobOYqCW8AEJTP/exec";
+                
+                console.log(`🏆 ランキング登録を送信します。名: ${name}, タイム: ${elapsedTime}秒, 画像ID: ${imageId}, ピース数: ${pieceCount}`);
+                
+                try {
+                    await fetch(`${GAS_URL}?action=add_score&id=${imageId}&pieceCount=${pieceCount}&name=${encodeURIComponent(name)}&time=${elapsedTime}`, {
+                        method: 'GET',
+                        mode: 'no-cors' // CORS問題を完全に回避
+                    });
+                    console.log("🏆 ランキング登録リクエストの送信に成功しました！");
+                } catch (e) {
+                    console.error("❌ ランキング登録の送信中にエラーが発生しました:", e);
+                }
+            } else {
+                console.log("⚪ プレイヤー名が未設定（匿名プレイ）のため、ランキング登録はスキップされました。");
+            }
+        };
+
+        // 🎨 画像から平均色を抽出し、目に優しい背景色と最適なコントラストのつまみ色を動的適用する
+        function applyDynamicColors(imageSrc) {
+            if (!imageSrc) return;
+            
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.onload = function() {
+                try {
+                    // キャンバスを作成（10x10程度の小さなサイズでサンプリング）
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = 10;
+                    canvas.height = 10;
+                    ctx.drawImage(img, 0, 0, 10, 10);
+                    
+                    const imgData = ctx.getImageData(0, 0, 10, 10).data;
+                    let r = 0, g = 0, b = 0, count = 0;
+                    
+                    for (let i = 0; i < imgData.length; i += 4) {
+                        // 透明ピクセルや極端に暗い/明るいピクセルを除いて安定したサンプリングを行う
+                        if (imgData[i+3] > 100) {
+                            r += imgData[i];
+                            g += imgData[i+1];
+                            b += imgData[i+2];
+                            count++;
+                        }
+                    }
+                    
+                    if (count === 0) return;
+                    
+                    r = Math.round(r / count);
+                    g = Math.round(g / count);
+                    b = Math.round(b / count);
+                    
+                    // RGBをHSLに変換
+                    const hsl = rgbToHsl(r, g, b);
+                    
+                    // --- 目に優しい背景色の算出 ---
+                    // 目にツンとこないよう、彩度（S）を大幅に落とす（低彩度の落ち着いたニュアンスカラー）
+                    // 12%〜22%程度に抑えてシックにする
+                    const bgS = Math.min(22, Math.max(12, hsl.s * 100 * 0.35));
+                    
+                    // 明度（L）も眩しすぎないダークグレー〜ミドルグレーの中間に調整
+                    // ピースが落とす黒いドロップシャドウがはっきりと見え、立体感が保たれる絶妙な明度（22%〜30%）に調整
+                    const bgL_start = 22;
+                    const bgL_end = 30;
+                    
+                    const h = Math.round(hsl.h * 360);
+                    const bgStartStr = `hsl(${h}, ${Math.round(bgS)}%, ${bgL_start}%)`;
+                    const bgEndStr = `hsl(${h}, ${Math.round(bgS)}%, ${bgL_end}%)`;
+                    
+                    // --- つまみ（ハンドル）の配色算出 ---
+                    // 背景やピースから目立つ色：色相を180度反転（補色）させてアクセンカラーにする
+                    const complementH = (h + 180) % 360;
+                    // つまみのホバー時カラーは目立たせるため高彩度にする
+                    const handleAccentS = 85;
+                    // 暗い背景に映えるよう、明度を明るめに (55%〜65% のビビッドな輝き)
+                    const handleAccentL = 60;
+                    
+                    const handleAccentStr = `hsl(${complementH}, ${handleAccentS}%, ${handleAccentL}%)`;
+                    
+                    // つまみの通常時の文字色も補色をベースにした目に優しい中間色にする
+                    const handleColorStr = `hsl(${complementH}, ${Math.round(handleAccentS * 0.7)}, 70%)`;
+                    
+                    // つまみの標準背景色は平均色を少しブレンドして背景に馴染ませる
+                    const handleBgStr = `rgba(${Math.round(r*0.1 + 18*0.9)}, ${Math.round(g*0.1 + 18*0.9)}, ${Math.round(b*0.1 + 20*0.9)}, 0.85)`;
+                    
+                    // CSS変数に反映
+                    document.documentElement.style.setProperty('--bg-gradient-start', bgStartStr);
+                    document.documentElement.style.setProperty('--bg-gradient-end', bgEndStr);
+                    document.documentElement.style.setProperty('--handle-bg', handleBgStr);
+                    document.documentElement.style.setProperty('--handle-color', handleColorStr);
+                    document.documentElement.style.setProperty('--handle-hover-color', handleAccentStr);
+                    document.documentElement.style.setProperty('--handle-border', `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, 0.3)`);
+                    
+                    console.log(`🎨 Dynamic styling applied: Hue=${h}, BG=[${bgStartStr} -> ${bgEndStr}], HandleAccent=${handleAccentStr}`);
+                } catch (e) {
+                    console.error("平均色の解析・適用に失敗しました:", e);
+                }
+            };
+            img.src = imageSrc;
+        }
+        
+        // RGBをHSLに変換するユーティリティ関数
+        function rgbToHsl(r, g, b) {
+            r /= 255, g /= 255, b /= 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+            
+            if (max === min) {
+                h = s = 0; // アクロマティック（無彩色）
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return { h: h, s: s, l: l };
+        }
+
+        function sendAutosaveStateToUnity() {
+            const autosaveToggle = document.getElementById("autosave-toggle");
+            if (unityInstance && autosaveToggle) {
+                const stateStr = autosaveToggle.checked ? "true" : "false";
+                unityInstance.SendMessage('PuzzleManager', 'SetAutosaveEnabled', stateStr);
+                console.log("🔄 Sent AutoSave state to Unity:", stateStr);
+            }
+        }
+
+        // オートセーブの初期状態をLocalStorageからロードしてイベントリスナーを登録
+        window.addEventListener('DOMContentLoaded', () => {
+            const autosaveToggle = document.getElementById("autosave-toggle");
+            if (autosaveToggle) {
+                const savedState = localStorage.getItem("jigsaw_autosave");
+                autosaveToggle.checked = savedState !== "false"; // デフォルトON
+                
+                autosaveToggle.addEventListener("change", function() {
+                    localStorage.setItem("jigsaw_autosave", this.checked);
+                    console.log("🔄 Auto-save toggled:", this.checked);
+                    sendAutosaveStateToUnity();
+                });
+            }
+        });
+
+        // 実行開始
+        initGame();
+    </script>
+</body>
+</html>
