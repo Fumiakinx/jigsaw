@@ -632,14 +632,14 @@
             });
         }
 
-        // 2. Unityのロード設定 (Jigsaw/Builds/Build を指すように調整)
-        var loaderUrl = "Builds/Build/Builds.loader.js";
+        // 2. Unityのロード設定 (Build を指すように調整)
+        var loaderUrl = "Build/Builds.loader.js";
         
         var config = {
             arguments: [],
-            dataUrl: "Builds/Build/Builds.data",
-            frameworkUrl: "Builds/Build/Builds.framework.js",
-            codeUrl: "Builds/Build/Builds.wasm",
+            dataUrl: "Build/Builds.data",
+            frameworkUrl: "Build/Builds.framework.js",
+            codeUrl: "Build/Builds.wasm",
             streamingAssetsUrl: "StreamingAssets",
             companyName: "DefaultCompany",
             productName: "Jigsaw",
